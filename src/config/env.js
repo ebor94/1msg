@@ -23,6 +23,7 @@ const REQUERIDAS = [
   'ONEMSG_INSTANCE_ID',
   'ONEMSG_TOKEN',
   'WEBHOOK_SECRET',
+  'JWT_SECRET',
 ];
 
 const faltantes = REQUERIDAS.filter((clave) => {
@@ -75,6 +76,11 @@ const env = Object.freeze({
   }),
 
   webhookSecret: process.env.WEBHOOK_SECRET,
+
+  jwt: Object.freeze({
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES || '12h',
+  }),
 
   media: Object.freeze({
     path: ruta('MEDIA_PATH', './media'),
