@@ -1,0 +1,9 @@
+{
+  "type": "ack",
+  "ack": {
+    "id": "wamid.TEST_SALIENTE_9001",
+    "chatId": "573001112233@c.us",
+    "status": "delivered",
+    "timestamp": 1753370580
+  }
+}

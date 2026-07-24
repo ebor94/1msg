@@ -1,0 +1,19 @@
+{
+  "type": "message",
+  "messages": [
+    {
+      "id": "wamid.TEST_IMAGEN_0002",
+      "from": "573001112233",
+      "chatId": "573001112233@c.us",
+      "timestamp": 1753370460,
+      "type": "image",
+      "image": {
+        "id": "MEDIA_ID_IMAGEN_0002",
+        "mime_type": "image/jpeg",
+        "caption": "Adjunto la foto del acta."
+      },
+      "fromMe": false,
+      "senderName": "Cliente Prueba"
+    }
+  ]
+}

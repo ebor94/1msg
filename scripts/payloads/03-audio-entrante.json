@@ -1,0 +1,19 @@
+{
+  "type": "message",
+  "messages": [
+    {
+      "id": "wamid.TEST_AUDIO_0003",
+      "from": "573001112233",
+      "chatId": "573001112233@c.us",
+      "timestamp": 1753370520,
+      "type": "audio",
+      "audio": {
+        "id": "MEDIA_ID_AUDIO_0003",
+        "mime_type": "audio/ogg; codecs=opus",
+        "voice": true
+      },
+      "fromMe": false,
+      "senderName": "Cliente Prueba"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+# Dependencias
+node_modules/
+
+# Entorno — nunca versionar secretos
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/*.log
+logs/*.log.*
+
+# Medios descargados (almacenamiento propio, no van al repo)
+media/
+
+# Sistema
+.DS_Store
+*.swp

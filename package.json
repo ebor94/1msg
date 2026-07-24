@@ -1,0 +1,30 @@
+{
+  "name": "bandeja-wa",
+  "version": "0.1.0",
+  "description": "Bandeja de chats WhatsApp por agente sobre la API de 1msg - Serfunorte",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "worker": "node src/workers/index.js",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@1msg/sdk": "^1.0.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "helmet": "^7.1.0",
+    "mysql2": "^3.11.0",
+    "sequelize": "^6.37.0",
+    "socket.io": "^4.7.0",
+    "winston": "^3.14.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "private": true
+}

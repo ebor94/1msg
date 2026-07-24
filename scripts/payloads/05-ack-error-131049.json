@@ -1,0 +1,14 @@
+{
+  "type": "ack",
+  "ack": {
+    "id": "wamid.TEST_SALIENTE_9002",
+    "chatId": "573009998877@c.us",
+    "status": "failed",
+    "timestamp": 1753370640,
+    "error": {
+      "code": 131049,
+      "title": "This message was not delivered to maintain healthy ecosystem engagement.",
+      "details": "Meta limita las plantillas de marketing por destinatario. Reintentar tras 24h."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "type": "message",
+  "messages": [
+    {
+      "id": "wamid.TEST_TEXTO_0001",
+      "from": "573001112233",
+      "chatId": "573001112233@c.us",
+      "timestamp": 1753370400,
+      "type": "text",
+      "text": { "body": "Hola, buenas tardes, necesito información de un servicio." },
+      "fromMe": false,
+      "senderName": "Cliente Prueba"
+    }
+  ]
+}
