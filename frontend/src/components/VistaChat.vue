@@ -3,6 +3,7 @@ import { ref, watch, nextTick } from 'vue';
 import { useChat } from '../stores/chat';
 import { iniciales } from '../utils/formato';
 import BurbujaMensaje from './BurbujaMensaje.vue';
+import Compositor from './Compositor.vue';
 
 const chat = useChat();
 const contenedor = ref(null);
@@ -29,5 +30,6 @@ watch(() => chat.mensajes, alFondo, { deep: true });
       <div v-else-if="chat.error" class="text-center text-red-500 text-sm">{{ chat.error }}</div>
       <BurbujaMensaje v-for="m in chat.mensajes" :key="m.id" :mensaje="m" />
     </div>
+    <Compositor />
   </div>
 </template>

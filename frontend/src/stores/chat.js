@@ -3,8 +3,31 @@ import { apiFetch } from '../api/cliente';
 import { useConversaciones } from './conversaciones';
 
 export const useChat = defineStore('chat', {
-  state: () => ({ conversacion: null, mensajes: [], cargando: false, error: '' }),
+  state: () => ({ conversacion: null, mensajes: [], cargando: false, error: '', enviando: false, errorEnvio: '' }),
   actions: {
+    async enviar(texto) {
+      if (!this.conversacion) return;
+      const convId = this.conversacion.id;
+      this.enviando = true;
+      this.errorEnvio = '';
+      try {
+        const r = await apiFetch(`/conversaciones/${convId}/mensajes`, {
+          method: 'POST',
+          body: JSON.stringify({ texto }),
+        });
+        if (this.conversacion && this.conversacion.id === convId) this.mensajes.push(r.mensaje);
+        const item = useConversaciones().items.find((c) => c.id === convId);
+        if (item) {
+          item.ultimoMensajeTexto = r.mensaje.texto;
+          item.ultimoMensajeEn = r.mensaje.tsProveedor;
+          item.ultimoMensajeDir = 'out';
+        }
+      } catch (e) {
+        this.errorEnvio = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.' : 'No se pudo enviar.';
+      } finally {
+        this.enviando = false;
+      }
+    },
     async abrir(conversacion) {
       this.conversacion = conversacion;
       this.mensajes = [];

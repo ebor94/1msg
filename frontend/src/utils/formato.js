@@ -32,3 +32,9 @@ const ETIQUETA_TIPO = {
 export function etiquetaTipo(tipo) {
   return ETIQUETA_TIPO[tipo] || null;
 }
+
+export function ventanaAbierta(fecha) {
+  if (!fecha) return false;
+  const d = new Date(fecha);
+  return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
+}

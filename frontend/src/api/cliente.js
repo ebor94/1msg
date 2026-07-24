@@ -22,6 +22,7 @@ export async function apiFetch(ruta, opciones = {}) {
   if (!resp.ok) {
     const e = new Error((cuerpo && cuerpo.error) || `error ${resp.status}`);
     e.status = resp.status;
+    if (cuerpo && cuerpo.codigo) e.codigo = cuerpo.codigo;
     throw e;
   }
   return cuerpo;

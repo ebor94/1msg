@@ -23,4 +23,16 @@ describe('store chat', () => {
     expect(global.fetch).toHaveBeenNthCalledWith(1, '/api/conversaciones/5/mensajes', expect.anything());
     expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/conversaciones/5/leer', expect.objectContaining({ method: 'POST' }));
   });
+
+  it('enviar hace POST y agrega el mensaje', async () => {
+    const chat = useChat();
+    chat.conversacion = { id: 7, contacto: {} };
+    chat.mensajes = [];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true, status: 201, json: async () => ({ mensaje: { id: 99, direccion: 'out', texto: 'hola' } }),
+    });
+    await chat.enviar('hola');
+    expect(chat.mensajes.at(-1).id).toBe(99);
+    expect(global.fetch).toHaveBeenCalledWith('/api/conversaciones/7/mensajes', expect.objectContaining({ method: 'POST' }));
+  });
 });
