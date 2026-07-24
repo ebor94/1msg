@@ -10,15 +10,22 @@ export const useChat = defineStore('chat', {
       this.mensajes = [];
       this.cargando = true;
       this.error = '';
+      // Guard contra clics rápidos: si el agente cambió de chat mientras esta
+      // petición estaba en vuelo, descartamos su resultado para no pintar los
+      // mensajes de una conversación bajo el nombre de otra.
+      const id = conversacion.id;
+      const sigueActual = () => this.conversacion && this.conversacion.id === id;
       try {
-        const r = await apiFetch(`/conversaciones/${conversacion.id}/mensajes`);
+        const r = await apiFetch(`/conversaciones/${id}/mensajes`);
+        if (!sigueActual()) return;
         this.mensajes = r.mensajes;
-        await apiFetch(`/conversaciones/${conversacion.id}/leer`, { method: 'POST' });
-        this.marcarLeidaEnLista(conversacion.id);
+        await apiFetch(`/conversaciones/${id}/leer`, { method: 'POST' });
+        if (!sigueActual()) return;
+        this.marcarLeidaEnLista(id);
       } catch (e) {
-        this.error = 'No se pudo abrir la conversación.';
+        if (sigueActual()) this.error = 'No se pudo abrir la conversación.';
       } finally {
-        this.cargando = false;
+        if (sigueActual()) this.cargando = false;
       }
     },
     marcarLeidaEnLista(id) {
