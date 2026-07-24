@@ -13,22 +13,21 @@ function extraerMeta(payload) {
   const meta = { tipo: null, waMessageId: null };
   if (!payload || typeof payload !== 'object') return meta;
 
-  // Tipo de evento: probamos las claves más habituales sin asumir una sola.
-  const tipo = payload.type || payload.event || payload.ackType || null;
-  if (typeof tipo === 'string') meta.tipo = tipo.slice(0, 60);
+  // Formato real de 1msg (docs/payloads-reales-1msg.md): el discriminador es la
+  // presencia de messages[] (mensajes) o ack[] (estados), no un campo `type`.
+  let id = null;
+  if (Array.isArray(payload.messages)) {
+    meta.tipo = 'mensajes';
+    id = payload.messages[0] && payload.messages[0].id;
+  } else if (Array.isArray(payload.ack)) {
+    meta.tipo = 'ack';
+    id = payload.ack[0] && payload.ack[0].id;
+  } else {
+    meta.tipo = payload.type || payload.event || null;
+  }
 
-  // Id del mensaje: puede venir suelto, dentro del primer mensaje del array,
-  // o dentro del ack (evento de estado de un saliente).
-  const primerMensaje = Array.isArray(payload.messages) ? payload.messages[0] : null;
-  const id =
-    payload.wa_message_id ||
-    payload.messageId ||
-    payload.id ||
-    (primerMensaje && (primerMensaje.id || primerMensaje.wa_message_id)) ||
-    (payload.ack && payload.ack.id) ||
-    null;
+  if (typeof meta.tipo === 'string') meta.tipo = meta.tipo.slice(0, 60);
   if (typeof id === 'string') meta.waMessageId = id.slice(0, 128);
-
   return meta;
 }
 
