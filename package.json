@@ -10,7 +10,8 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "worker": "node src/workers/index.js",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "node --test"
   },
   "dependencies": {
     "@1msg/sdk": "^1.0.0",
