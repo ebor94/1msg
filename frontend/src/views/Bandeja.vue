@@ -1,8 +1,10 @@
 <script setup>
+import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../stores/auth';
 import { useChat } from '../stores/chat';
 import { iniciales } from '../utils/formato';
+import { conectarSocket, desconectarSocket } from '../socket/cliente';
 import ListaConversaciones from '../components/ListaConversaciones.vue';
 import VistaChat from '../components/VistaChat.vue';
 import PanelCliente from '../components/PanelCliente.vue';
@@ -10,7 +12,15 @@ import PanelCliente from '../components/PanelCliente.vue';
 const auth = useAuth();
 const chat = useChat();
 const router = useRouter();
-function salir() { auth.logout(); router.push('/login'); }
+
+onMounted(conectarSocket);
+onUnmounted(desconectarSocket);
+
+function salir() {
+  desconectarSocket();
+  auth.logout();
+  router.push('/login');
+}
 </script>
 
 <template>
