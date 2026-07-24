@@ -212,7 +212,15 @@ async function procesarAck(norm, transaction) {
   if (Object.keys(cambios).length) await msg.update(cambios, { transaction });
 
   await aplicarReglaError(norm, transaction);
-  return { aplicado: true };
+
+  const conv = await Conversacion.findByPk(msg.conversacionId, { attributes: ['id', 'agenteId', 'estado'], transaction });
+  return {
+    aplicado: true,
+    conversacionId: conv ? conv.id : msg.conversacionId,
+    agenteId: conv ? conv.agenteId : null,
+    estado: msg.estado,
+    waMessageId: norm.waMessageId,
+  };
 }
 
 /**
@@ -225,6 +233,7 @@ async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
   const ev = normalizarEvento(payload);
   const resumen = { clase: ev.clase, mensajes: 0, contactosNuevos: 0, convNuevas: 0, acks: 0, acksAplicados: 0, mediaOk: 0, mediaFallida: 0 };
   const tareasMedia = [];
+  const eventosSocket = [];
 
   const t = await sequelize.transaction();
   try {
@@ -241,6 +250,11 @@ async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
         if (creado) {
           await actualizarDesnormalizados(conv, norm, t);
           resumen.mensajes += 1;
+          eventosSocket.push({
+            evento: 'mensaje:nuevo',
+            destino: { agenteId: conv.agenteId, general: !conv.agenteId },
+            payload: { conversacionId: conv.id, mensaje: { id: mensajeId, direccion: norm.direccion, tipo: norm.tipo, texto: norm.texto, estado: 'pendiente', tsProveedor: norm.tsProveedor } },
+          });
           if (norm.esMedia && norm.mediaUrl) {
             tareasMedia.push({
               mensajeId,
@@ -256,7 +270,14 @@ async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
       for (const norm of ev.acks) {
         const r = await procesarAck(norm, t);
         resumen.acks += 1;
-        if (r.aplicado) resumen.acksAplicados += 1;
+        if (r.aplicado) {
+          resumen.acksAplicados += 1;
+          eventosSocket.push({
+            evento: 'mensaje:ack',
+            destino: { agenteId: r.agenteId, general: !r.agenteId },
+            payload: { conversacionId: r.conversacionId, waMessageId: r.waMessageId, estado: r.estado },
+          });
+        }
       }
     }
 
@@ -288,7 +309,7 @@ async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
     }
   }
 
-  return resumen;
+  return { ...resumen, eventosSocket };
 }
 
 module.exports = { procesarEventoWebhook };

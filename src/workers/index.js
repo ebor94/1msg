@@ -13,11 +13,28 @@
  *   ... --limit=N                          → tamaño del lote de dry-run
  */
 
-require('../config/env');
+const env = require('../config/env');
 const logger = require('../utils/logger');
 const { sequelize, verificarConexion } = require('../config/database');
 const { EventoWebhook } = require('../models');
 const { procesarEventoWebhook } = require('../services/ingesta');
+
+/**
+ * Avisa al API (mismo host, proceso aparte) para que emita por el socket.
+ * Best-effort: un fallo de red o del endpoint interno NUNCA debe tumbar el
+ * procesamiento del evento (el socket no es la fuente de verdad, invariante 6).
+ */
+async function avisarSocket(ev) {
+  try {
+    await fetch(`http://127.0.0.1:${env.port}/internal/emitir`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-secret': env.webhookSecret },
+      body: JSON.stringify(ev),
+    });
+  } catch (e) {
+    logger.warn(`aviso socket falló (no crítico): ${e.message}`);
+  }
+}
 
 const LOTE = 50;
 const INTERVALO_MS = 1000;
@@ -47,6 +64,9 @@ async function procesarLote(limite) {
         evento.procesado = true;
         evento.error = null;
         await evento.save();
+        if (resumen.eventosSocket?.length) {
+          for (const ev of resumen.eventosSocket) await avisarSocket(ev);
+        }
       }
       intentos.delete(evento.id);
       logger.debug(`evento ${evento.id} [${resumen.clase}] ok`, resumen);

@@ -4,6 +4,7 @@ const { Conversacion, Mensaje, Contacto, Agente } = require('../models');
 const { listar, puedeVer } = require('../services/conversaciones');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { ventanaAbierta, conFirma } = require('../services/envio');
+const { emitir } = require('../sockets/emisor');
 const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE } = require('../config/constants');
 const logger = require('../utils/logger');
 
@@ -108,6 +109,9 @@ async function enviar(req, res) {
       ultimoMensajeTexto: textoFinal.slice(0, 255),
       ultimoMensajeDir: DIRECCION.OUT,
     });
+
+    const destino = { agenteId: conv.agenteId, general: !conv.agenteId };
+    emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje });
 
     return res.status(201).json({ mensaje });
   } catch (err) {
