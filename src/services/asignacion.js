@@ -3,23 +3,14 @@
 /**
  * Cascada de asignación de una conversación entrante (regla de negocio, CLAUDE.md):
  *   1. Si el contacto ya tiene agente_dueno_id (y está activo) → ese agente (continuidad).
- *   2. Si el número cruza con un cliente de serfuweb con asesor → ese asesor.
- *   3. En cualquier otro caso → bandeja general (agente_id NULL).
+ *   2. En cualquier otro caso → bandeja general (agente_id NULL).
  *
- * La regla 2 depende del cruce con las tablas del core de serfuweb, que aún NO
- * está definido (qué tabla/columna). Queda como gancho `resolverAsesorSerfuweb`
- * que hoy devuelve null; al conectarlo, la cascada funciona sin más cambios.
+ * Decisión 2026-07-24: se descartó el cruce automático con clientes de serfuweb.
+ * Todo cae a general y el agente toma el chat manualmente (Fase 2); al tomarlo se
+ * vuelve dueño del contacto y la regla 1 le devuelve los próximos mensajes.
  */
 
 const { TIPO_ASIGNACION } = require('../config/constants');
-
-/**
- * Gancho para la regla 2. Debe devolver el id de un wa_agentes (asesor) o null.
- * TODO: definir el cruce número→cliente serfuweb→asesor.
- */
-async function resolverAsesorSerfuweb(/* contacto, { transaction } */) {
-  return null;
-}
 
 /**
  * Evalúa la cascada para un contacto.
@@ -39,14 +30,8 @@ async function cascada(contacto, { Agente, transaction }) {
     // Dueño inactivo → cae a general (regla de reapertura).
   }
 
-  // Regla 2: cliente de serfuweb con asesor (pendiente de mapeo).
-  const asesorId = await resolverAsesorSerfuweb(contacto, { transaction });
-  if (asesorId) {
-    return { agenteId: asesorId, tipo: TIPO_ASIGNACION.AUTO_REGLA, motivo: 'cliente serfuweb con asesor' };
-  }
-
-  // Regla 3: bandeja general.
+  // Regla 2: bandeja general.
   return { agenteId: null, tipo: TIPO_ASIGNACION.AUTO_REGLA, motivo: 'bandeja general' };
 }
 
-module.exports = { cascada, resolverAsesorSerfuweb };
+module.exports = { cascada };

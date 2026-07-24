@@ -79,9 +79,14 @@ El token va en query string, no en header. `instanceId` y token viven en `.env`.
 
 **Asignación de una conversación entrante** (cascada, se evalúa en el worker):
 
-1. Si el contacto ya tiene `agente_dueno_id` → va a ese agente.
-2. Si el número cruza con un cliente de `serfuweb` con asesor → va a ese asesor.
-3. En cualquier otro caso → `agente_id = NULL`, o sea **bandeja general**.
+1. Si el contacto ya tiene `agente_dueno_id` → va a ese agente (continuidad).
+2. En cualquier otro caso → `agente_id = NULL`, o sea **bandeja general**.
+
+> Decisión 2026-07-24: se **descartó** el cruce automático con clientes de
+> `serfuweb` (asesor). En su lugar, todo cae a general y el agente **toma** el
+> chat manualmente; al tomarlo se vuelve su dueño (ver "Toma de un chat"). El
+> agente también podrá **crear un contacto** y quedárselo (`agente_dueno_id` =
+> él). Ambas acciones son de la bandeja (Fase 2); el modelo ya las soporta.
 
 **Bandeja general**: conversaciones con `agente_id IS NULL`. Visible para todos los
 agentes. Se ordena FIFO por `ultimo_mensaje_en ASC` (lo que más lleva esperando va
@@ -96,6 +101,11 @@ UPDATE wa_conversaciones
 ```
 
 Si `affectedRows = 0`, otro agente se adelantó: devolver 409 y refrescar su bandeja.
+
+Al tomar el chat, en la misma transacción se marca al agente como **dueño** del
+contacto (`wa_contactos.agente_dueno_id = :agente`) para que la continuidad
+(regla 1) le devuelva los próximos mensajes de ese número. Lo mismo cuando un
+agente crea un contacto: queda con `agente_dueno_id = él`.
 
 **Reapertura**: un chat cerrado que recibe mensaje nuevo vuelve **siempre a su
 agente anterior**, sin límite de tiempo. Solo cae a la general si ese agente está
