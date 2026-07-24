@@ -1,5 +1,7 @@
 'use strict';
 
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const helmet = require('helmet');
 const logger = require('./utils/logger');
@@ -16,6 +18,16 @@ function crearApp() {
   app.use(express.json({ limit: '2mb' }));
 
   app.use('/', rutas);
+
+  const distFront = path.resolve(__dirname, '..', 'frontend', 'dist');
+  if (fs.existsSync(distFront)) {
+    app.use(express.static(distFront));
+    // Fallback SPA: cualquier GET que no sea /api, /webhook, /health ni un archivo.
+    app.get(/^\/(?!api|webhook|health).*/, (req, res, next) => {
+      if (req.method !== 'GET') return next();
+      return res.sendFile(path.join(distFront, 'index.html'));
+    });
+  }
 
   // 404
   app.use((req, res) => res.status(404).json({ error: 'no encontrado' }));

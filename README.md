@@ -62,6 +62,13 @@ npm test                             # tests del normalizador
 
 ## Ejecución (producción con pm2)
 
+El backend sirve el build del frontend (`frontend/dist`) de forma estática con
+fallback SPA. Antes de (re)iniciar `wa-backend`, generar ese build:
+
+```bash
+npm --prefix frontend ci && npm --prefix frontend run build
+```
+
 ```bash
 pm2 start src/index.js       --name wa-backend --time
 pm2 start src/workers/index.js --name wa-worker  --time
