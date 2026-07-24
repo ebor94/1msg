@@ -13,6 +13,9 @@ logs/*.log.*
 # Medios descargados (almacenamiento propio, no van al repo)
 media/
 
+# Mockups del brainstorming visual
+.superpowers/
+
 # Sistema
 .DS_Store
 *.swp
