@@ -28,19 +28,33 @@ async function listarHandler(req, res) {
 }
 
 async function mensajes(req, res) {
-  const conv = await accesible(req, res);
-  if (!conv) return undefined;
-  const where = { conversacionId: conv.id };
-  if (req.query.antesDe) where.id = { [Op.lt]: Number(req.query.antesDe) };
-  const filas = await Mensaje.findAll({ where, order: [['tsProveedor', 'DESC'], ['id', 'DESC']], limit: 30 });
-  return res.json({ mensajes: filas.reverse() });
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    const where = { conversacionId: conv.id };
+    if (req.query.antesDe !== undefined) {
+      const antesDe = Number(req.query.antesDe);
+      if (!Number.isInteger(antesDe)) return res.status(400).json({ error: 'antesDe inválido' });
+      where.id = { [Op.lt]: antesDe };
+    }
+    const filas = await Mensaje.findAll({ where, order: [['tsProveedor', 'DESC'], ['id', 'DESC']], limit: 30 });
+    return res.json({ mensajes: filas.reverse() });
+  } catch (err) {
+    logger.error(`mensajes conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
 }
 
 async function leer(req, res) {
-  const conv = await accesible(req, res);
-  if (!conv) return undefined;
-  await Conversacion.update({ noLeidos: 0 }, { where: { id: conv.id } });
-  return res.json({ ok: true });
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    await Conversacion.update({ noLeidos: 0 }, { where: { id: conv.id } });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`leer conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
 }
 
 module.exports = { listarHandler, mensajes, leer };
