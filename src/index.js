@@ -8,19 +8,28 @@
  * (npm run worker) y se implementa en la tarea 4.
  */
 
+const http = require('http');
+const { Server } = require('socket.io');
 const env = require('./config/env'); // valida env y aborta si falta algo obligatorio
 const logger = require('./utils/logger');
 const { verificarConexion } = require('./config/database');
 require('./models'); // registra modelos y asociaciones
 const crearApp = require('./app');
+const { setIo } = require('./sockets/io');
+const { registrar } = require('./sockets/registro');
 
 async function bootstrap() {
   logger.info('Arrancando bandeja WhatsApp — Serfunorte');
   await verificarConexion();
 
   const app = crearApp();
-  const server = app.listen(env.port, () => {
-    logger.info(`API HTTP escuchando en http://127.0.0.1:${env.port} (webhook: POST /webhook/1msg)`);
+  const server = http.createServer(app);
+  const io = new Server(server, { path: '/socket.io' });
+  registrar(io);
+  setIo(io);
+
+  server.listen(env.port, () => {
+    logger.info(`API HTTP+WS escuchando en http://127.0.0.1:${env.port} (webhook: POST /webhook/1msg)`);
   });
 
   // Apagado limpio: dejar de aceptar conexiones antes de morir.
