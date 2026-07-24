@@ -30,6 +30,27 @@ describe('store auth', () => {
     expect(auth.estaAutenticado).toBe(false);
   });
 
+  it('cargarAgente rehidrata el agente desde /auth/me', async () => {
+    localStorage.setItem('wa_token', 'tkn');
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true, status: 200, json: async () => ({ agente: { id: 1, rol: 'administrador' } }),
+    });
+    const auth = useAuth();
+    auth.cargarDeStorage();
+    await auth.cargarAgente();
+    expect(auth.agente.rol).toBe('administrador');
+  });
+
+  it('cargarAgente con token inválido (401) hace logout', async () => {
+    localStorage.setItem('wa_token', 'viejo');
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'no' }) });
+    const auth = useAuth();
+    auth.cargarDeStorage();
+    await auth.cargarAgente();
+    expect(auth.token).toBe(null);
+    expect(auth.estaAutenticado).toBe(false);
+  });
+
   it('logout limpia estado y storage', () => {
     const auth = useAuth();
     auth.token = 'tkn'; auth.agente = { id: 1 };

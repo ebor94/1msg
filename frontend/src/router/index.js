@@ -9,8 +9,9 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuth();
+  if (auth.token && !auth.agente) await auth.cargarAgente();
   if (to.meta.requiereAuth && !auth.estaAutenticado) return { name: 'login' };
   if (to.name === 'login' && auth.estaAutenticado) return { name: 'bandeja' };
   return true;

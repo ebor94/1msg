@@ -21,6 +21,15 @@ export const useAuth = defineStore('auth', {
       const t = localStorage.getItem(CLAVE_TOKEN);
       if (t) this.token = t;
     },
+    async cargarAgente() {
+      if (!this.token) return;
+      try {
+        const r = await apiFetch('/auth/me');
+        this.agente = r.agente;
+      } catch (e) {
+        this.logout();
+      }
+    },
     logout() {
       this.token = null;
       this.agente = null;
