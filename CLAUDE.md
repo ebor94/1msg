@@ -50,9 +50,13 @@ El token va en query string, no en header. `instanceId` y token viven en `.env`.
 
 - El SDK y el token son **solo de servidor**. El token jamás se expone al frontend
   ni viaja al navegador. El frontend habla con nuestra API, nuestra API habla con 1msg.
-- Solo hay **una URL de webhook por canal** (`GET /webhook`, `POST /webhook`). Si
-  algún día n8n necesita también los eventos, nuestro backend hace fan-out; no se
-  reconfigura el webhook.
+- **El webhook admite MÚLTIPLES URLs** (`webhookUrl` es un array — confirmado en
+  producción 2026-07-24). El canal `VID182868781` ya trae la URL interna de 1msg
+  `https://app.1msg.io/service/service_core/whatsapp/webhook/12106` que **alimenta
+  la bandeja que usan los agentes**: NUNCA quitarla. Nosotros nos SUMAMOS a la
+  lista con nuestra URL; 1msg hace el fan-out nativo, no hace falta reenviar desde
+  nuestro backend. Leer/instalar: `GET`/`POST https://api.1msg.io/{instanceId}/webhook?token=...`.
+  El formato real de los eventos está en `docs/payloads-reales-1msg.md`.
 - **Ventana de 24 horas**: todos los métodos de envío excepto `sendTemplate`
   fallan si la sesión con el usuario está cerrada. Fuera de ventana solo se puede
   enviar plantilla aprobada.
