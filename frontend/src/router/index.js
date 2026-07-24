@@ -1,11 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useAuth } from '../stores/auth';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'bandeja', component: () => import('../views/Bandeja.vue') },
+    { path: '/', name: 'bandeja', component: () => import('../views/Bandeja.vue'), meta: { requiereAuth: true } },
     { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
   ],
+});
+
+router.beforeEach((to) => {
+  const auth = useAuth();
+  if (to.meta.requiereAuth && !auth.estaAutenticado) return { name: 'login' };
+  if (to.name === 'login' && auth.estaAutenticado) return { name: 'bandeja' };
+  return true;
 });
 
 export default router;
