@@ -26,11 +26,12 @@ const { procesarEventoWebhook } = require('../services/ingesta');
  */
 async function avisarSocket(ev) {
   try {
-    await fetch(`http://127.0.0.1:${env.port}/internal/emitir`, {
+    const res = await fetch(`http://127.0.0.1:${env.port}/internal/emitir`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-internal-secret': env.webhookSecret },
       body: JSON.stringify(ev),
     });
+    if (!res.ok) logger.warn(`aviso socket devolvió ${res.status} (revisar WEBHOOK_SECRET/PORT)`);
   } catch (e) {
     logger.warn(`aviso socket falló (no crítico): ${e.message}`);
   }
