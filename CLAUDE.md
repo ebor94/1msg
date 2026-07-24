@@ -27,8 +27,8 @@ nosotros del flujo de webhooks.
 | Tiempo real | Socket.io (un solo proceso, sin adapter Redis) |
 | Cola | Tabla `wa_eventos_webhook` (NO usar Redis/BullMQ por ahora) |
 | Frontend | Vue 3 (fase 3, aún no empieza) |
-| Servidor | `192.9.17.30`, Oracle Cloud, Ubuntu, Nginx reverse proxy |
-| URL pública | `https://wa.serfunorte.com.co` → proxy a `127.0.0.1:3000` |
+| Servidor | `192.9.17.30` (hostname `srv-backend`, alias SSH `mantix`), Oracle Cloud, Ubuntu 24.04. App en `~/apps/wa` bajo pm2 (`wa-backend`) |
+| URL pública | `https://wa.losolivoscucuta.com` → Cloudflare Tunnel (`glpi-olivos`) → `localhost:3000`. Sin puertos entrantes abiertos; TLS en el borde de Cloudflare. La app ve todas las peticiones como `127.0.0.1`; la IP real del cliente va en `CF-Connecting-IP` |
 
 La base `serfuweb` ya contiene las tablas del core de negocio. **No toques ninguna
 tabla que no empiece por `wa_`.** El esquema está en `docs/esquema_bandeja.sql`.
