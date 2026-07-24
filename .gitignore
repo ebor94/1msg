@@ -19,3 +19,7 @@ media/
 # Sistema
 .DS_Store
 *.swp
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/
