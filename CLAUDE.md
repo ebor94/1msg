@@ -88,6 +88,13 @@ El token va en query string, no en header. `instanceId` y token viven en `.env`.
 > agente también podrá **crear un contacto** y quedárselo (`agente_dueno_id` =
 > él). Ambas acciones son de la bandeja (Fase 2); el modelo ya las soporta.
 
+**Agentes y roles**: `wa_agentes` es la tabla puente de los usuarios de
+`serfuweb.usuarios` que operan la bandeja (~15 de 40). `wa_agentes.usuario_id`
+enlaza (blando, sin FK dura) a `serfuweb.usuarios.id`; la identidad y el login
+viven en serfuweb (no guardamos contraseñas). Roles PROPIos de la herramienta:
+`administrador` (ve todo y asigna chats) y `asesor` (lo suyo + general).
+Administradores actuales: `bortega`, `ssuarez`. Ver `docs/migraciones/001-usuarios-serfuweb.sql`.
+
 **Bandeja general**: conversaciones con `agente_id IS NULL`. Visible para todos los
 agentes. Se ordena FIFO por `ultimo_mensaje_en ASC` (lo que más lleva esperando va
 primero).
