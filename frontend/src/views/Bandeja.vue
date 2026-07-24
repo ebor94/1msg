@@ -30,7 +30,7 @@ function salir() { auth.logout(); router.push('/login'); }
         <ListaConversaciones />
       </aside>
       <!-- Chat: en móvil ocupa todo cuando hay uno abierto -->
-      <main class="min-h-0 h-full flex flex-col" :class="chat.conversacion ? 'block' : 'hidden md:block'">
+      <main class="min-h-0 h-full" :class="chat.conversacion ? 'flex flex-col' : 'hidden md:flex md:flex-col'">
         <div class="md:hidden bg-[#f0f2f5] border-b border-gray-200 px-3 py-2" v-if="chat.conversacion">
           <button class="text-marca-oscuro text-sm" @click="chat.cerrar()">‹ Volver</button>
         </div>
