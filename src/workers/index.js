@@ -24,6 +24,7 @@ const INTERVALO_MS = 1000;
 const MAX_INTENTOS = 3;
 
 const dryRun = process.argv.includes('--dry-run');
+const unaVez = process.argv.includes('--once'); // procesa un lote real y sale
 const limitArg = process.argv.find((a) => a.startsWith('--limit='));
 const limiteDry = limitArg ? Number(limitArg.split('=')[1]) : 20;
 
@@ -115,6 +116,14 @@ async function bootstrap() {
   await verificarConexion();
   if (dryRun) {
     await correrDryRun();
+    await sequelize.close();
+    return;
+  }
+  if (unaVez) {
+    const lote = limitArg ? limiteDry : LOTE;
+    logger.info(`Corrida única: procesando hasta ${lote} eventos (real)...`);
+    const eventos = await procesarLote(lote);
+    logger.info(`Corrida única: ${eventos.length} eventos procesados.`);
     await sequelize.close();
     return;
   }
