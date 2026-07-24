@@ -23,7 +23,8 @@ async function listarHandler(req, res) {
     return res.json(r);
   } catch (err) {
     logger.error(`listar conversaciones: ${err.message}`);
-    return res.status(err.status || 500).json({ error: err.message });
+    const status = err.status || 500;
+    return res.status(status).json({ error: status === 403 ? err.message : 'error interno' });
   }
 }
 
