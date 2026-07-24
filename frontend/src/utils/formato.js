@@ -14,3 +14,21 @@ export function horaCorta(fecha) {
     ? d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
     : d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
 }
+
+const ICONO_ESTADO = {
+  pendiente: '🕓', enviado: '✓', entregado: '✓✓', leido: '✓✓', fallido: '⚠',
+};
+export function iconoEstado(estado) {
+  return ICONO_ESTADO[estado] || '';
+}
+
+export function esLeido(estado) {
+  return estado === 'leido';
+}
+
+const ETIQUETA_TIPO = {
+  image: '[imagen]', audio: '[audio]', video: '[video]', document: '[documento]', sticker: '[sticker]',
+};
+export function etiquetaTipo(tipo) {
+  return ETIQUETA_TIPO[tipo] || null;
+}
