@@ -14,6 +14,7 @@
 const { sequelize, Canal, Agente, Contacto, Conversacion, Mensaje, Asignacion } = require('../models');
 const { normalizarEvento } = require('./normalizador');
 const { cascada } = require('./asignacion');
+const { guardarMediaDeMensaje } = require('./media');
 const logger = require('../utils/logger');
 const {
   ESTADO_CONVERSACION,
@@ -122,7 +123,7 @@ async function insertarMensaje(conv, norm, transaction) {
 
   // Sin wa_message_id no hay clave de idempotencia: creamos directo (raro).
   if (!norm.waMessageId) {
-    await Mensaje.create(
+    const inst = await Mensaje.create(
       {
         conversacionId: conv.id,
         direccion: norm.direccion,
@@ -134,10 +135,10 @@ async function insertarMensaje(conv, norm, transaction) {
       },
       { transaction },
     );
-    return { creado: true };
+    return { creado: true, mensajeId: inst.id };
   }
 
-  const [, creado] = await Mensaje.findOrCreate({
+  const [inst, creado] = await Mensaje.findOrCreate({
     where: { waMessageId: norm.waMessageId },
     defaults: {
       conversacionId: conv.id,
@@ -151,9 +152,9 @@ async function insertarMensaje(conv, norm, transaction) {
     },
     transaction,
   });
-  // NOTA: la descarga de media (tipo con mediaUrl) es la tarea 5; aquí solo se
-  // registra el mensaje. Las URLs de media de 1msg expiran en ~5 min.
-  return { creado };
+  // La descarga de media va DESPUÉS del commit (fuera de la transacción), en
+  // procesarEventoWebhook, para no retener la transacción durante la red.
+  return { creado, mensajeId: inst.id };
 }
 
 async function actualizarDesnormalizados(conv, norm, transaction) {
@@ -222,7 +223,8 @@ async function procesarAck(norm, transaction) {
 async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
   const payload = typeof eventoRow.payload === 'string' ? JSON.parse(eventoRow.payload) : eventoRow.payload;
   const ev = normalizarEvento(payload);
-  const resumen = { clase: ev.clase, mensajes: 0, contactosNuevos: 0, convNuevas: 0, acks: 0, acksAplicados: 0 };
+  const resumen = { clase: ev.clase, mensajes: 0, contactosNuevos: 0, convNuevas: 0, acks: 0, acksAplicados: 0, mediaOk: 0, mediaFallida: 0 };
+  const tareasMedia = [];
 
   const t = await sequelize.transaction();
   try {
@@ -235,10 +237,19 @@ async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
         if (contactoNuevo) resumen.contactosNuevos += 1;
         const { conv, creada } = await resolverConversacion(contacto, norm, canalId, t);
         if (creada) resumen.convNuevas += 1;
-        const { creado } = await insertarMensaje(conv, norm, t);
+        const { creado, mensajeId } = await insertarMensaje(conv, norm, t);
         if (creado) {
           await actualizarDesnormalizados(conv, norm, t);
           resumen.mensajes += 1;
+          if (norm.esMedia && norm.mediaUrl) {
+            tareasMedia.push({
+              mensajeId,
+              conversacionId: conv.id,
+              waMessageId: norm.waMessageId,
+              mediaUrl: norm.mediaUrl,
+              fecha: norm.tsProveedor,
+            });
+          }
         }
       }
     } else if (ev.clase === 'acks') {
@@ -251,12 +262,33 @@ async function procesarEventoWebhook(eventoRow, { dryRun = false } = {}) {
 
     if (dryRun) await t.rollback();
     else await t.commit();
-    return resumen;
   } catch (err) {
     await t.rollback();
     logger.error(`Ingesta falló para evento ${eventoRow.id}: ${err.message}`);
     throw err;
   }
+
+  // Descarga de media FUERA de la transacción: la URL de 1msg expira en ~5 min,
+  // así que se hace ya. Un fallo de descarga NO pierde el mensaje (queda con
+  // media_ruta NULL) ni reintenta el evento entero.
+  if (!dryRun && tareasMedia.length) {
+    for (const tarea of tareasMedia) {
+      try {
+        const campos = await guardarMediaDeMensaje(tarea);
+        if (campos) {
+          await Mensaje.update(campos, { where: { id: tarea.mensajeId } });
+          resumen.mediaOk += 1;
+        } else {
+          resumen.mediaFallida += 1;
+        }
+      } catch (e) {
+        resumen.mediaFallida += 1;
+        logger.error(`media falló para mensaje ${tarea.mensajeId} (${tarea.waMessageId}): ${e.message}`);
+      }
+    }
+  }
+
+  return resumen;
 }
 
 module.exports = { procesarEventoWebhook };
