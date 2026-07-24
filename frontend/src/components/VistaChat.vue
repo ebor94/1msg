@@ -1,0 +1,33 @@
+<script setup>
+import { ref, watch, nextTick } from 'vue';
+import { useChat } from '../stores/chat';
+import { iniciales } from '../utils/formato';
+import BurbujaMensaje from './BurbujaMensaje.vue';
+
+const chat = useChat();
+const contenedor = ref(null);
+const nombre = (c) => c?.contacto?.nombreDisplay || c?.contacto?.nombreWa || c?.contacto?.telefono || 'Sin nombre';
+
+async function alFondo() {
+  await nextTick();
+  if (contenedor.value) contenedor.value.scrollTop = contenedor.value.scrollHeight;
+}
+watch(() => chat.mensajes, alFondo, { deep: true });
+</script>
+
+<template>
+  <div v-if="!chat.conversacion" class="h-full grid place-items-center text-gray-400 bg-gray-50">
+    Selecciona un chat para ver la conversación
+  </div>
+  <div v-else class="h-full flex flex-col bg-[#eae6df]">
+    <div class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-2.5 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold">{{ iniciales(nombre(chat.conversacion)) }}</div>
+      <b class="text-sm text-gray-900">{{ nombre(chat.conversacion) }}</b>
+    </div>
+    <div ref="contenedor" class="flex-1 overflow-auto p-4 flex flex-col gap-1.5">
+      <div v-if="chat.cargando" class="text-center text-gray-500 text-sm">Cargando…</div>
+      <div v-else-if="chat.error" class="text-center text-red-500 text-sm">{{ chat.error }}</div>
+      <BurbujaMensaje v-for="m in chat.mensajes" :key="m.id" :mensaje="m" />
+    </div>
+  </div>
+</template>
