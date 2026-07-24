@@ -72,10 +72,11 @@ const TIPO_ASIGNACION = Object.freeze({
   ESCALADO_BOT: 'escalado_bot',
 });
 
+// Roles propios de la bandeja (no son el rol_id de serfuweb):
+//  administrador → ve todo y asigna chats; asesor → ve lo suyo + general.
 const ROL_AGENTE = Object.freeze({
-  AGENTE: 'agente',
-  SUPERVISOR: 'supervisor',
-  ADMIN: 'admin',
+  ADMINISTRADOR: 'administrador',
+  ASESOR: 'asesor',
 });
 
 // --- Códigos de error relevantes de 1msg / Meta (CLAUDE.md) ---

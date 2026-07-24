@@ -2,13 +2,19 @@
 
 const { ROL_AGENTE } = require('../config/constants');
 
-/** wa_agentes — los 15 asesores. rol define qué ve cada uno. */
+/**
+ * wa_agentes — los usuarios de serfuweb que son agentes de WhatsApp (~15 de 40).
+ * Tabla puente: `usuario_id` referencia (blanda) a serfuweb.usuarios.id; la
+ * identidad (nombre/email/activo) vive allá, aquí van los campos de WhatsApp.
+ */
 module.exports = (sequelize, DataTypes) =>
   sequelize.define(
     'Agente',
     {
       id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
-      usuario: { type: DataTypes.STRING(60), allowNull: false, unique: true },
+      // Enlace blando a serfuweb.usuarios.id (sin FK dura, para no acoplar el core).
+      usuarioId: { type: DataTypes.INTEGER, allowNull: true, unique: true },
+      usuario: { type: DataTypes.STRING(60), allowNull: false, unique: true }, // = serfuweb.usuarios.email (login)
       nombre: { type: DataTypes.STRING(120), allowNull: false },
       email: { type: DataTypes.STRING(150), allowNull: true },
       // Prefijo en mensajes salientes (ej. "Ana | ") porque comparten número.
@@ -16,7 +22,7 @@ module.exports = (sequelize, DataTypes) =>
       rol: {
         type: DataTypes.ENUM(...Object.values(ROL_AGENTE)),
         allowNull: false,
-        defaultValue: ROL_AGENTE.AGENTE,
+        defaultValue: ROL_AGENTE.ASESOR,
       },
       lineaNegocio: { type: DataTypes.STRING(40), allowNull: true },
       sede: { type: DataTypes.STRING(60), allowNull: true },

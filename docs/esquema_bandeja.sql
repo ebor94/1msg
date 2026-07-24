@@ -25,16 +25,20 @@ CREATE TABLE wa_canales (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Agentes. rol define qué ve: 'agente' solo lo suyo + la general,
--- 'supervisor' lo ve todo, 'admin' además configura.
+-- Agentes. Son los usuarios de serfuweb que operan la bandeja de WhatsApp
+-- (~15 de 40). Tabla puente: usuario_id referencia (blanda, sin FK dura)
+-- a serfuweb.usuarios.id; la identidad (nombre/email/activo/clave) vive allá.
+-- rol es PROPIO de la herramienta:
+--   'administrador' → ve todo y asigna chats ; 'asesor' → lo suyo + general.
 -- ---------------------------------------------------------------------
 CREATE TABLE wa_agentes (
   id              INT UNSIGNED   NOT NULL AUTO_INCREMENT,
-  usuario         VARCHAR(60)    NOT NULL,
+  usuario_id      INT            NULL,   -- enlace blando a serfuweb.usuarios.id
+  usuario         VARCHAR(60)    NOT NULL,  -- = serfuweb.usuarios.email (login)
   nombre          VARCHAR(120)   NOT NULL,
   email           VARCHAR(150)   NULL,
   firma           VARCHAR(60)    NULL,  -- prefijo en mensajes salientes
-  rol             ENUM('agente','supervisor','admin') NOT NULL DEFAULT 'agente',
+  rol             ENUM('administrador','asesor') NOT NULL DEFAULT 'asesor',
   linea_negocio   VARCHAR(40)    NULL,  -- prevision / funeraria / cementerio
   sede            VARCHAR(60)    NULL,
   max_chats       SMALLINT UNSIGNED NOT NULL DEFAULT 50,
@@ -44,6 +48,7 @@ CREATE TABLE wa_agentes (
   creado_en       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_agente_usuario (usuario),
+  UNIQUE KEY uq_agente_usuario_id (usuario_id),
   KEY idx_agente_disponible (activo, disponible)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
