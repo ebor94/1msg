@@ -1,10 +1,14 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useAuth } from '../stores/auth';
+import { useChat } from '../stores/chat';
 import { iniciales } from '../utils/formato';
 import ListaConversaciones from '../components/ListaConversaciones.vue';
+import VistaChat from '../components/VistaChat.vue';
+import PanelCliente from '../components/PanelCliente.vue';
 
 const auth = useAuth();
+const chat = useChat();
 const router = useRouter();
 function salir() { auth.logout(); router.push('/login'); }
 </script>
@@ -20,11 +24,22 @@ function salir() { auth.logout(); router.push('/login'); }
         <button class="ml-2 text-white/80 hover:text-white text-xs underline" @click="salir">Salir</button>
       </div>
     </header>
-    <div class="flex-1 min-h-0 grid" style="grid-template-columns: 340px 1fr;">
-      <aside class="border-r border-gray-200 min-h-0"><ListaConversaciones /></aside>
-      <main class="grid place-items-center text-gray-400 bg-gray-50">
-        Selecciona un chat (el detalle llega en el Plan 3)
+    <div class="flex-1 min-h-0 md:grid" style="grid-template-columns: 340px 1fr 300px;">
+      <!-- Lista: se oculta en móvil cuando hay chat abierto -->
+      <aside class="border-r border-gray-200 min-h-0 h-full" :class="chat.conversacion ? 'hidden md:block' : 'block'">
+        <ListaConversaciones />
+      </aside>
+      <!-- Chat: en móvil ocupa todo cuando hay uno abierto -->
+      <main class="min-h-0 h-full flex flex-col" :class="chat.conversacion ? 'block' : 'hidden md:block'">
+        <div class="md:hidden bg-[#f0f2f5] border-b border-gray-200 px-3 py-2" v-if="chat.conversacion">
+          <button class="text-marca-oscuro text-sm" @click="chat.cerrar()">‹ Volver</button>
+        </div>
+        <VistaChat class="flex-1 min-h-0" />
       </main>
+      <!-- Panel: solo en escritorio -->
+      <aside class="border-l border-gray-200 min-h-0 h-full hidden md:block">
+        <PanelCliente />
+      </aside>
     </div>
   </div>
 </template>
