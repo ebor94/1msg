@@ -10,6 +10,7 @@ const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onem
 const { enviarArchivo } = require('../integrations/onemsg/media');
 const { ventanaAbierta, conFirma } = require('../services/envio');
 const { guardarBufferComoMedia, categoriaMedia } = require('../services/media');
+const { transcodificarAOgg } = require('../services/audio');
 const { registrar } = require('../services/mediaPublica');
 const { construirParams, construirParamsHeader, renderizarCuerpo } = require('../services/plantillas');
 const { obtenerCatalogo } = require('./plantillasController');
@@ -188,14 +189,31 @@ async function enviarMedia(req, res) {
       return res.status(500).json({ error: 'envío de adjuntos no configurado' });
     }
 
-    const categoria = categoriaMedia(archivo.mimetype);
+    const esVoz = !!(req.body && (req.body.voz === '1' || req.body.voz === 'true'));
+    let buffer = archivo.buffer;
+    let contentType = archivo.mimetype;
+    let nombreOriginal = archivo.originalname;
+    let voice = false;
+    if (esVoz) {
+      try {
+        buffer = await transcodificarAOgg(archivo.buffer);
+      } catch (err) {
+        logger.error(`transcodificar nota de voz (conv ${req.params.id}): ${err.message}`);
+        return res.status(502).json({ error: 'no se pudo procesar el audio', codigo: 'audio' });
+      }
+      contentType = 'audio/ogg';
+      nombreOriginal = 'nota-de-voz.ogg';
+      voice = true;
+    }
+
+    const categoria = categoriaMedia(contentType);
     const token = crypto.randomBytes(32).toString('hex');
     const guardado = await guardarBufferComoMedia({
-      buffer: archivo.buffer,
-      contentType: archivo.mimetype,
+      buffer,
+      contentType,
       conversacionId: conv.id,
       nombreArchivo: `out-${token}`,
-      nombreOriginal: archivo.originalname,
+      nombreOriginal,
       fecha: new Date(),
     });
     const tokenPublico = registrar(guardado.mediaRuta, guardado.mediaMime);
@@ -210,6 +228,7 @@ async function enviarMedia(req, res) {
         mediaType: categoria,
         caption: captionFinal,
         filename: guardado.mediaNombre || undefined,
+        voice,
       });
     } catch (err) {
       logger.error(`envío media 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
