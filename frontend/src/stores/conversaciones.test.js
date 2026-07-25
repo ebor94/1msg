@@ -14,6 +14,6 @@ describe('store conversaciones', () => {
     await s.cargar('mias');
     expect(s.items.length).toBe(1);
     expect(s.items[0].id).toBe(5);
-    expect(global.fetch).toHaveBeenCalledWith('/api/conversaciones?bandeja=mias', expect.anything());
+    expect(global.fetch).toHaveBeenCalledWith('/api/conversaciones?bandeja=mias&pagina=0', expect.anything());
   });
 });

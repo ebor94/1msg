@@ -74,6 +74,11 @@ async function iniciar() {
     }
   }
 }
+
+function onScrollLista(e) {
+  const el = e.target;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) conv.cargarMas();
+}
 </script>
 
 <template>
@@ -124,11 +129,12 @@ async function iniciar() {
           ✉ No leídos
         </button>
       </div>
-      <div class="flex-1 overflow-auto">
+      <div class="flex-1 overflow-auto" @scroll="onScrollLista">
         <div v-if="conv.cargando" class="p-4 text-center text-gray-400 text-sm">Cargando…</div>
         <div v-else-if="conv.error" class="p-4 text-center text-red-500 text-sm">{{ conv.error }}</div>
         <div v-else-if="!conv.items.length" class="p-4 text-center text-gray-400 text-sm">Sin conversaciones.</div>
         <ItemConversacion v-for="c in conv.items" :key="c.id" :conversacion="c" />
+        <div v-if="conv.cargandoMas" class="p-2 text-center text-gray-400 text-[12px]">Cargando más…</div>
       </div>
     </template>
 
