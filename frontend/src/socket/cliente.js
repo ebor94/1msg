@@ -3,6 +3,7 @@ import { tokenGuardado } from '../api/cliente';
 import { useConversaciones } from '../stores/conversaciones';
 import { useChat } from '../stores/chat';
 import { useAuth } from '../stores/auth';
+import { useSonido } from '../stores/sonido';
 
 let socket = null;
 
@@ -31,6 +32,7 @@ export function conectarSocket() {
       ultimoMensajeTexto: mensaje.texto, ultimoMensajeEn: mensaje.tsProveedor, ultimoMensajeDir: mensaje.direccion,
     });
     if (item && !abierta && mensaje.direccion === 'in') item.noLeidos = (item.noLeidos || 0) + 1;
+    if (!abierta && mensaje.direccion === 'in') useSonido().reproducir();
   });
 
   socket.on('mensaje:ack', ({ waMessageId, estado }) => {
