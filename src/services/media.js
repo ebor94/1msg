@@ -112,7 +112,8 @@ function rutaMediaSegura(mediaRuta, base) {
   if (!mediaRuta) return null;
   const baseAbs = path.resolve(base);
   const abs = path.resolve(baseAbs, mediaRuta);
-  if (abs !== baseAbs && !abs.startsWith(baseAbs + path.sep)) return null;
+  // Debe ser un archivo DENTRO de base: descarta escapes con `..` y la base misma.
+  if (!abs.startsWith(baseAbs + path.sep)) return null;
   return abs;
 }
 

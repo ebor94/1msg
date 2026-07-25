@@ -19,3 +19,8 @@ test('rutaMediaSegura: vacío → null', () => {
   assert.equal(rutaMediaSegura('', BASE), null);
   assert.equal(rutaMediaSegura(null, BASE), null);
 });
+
+test('rutaMediaSegura: la base misma (. o vacío resuelto) → null', () => {
+  assert.equal(rutaMediaSegura('.', BASE), null);
+  assert.equal(rutaMediaSegura('2026/..', BASE), null);
+});
