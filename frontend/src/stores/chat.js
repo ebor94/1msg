@@ -25,7 +25,11 @@ export const useChat = defineStore('chat', {
           method: 'POST',
           body: JSON.stringify({ texto }),
         });
-        if (this.conversacion && this.conversacion.id === convId) this.mensajes.push(r.mensaje);
+        // Guard anti-doble: el socket puede empujar este mismo mensaje antes de que
+        // llegue la respuesta HTTP. Solo lo agregamos si no está ya en la lista.
+        if (this.conversacion && this.conversacion.id === convId && !this.mensajes.some((m) => m.id === r.mensaje.id)) {
+          this.mensajes.push(r.mensaje);
+        }
         const item = useConversaciones().items.find((c) => c.id === convId);
         if (item) {
           item.ultimoMensajeTexto = r.mensaje.texto;
