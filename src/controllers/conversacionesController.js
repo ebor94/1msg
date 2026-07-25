@@ -1,7 +1,7 @@
 'use strict';
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
-const { Conversacion, Mensaje, Contacto, Agente, Asignacion } = require('../models');
+const { Conversacion, Mensaje, Contacto, Agente, Asignacion, NotaInterna } = require('../models');
 const { listar, puedeVer } = require('../services/conversaciones');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { ventanaAbierta, conFirma } = require('../services/envio');
@@ -200,4 +200,35 @@ async function asignar(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, leer, enviar, tomar, asignar };
+async function agregarNota(req, res) {
+  const nota = (req.body && req.body.nota ? String(req.body.nota) : '').trim();
+  if (!nota) return res.status(400).json({ error: 'nota vacía' });
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    const creada = await NotaInterna.create({ conversacionId: conv.id, agenteId: req.agente.id, nota });
+    return res.status(201).json({ nota: { id: creada.id, nota: creada.nota, agente: req.agente.nombre, creadoEn: creada.creado_en } });
+  } catch (err) {
+    logger.error(`nota conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function listarNotas(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    const filas = await NotaInterna.findAll({
+      where: { conversacionId: conv.id },
+      order: [['id', 'ASC']],
+      include: [{ model: Agente, as: 'agente', attributes: ['nombre'] }],
+    });
+    const notas = filas.map((n) => ({ id: n.id, nota: n.nota, agente: n.agente ? n.agente.nombre : null, creadoEn: n.creado_en }));
+    return res.json({ notas });
+  } catch (err) {
+    logger.error(`listar notas ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { listarHandler, mensajes, leer, enviar, tomar, asignar, agregarNota, listarNotas };
