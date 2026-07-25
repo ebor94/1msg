@@ -78,22 +78,28 @@ async function crear(req, res) {
 }
 
 /**
- * Buscador GLOBAL por teléfono (parcial, sobre dígitos). Devuelve solo metadatos:
- * dueño actual de la conversación (si existe) y una `conversacion` lista para
- * abrir en el frontend. No filtra por agente: cualquier agente autenticado ve
- * cualquier contacto (la bandeja decide después si puede abrir la conversación).
+ * Buscador GLOBAL por nombre (nombre_wa/nombre_display) y/o teléfono (parcial,
+ * sobre dígitos). Devuelve solo metadatos: dueño actual de la conversación (si
+ * existe) y una `conversacion` lista para abrir en el frontend. No filtra por
+ * agente: cualquier agente autenticado ve cualquier contacto (la bandeja decide
+ * después si puede abrir la conversación).
  */
 async function buscar(req, res) {
-  const telefono = soloDigitos(req.query.telefono);
-  if (telefono.length < 3) return res.json({ resultados: [] });
+  const q = String(req.query.q ?? req.query.telefono ?? '').trim();
+  const digitos = soloDigitos(q);
+  const condiciones = [];
+  if (q.length >= 2) {
+    condiciones.push({ nombreDisplay: { [Op.like]: `%${q}%` } });
+    condiciones.push({ nombreWa: { [Op.like]: `%${q}%` } });
+  }
+  if (digitos.length >= 3) {
+    condiciones.push({ telefono: { [Op.like]: `%${digitos}%` } });
+    condiciones.push({ waId: { [Op.like]: `%${digitos}%` } });
+  }
+  if (!condiciones.length) return res.json({ resultados: [] });
   try {
     const contactos = await Contacto.findAll({
-      where: {
-        [Op.or]: [
-          { telefono: { [Op.like]: `%${telefono}%` } },
-          { waId: { [Op.like]: `%${telefono}%` } },
-        ],
-      },
+      where: { [Op.or]: condiciones },
       attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay'],
       limit: 10,
     });
