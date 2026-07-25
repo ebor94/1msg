@@ -10,7 +10,7 @@
  * vuelve dueño del contacto y la regla 1 le devuelve los próximos mensajes.
  */
 
-const { TIPO_ASIGNACION, ROL_AGENTE } = require('../config/constants');
+const { TIPO_ASIGNACION } = require('../config/constants');
 
 /**
  * Evalúa la cascada para un contacto.
@@ -27,27 +27,10 @@ async function cascada(contacto, { Agente, transaction }) {
         motivo: 'continuidad: contacto con agente dueño',
       };
     }
-    // Dueño inactivo → sigue a la regla temporal.
+    // Dueño inactivo → cae a general.
   }
 
-  // TEMPORAL (por ahora): sin dueño → repartir al azar entre los administradores
-  // activos (hoy: bortega, ssuarez). Al incorporar asesores se revisará (volver a
-  // general o rotación entre asesores).
-  const admins = await Agente.findAll({
-    where: { rol: ROL_AGENTE.ADMINISTRADOR, activo: true },
-    attributes: ['id'],
-    transaction,
-  });
-  if (admins.length) {
-    const elegido = admins[Math.floor(Math.random() * admins.length)];
-    return {
-      agenteId: elegido.id,
-      tipo: TIPO_ASIGNACION.AUTO_ROTACION,
-      motivo: 'reparto temporal entre administradores',
-    };
-  }
-
-  // Sin administradores → bandeja general.
+  // Regla 2: sin dueño (o dueño inactivo) → bandeja general.
   return { agenteId: null, tipo: TIPO_ASIGNACION.AUTO_REGLA, motivo: 'bandeja general' };
 }
 
