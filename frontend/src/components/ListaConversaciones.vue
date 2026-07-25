@@ -80,7 +80,7 @@ async function iniciar() {
   <div class="flex flex-col h-full">
     <div class="p-2.5 pb-1">
       <div class="relative">
-        <input v-model="texto" placeholder="Buscar por teléfono…"
+        <input v-model="texto" placeholder="Buscar por nombre o teléfono…"
           class="w-full bg-gray-100 rounded-full px-4 py-2 text-[13px] outline-none" />
         <button v-if="texto" class="absolute right-3 top-2 text-gray-400 text-sm" @click="limpiar">✕</button>
       </div>
