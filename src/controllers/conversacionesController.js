@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Conversacion, Mensaje, Contacto, Agente, Asignacion, NotaInterna } = require('../models');
 const { listar, puedeVer } = require('../services/conversaciones');
+const { recuperarHistorial } = require('../services/backfill');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
 const { enviarArchivo } = require('../integrations/onemsg/media');
@@ -49,15 +50,43 @@ async function mensajes(req, res) {
     const conv = await accesible(req, res);
     if (!conv) return undefined;
     const where = { conversacionId: conv.id };
-    if (req.query.antesDe !== undefined) {
-      const antesDe = Number(req.query.antesDe);
-      if (!Number.isInteger(antesDe)) return res.status(400).json({ error: 'antesDe inválido' });
-      where.id = { [Op.lt]: antesDe };
+    const { antesDeTs, antesDeId } = req.query;
+    if (antesDeTs !== undefined && antesDeId !== undefined) {
+      const ts = new Date(antesDeTs);
+      const id = Number(antesDeId);
+      if (Number.isNaN(ts.getTime()) || !Number.isInteger(id)) {
+        return res.status(400).json({ error: 'cursor inválido' });
+      }
+      where[Op.or] = [
+        { tsProveedor: { [Op.lt]: ts } },
+        { tsProveedor: ts, id: { [Op.lt]: id } },
+      ];
     }
     const filas = await Mensaje.findAll({ where, order: [['tsProveedor', 'DESC'], ['id', 'DESC']], limit: 30 });
     return res.json({ mensajes: filas.reverse() });
   } catch (err) {
     logger.error(`mensajes conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function historial(req, res) {
+  try {
+    const conv = await Conversacion.findByPk(req.params.id, {
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId'] }],
+    });
+    if (!conv) return res.status(404).json({ error: 'no encontrada' });
+    if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    if (!conv.contacto) return res.status(404).json({ error: 'sin contacto' });
+
+    const r = await recuperarHistorial(conv);
+    return res.json(r);
+  } catch (err) {
+    if (err.name === 'OneMsgError') {
+      logger.error(`historial 1msg (conv ${req.params.id}): ${err.message} [${err.codigo || ''}]`);
+      return res.status(502).json({ error: 'no se pudo recuperar el historial', codigo: err.codigo || null });
+    }
+    logger.error(`historial conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
 }
@@ -386,4 +415,4 @@ async function listarNotas(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, leer, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas };
+module.exports = { listarHandler, mensajes, historial, leer, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas };
