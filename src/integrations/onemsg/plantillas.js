@@ -23,10 +23,10 @@ async function listarPlantillas(deps = {}) {
   return t.filter((p) => p.status === 'approved');
 }
 
-async function enviarPlantilla({ phone, template, language, params }, deps = {}) {
+async function enviarPlantilla({ phone, template, language, params, namespace }, deps = {}) {
   const http = deps.http || axios;
   const baseMs = deps.baseMs || 800;
-  const cuerpo = { template, language, params: params || [], phone };
+  const cuerpo = { ...(namespace ? { namespace } : {}), template, language, params: params || [], phone };
 
   const resp = await retryWithBackoff(
     async () => {

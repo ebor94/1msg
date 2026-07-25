@@ -8,6 +8,7 @@ const acc = useAcciones();
 const chat = useChat();
 const elegida = ref(null);
 const valores = ref([]);
+const imagenUrl = ref('');
 const error = ref('');
 const enviando = ref(false);
 
@@ -16,6 +17,7 @@ onMounted(() => acc.cargarPlantillas());
 function elegir(p) {
   elegida.value = p;
   valores.value = Array.from({ length: p.variables }, () => '');
+  imagenUrl.value = p.tieneImagen ? (p.imagenDefault || '') : '';
 }
 const preview = computed(() => {
   if (!elegida.value) return '';
@@ -24,9 +26,16 @@ const preview = computed(() => {
 async function enviar() {
   error.value = '';
   if (valores.value.some((v) => !String(v).trim())) { error.value = 'Completa todas las variables.'; return; }
+  if (elegida.value.tieneImagen && !imagenUrl.value.trim()) { error.value = 'La URL de la imagen es requerida.'; return; }
   enviando.value = true;
   try {
-    await acc.enviarPlantilla(chat.conversacion.id, { template: elegida.value.name, language: elegida.value.language, variables: valores.value });
+    await acc.enviarPlantilla(chat.conversacion.id, {
+      template: elegida.value.name,
+      language: elegida.value.language,
+      namespace: elegida.value.namespace,
+      variables: valores.value,
+      imagenUrl: elegida.value.tieneImagen ? imagenUrl.value.trim() : undefined,
+    });
     emit('cerrar');
   } catch (e) {
     error.value = e.codigo ? `No se pudo enviar (${e.codigo}).` : 'No se pudo enviar la plantilla.';
@@ -54,6 +63,10 @@ async function enviar() {
       <div v-else>
         <button class="text-[12px] text-marca-oscuro mb-2" @click="elegida = null">‹ Otra plantilla</button>
         <div class="bg-[#d9fdd3] rounded p-2 text-[13px] whitespace-pre-wrap mb-3">{{ preview }}</div>
+        <div v-if="elegida.tieneImagen" class="mb-2">
+          <label class="text-[11px] text-gray-400">URL de la imagen</label>
+          <input v-model="imagenUrl" class="w-full border rounded px-2 py-1.5 text-[13px]" />
+        </div>
         <div v-for="(_, i) in valores" :key="i" class="mb-2">
           <label class="text-[11px] text-gray-400">Variable {{ i + 1 }}</label>
           <input v-model="valores[i]" class="w-full border rounded px-2 py-1.5 text-[13px]" />

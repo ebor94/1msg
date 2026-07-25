@@ -6,7 +6,7 @@ const { listar, puedeVer } = require('../services/conversaciones');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
 const { ventanaAbierta, conFirma } = require('../services/envio');
-const { construirParams, renderizarCuerpo } = require('../services/plantillas');
+const { construirParams, construirParamsHeader, renderizarCuerpo } = require('../services/plantillas');
 const { obtenerCatalogo } = require('./plantillasController');
 const { tipoDeAsignacion, roomsDeAsignacion } = require('../services/asignacionManual');
 const { emitir, emitirARooms } = require('../sockets/emisor');
@@ -130,7 +130,7 @@ async function enviar(req, res) {
  * ventana de 24h: ese es justamente el caso de uso de las plantillas.
  */
 async function enviarPlantilla(req, res) {
-  const { template, language, variables } = req.body || {};
+  const { template, language, variables, imagenUrl, namespace } = req.body || {};
   if (!template) return res.status(400).json({ error: 'plantilla requerida' });
   const vars = Array.isArray(variables) ? variables : [];
 
@@ -145,11 +145,13 @@ async function enviarPlantilla(req, res) {
 
     let enviado;
     try {
+      const params = [...construirParamsHeader(imagenUrl), ...construirParams(vars)];
       enviado = await enviarPlantillaOnemsg({
         phone: conv.contacto.telefono,
         template,
-        language: { code: language || 'es' },
-        params: construirParams(vars),
+        namespace: namespace || null,
+        language: { code: language || 'es', policy: 'deterministic' },
+        params,
       });
     } catch (err) {
       logger.error(`envío plantilla 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
