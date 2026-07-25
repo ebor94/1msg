@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) =>
       ultimoMensajeDir: { type: DataTypes.ENUM(...Object.values(DIRECCION)), allowNull: true },
       noLeidos: { type: DataTypes.SMALLINT.UNSIGNED, allowNull: false, defaultValue: 0 },
       tomadaEn: { type: DataTypes.DATE, allowNull: true },
+      historialRecuperadoEn: { type: DataTypes.DATE, allowNull: true },
       historicoCargadoEn: { type: DataTypes.DATE, allowNull: true }, // backfill bajo demanda hecho
       cerradaEn: { type: DataTypes.DATE, allowNull: true },
     },
