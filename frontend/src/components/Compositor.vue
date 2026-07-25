@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import { ventanaAbierta } from '../utils/formato';
@@ -54,6 +54,11 @@ async function enviarAdj() {
     enviandoAdj.value = false;
   }
 }
+
+// Al cambiar de conversación, descarta cualquier adjunto pendiente (evita
+// enviarlo al contacto equivocado) y revoca su blob de preview.
+watch(() => chat.conversacion?.id, () => cancelarAdj());
+onUnmounted(() => { if (previewUrl.value) URL.revokeObjectURL(previewUrl.value); });
 
 // Expuesto para que VistaChat (drag-and-drop) entregue el archivo.
 defineExpose({ tomarArchivo });
