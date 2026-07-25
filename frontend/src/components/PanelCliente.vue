@@ -70,7 +70,7 @@ async function guardarNombre() {
       <button class="text-gray-400 hover:text-marca-oscuro text-sm" title="Editar nombre" @click="abrirEdicion">✎</button>
     </div>
     <div v-else class="flex flex-col items-center gap-1.5">
-      <input v-model="nombreEdit" @keydown.enter="guardarNombre" placeholder="Nombre del contacto"
+      <input v-model="nombreEdit" @keydown.enter="guardarNombre" placeholder="Nombre del contacto" maxlength="120"
         class="w-full border rounded px-2 py-1.5 text-[13px] text-center" />
       <div class="flex gap-2">
         <button class="text-[12px] text-gray-500 px-2 py-1" @click="editando = false">Cancelar</button>
