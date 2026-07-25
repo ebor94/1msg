@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { iniciales, iconoEstado, esLeido, etiquetaTipo, ventanaAbierta } from './formato';
+import { iniciales, iconoEstado, esLeido, etiquetaTipo, ventanaAbierta, tamanoLegible } from './formato';
 
 describe('formato', () => {
   it('iniciales toma hasta 2 palabras', () => {
@@ -30,5 +30,14 @@ describe('formato', () => {
     expect(ventanaAbierta(new Date(Date.now() + 3600e3).toISOString())).toBe(true);
     expect(ventanaAbierta(new Date(Date.now() - 3600e3).toISOString())).toBe(false);
     expect(ventanaAbierta(null)).toBe(false);
+  });
+});
+
+describe('tamanoLegible', () => {
+  it('formatea bytes a unidad legible', () => {
+    expect(tamanoLegible(0)).toBe('');
+    expect(tamanoLegible(512)).toBe('512 B');
+    expect(tamanoLegible(2048)).toBe('2.0 KB');
+    expect(tamanoLegible(5 * 1024 * 1024)).toBe('5.0 MB');
   });
 });

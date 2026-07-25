@@ -28,4 +28,20 @@ export async function apiFetch(ruta, opciones = {}) {
   return cuerpo;
 }
 
+export async function fetchMediaBlob(ruta) {
+  const token = tokenGuardado();
+  const resp = await fetch(`/api${ruta}`, {
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
+  if (!resp.ok) {
+    const e = new Error(`media ${resp.status}`);
+    e.status = resp.status;
+    throw e;
+  }
+  const blob = await resp.blob();
+  const disp = resp.headers.get('content-disposition') || '';
+  const m = /filename="?([^";]+)"?/.exec(disp);
+  return { blob, url: URL.createObjectURL(blob), filename: m ? m[1] : null, mime: blob.type };
+}
+
 export { CLAVE_TOKEN };
