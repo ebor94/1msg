@@ -7,7 +7,7 @@ function convFalsa() {
   return {
     id: 7,
     contacto: { waId: '57300@c.us' },
-    historialRecuperadoEn: null,
+    historicoCargadoEn: null,
     async update(campos) { Object.assign(this, campos); },
   };
 }
@@ -46,12 +46,12 @@ test('recupera todas las páginas hasta agotar y no duplica', async () => {
   const conv = convFalsa();
   const r = await recuperarHistorial(conv, deps);
   assert.equal(r.recuperados, 5);
-  assert.ok(conv.historialRecuperadoEn instanceof Date);
+  assert.ok(conv.historicoCargadoEn instanceof Date);
 });
 
 test('si ya está recuperado, no llama a 1msg', async () => {
   const conv = convFalsa();
-  conv.historialRecuperadoEn = new Date();
+  conv.historicoCargadoEn = new Date();
   let llamado = false;
   const r = await recuperarHistorial(conv, { paginaHistorial: async () => { llamado = true; return []; }, Mensaje: mensajeFalso() });
   assert.equal(r.yaRecuperado, true);

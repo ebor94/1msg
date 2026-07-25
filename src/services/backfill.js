@@ -19,10 +19,10 @@ async function enTandas(items, tam, fn) {
 
 /**
  * Recupera TODO el historial de un chat desde 1msg y lo guarda idempotente.
- * Corre una vez por conversación (marca historialRecuperadoEn).
+ * Corre una vez por conversación (marca historicoCargadoEn).
  */
 async function recuperarHistorial(conv, deps = {}) {
-  if (conv.historialRecuperadoEn) return { yaRecuperado: true };
+  if (conv.historicoCargadoEn) return { yaRecuperado: true };
 
   const paginar = deps.paginaHistorial || paginaHistorialReal;
   const guardarMedia = deps.guardarMediaDeMensaje || guardarMediaReal;
@@ -82,7 +82,7 @@ async function recuperarHistorial(conv, deps = {}) {
     }
   });
 
-  await conv.update({ historialRecuperadoEn: new Date() });
+  await conv.update({ historicoCargadoEn: new Date() });
   return { recuperados, mediaOk, mediaFallida };
 }
 
