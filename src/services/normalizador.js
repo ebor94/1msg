@@ -83,7 +83,10 @@ function normalizarMensaje(m) {
   return {
     waMessageId: m.id || null,
     waIdContacto: m.chatId || m.author || null,
-    nombreWa: m.senderName || m.chatName || null,
+    // Solo en ENTRANTES el senderName es el del cliente. En salientes es el
+    // número propio de la empresa (echo), así que NO lo usamos como nombre del
+    // contacto (si no, la campaña saliente le pone a todos el mismo "nombre").
+    nombreWa: saliente ? null : m.senderName || m.chatName || null,
     direccion: saliente ? DIRECCION.OUT : DIRECCION.IN,
     tipo,
     esMedia,

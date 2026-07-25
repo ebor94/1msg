@@ -37,11 +37,13 @@ test('mensaje de texto entrante (type chat)', () => {
   assert.deepEqual(m.tsProveedor, new Date(1753370400 * 1000));
 });
 
-test('mensaje saliente (fromMe/self) → direccion out', () => {
+test('mensaje saliente (fromMe/self) → direccion out y nombreWa null', () => {
   const ev = normalizarEvento({
-    messages: [{ id: 'X', type: 'chat', body: 'Respuesta', self: 1, fromMe: true, time: '1' }],
+    messages: [{ id: 'X', type: 'chat', body: 'Respuesta', self: 1, fromMe: true, time: '1', senderName: '573176652197@c.us' }],
   });
   assert.equal(ev.mensajes[0].direccion, 'out');
+  // El senderName de un saliente es la empresa: nunca es el nombre del contacto.
+  assert.equal(ev.mensajes[0].nombreWa, null);
 });
 
 test('mensaje con media (document): body es URL, caption es texto', () => {
