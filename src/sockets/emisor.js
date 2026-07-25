@@ -16,4 +16,17 @@ function emitir(evento, destino, payload) {
   canal.emit(evento, payload);
 }
 
-module.exports = { roomsPara, emitir };
+/**
+ * Emite a un conjunto de rooms ya resuelto (p. ej. la unión de origen y
+ * destino de una reasignación). A diferencia de emitir(), no deriva las
+ * rooms de un destino único: las recibe calculadas.
+ */
+function emitirARooms(evento, rooms, payload) {
+  const io = getIo();
+  if (!io) return;
+  let canal = io;
+  for (const r of rooms) canal = canal.to(r);
+  canal.emit(evento, payload);
+}
+
+module.exports = { roomsPara, emitir, emitirARooms };

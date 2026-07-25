@@ -24,5 +24,7 @@ router.get('/conversaciones', requireAuth, convCtrl.listarHandler);
 router.get('/conversaciones/:id/mensajes', requireAuth, convCtrl.mensajes);
 router.post('/conversaciones/:id/mensajes', requireAuth, convCtrl.enviar);
 router.post('/conversaciones/:id/leer', requireAuth, convCtrl.leer);
+router.post('/conversaciones/:id/tomar', requireAuth, convCtrl.tomar);
+router.post('/conversaciones/:id/asignar', requireAuth, convCtrl.asignar);
 
 module.exports = router;

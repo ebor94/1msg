@@ -1,11 +1,13 @@
 'use strict';
 const { Op } = require('sequelize');
-const { Conversacion, Mensaje, Contacto, Agente } = require('../models');
+const { sequelize } = require('../config/database');
+const { Conversacion, Mensaje, Contacto, Agente, Asignacion } = require('../models');
 const { listar, puedeVer } = require('../services/conversaciones');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { ventanaAbierta, conFirma } = require('../services/envio');
-const { emitir } = require('../sockets/emisor');
-const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE } = require('../config/constants');
+const { tipoDeAsignacion, roomsDeAsignacion } = require('../services/asignacionManual');
+const { emitir, emitirARooms } = require('../sockets/emisor');
+const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
 const logger = require('../utils/logger');
 
 async function accesible(req, res) {
@@ -120,4 +122,82 @@ async function enviar(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, leer, enviar };
+/**
+ * Toma atómica de un chat de la bandeja general. La guarda va en el WHERE
+ * del UPDATE (agenteId: null): si affectedRows = 0, otro agente se adelantó
+ * y devolvemos 409. Nunca SELECT + UPDATE (condición de carrera).
+ */
+async function tomar(req, res) {
+  const id = req.params.id;
+  const me = req.agente.id;
+  try {
+    const conv = await Conversacion.findByPk(id);
+    if (!conv) return res.status(404).json({ error: 'no encontrada' });
+
+    const resultado = await sequelize.transaction(async (t) => {
+      const [n] = await Conversacion.update(
+        { agenteId: me, tomadaEn: new Date(), estado: ESTADO_CONVERSACION.ABIERTA },
+        { where: { id, agenteId: null }, transaction: t },
+      );
+      if (n === 0) return null; // otro se adelantó
+      await Contacto.update({ agenteDuenoId: me }, { where: { id: conv.contactoId }, transaction: t });
+      await Asignacion.create(
+        { conversacionId: id, deAgenteId: null, aAgenteId: me, tipo: TIPO_ASIGNACION.TOMA_MANUAL, ejecutadoPorId: me },
+        { transaction: t },
+      );
+      return true;
+    });
+    if (!resultado) return res.status(409).json({ error: 'otro agente ya la tomó', codigo: 'tomada' });
+
+    emitirARooms('conversacion:asignada', roomsDeAsignacion(null, me), { conversacionId: Number(id), agenteId: me });
+    const actualizada = await Conversacion.findByPk(id);
+    return res.json({ conversacion: actualizada });
+  } catch (err) {
+    logger.error(`tomar conversación ${id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+/**
+ * Reasignación manual: a otro agente o de vuelta a la bandeja general
+ * (agenteId: null). Transfiere también la dueñez del contacto para que la
+ * continuidad (regla 1 de asignación) le devuelva los próximos mensajes.
+ */
+async function asignar(req, res) {
+  const id = req.params.id;
+  const me = req.agente.id;
+  const nuevo = req.body && req.body.agenteId != null ? Number(req.body.agenteId) : null;
+  if (req.body && req.body.agenteId != null && !Number.isInteger(nuevo)) {
+    return res.status(400).json({ error: 'agenteId inválido' });
+  }
+  try {
+    const conv = await Conversacion.findByPk(id);
+    if (!conv) return res.status(404).json({ error: 'no encontrada' });
+    if (nuevo) {
+      const ag = await Agente.findByPk(nuevo);
+      if (!ag || !ag.activo) return res.status(400).json({ error: 'agente destino inválido' });
+    }
+    const anterior = conv.agenteId;
+
+    await sequelize.transaction(async (t) => {
+      await Conversacion.update(
+        { agenteId: nuevo, estado: nuevo ? ESTADO_CONVERSACION.ABIERTA : ESTADO_CONVERSACION.NUEVA },
+        { where: { id }, transaction: t },
+      );
+      await Contacto.update({ agenteDuenoId: nuevo }, { where: { id: conv.contactoId }, transaction: t });
+      await Asignacion.create(
+        { conversacionId: id, deAgenteId: anterior, aAgenteId: nuevo, tipo: tipoDeAsignacion(anterior, nuevo), ejecutadoPorId: me },
+        { transaction: t },
+      );
+    });
+
+    emitirARooms('conversacion:asignada', roomsDeAsignacion(anterior, nuevo), { conversacionId: Number(id), agenteId: nuevo });
+    const actualizada = await Conversacion.findByPk(id);
+    return res.json({ conversacion: actualizada });
+  } catch (err) {
+    logger.error(`asignar conversación ${id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { listarHandler, mensajes, leer, enviar, tomar, asignar };
