@@ -108,12 +108,22 @@ subida ni envío. Sin migraciones.
 
 ### Frontend: adjuntar en el compositor
 
-- Botón 📎 junto a los botones existentes (📄 plantilla, ➤ enviar), visible con la ventana abierta.
-- Al elegir archivo: vista previa (miniatura para imagen; nombre+tamaño para otros),
-  campo de caption opcional, botón enviar con indicador de progreso/spinner.
+- **Tres puertas de entrada al mismo flujo** (todas producen un `File` idéntico):
+  1. Botón 📎 junto a los botones existentes (📄 plantilla, ➤ enviar) — selector de archivo, **siempre disponible (respaldo garantizado)**.
+  2. **Pegar** (`Ctrl/Cmd+V`) sobre el compositor: evento `paste` → `clipboardData.items`,
+     se toma el primer ítem de imagen con `getAsFile()` (capturas de pantalla, imágenes copiadas de la web).
+  3. **Arrastrar y soltar** un archivo sobre el área del chat: `dragover`/`drop` (con
+     `preventDefault`) → `dataTransfer.files`; una capa visual "Suelta para adjuntar" al arrastrar.
+- Cualquiera de las tres abre la **misma vista previa**: miniatura para imagen (nombre+tamaño
+  para otros), campo de caption opcional, botón enviar con indicador de progreso/spinner,
+  y opción de cancelar/quitar el adjunto.
 - Reutiliza el store: nueva acción `enviarMedia(convId, file, caption)` que hace el POST
   multipart y hace push del `mensaje` devuelto al chat (como `enviarPlantilla`).
-- Validación en cliente: tamaño ≤ 16 MB y tipo permitido (mensaje claro si excede).
+- Validación en cliente: tamaño ≤ 16 MB y tipo permitido (mensaje claro si excede). Pegar/soltar
+  algo que no sea archivo permitido se ignora con aviso.
+- Paste y drag-and-drop son APIs estándar del navegador (Clipboard API / HTML Drag and Drop),
+  sin dependencias extra; validado como viable. El selector 📎 es el camino de respaldo si en
+  algún navegador/entorno fallara alguno de los dos.
 
 ### Alcance Plan 9
 
@@ -145,7 +155,6 @@ de imagen de plantillas). Sin edición/recorte de imágenes. Sin arrastrar-solta
 
 ## Fuera de alcance (por ahora)
 
-- Arrastrar-soltar y pegar desde portapapeles.
 - Miniaturas/transcodificación server-side (se sirve el original).
 - Envío de múltiples archivos en un mensaje.
 - Purga/expiración del almacenamiento de media (ya hay purga de `wa_eventos_webhook`; el
