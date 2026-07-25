@@ -39,6 +39,12 @@ export function conectarSocket() {
     if (m) m.estado = estado;
   });
 
+  socket.on('conversacion:asignada', ({ conversacionId, agenteId }) => {
+    const chat = useChat();
+    if (chat.conversacion && chat.conversacion.id === conversacionId) chat.conversacion.agenteId = agenteId;
+    useConversaciones().cargar();
+  });
+
   socket.on('connect', () => {
     const conv = useConversaciones();
     if (conv.items.length || conv.bandeja) conv.cargar(conv.bandeja);
