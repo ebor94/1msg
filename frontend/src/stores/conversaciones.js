@@ -26,6 +26,7 @@ export const useConversaciones = defineStore('conversaciones', {
       this.cargando = true;
       this.error = '';
       this.pagina = 0;
+      this.cargandoMas = false; // una carga fresh reinicia también el estado de "cargar más"
       try {
         const r = await apiFetch(this._url(0));
         this.items = r.conversaciones;
