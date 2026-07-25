@@ -1,11 +1,29 @@
 'use strict';
-const { Contacto } = require('../models');
+const { Contacto, Conversacion, Asignacion, Canal } = require('../models');
+const { sequelize } = require('../config/database');
+const env = require('../config/env');
+const { ESTADO_CONVERSACION, ORIGEN_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
 const logger = require('../utils/logger');
 
 function soloDigitos(s) {
   return String(s || '').replace(/\D/g, '');
 }
 
+async function resolverCanalId(t) {
+  const inst = env.onemsg.instanceId;
+  const [canal] = await Canal.findOrCreate({
+    where: { instanceId: inst },
+    defaults: { instanceId: inst, nombre: `Canal ${inst}`, telefono: '', tokenRef: 'env:ONEMSG_TOKEN' },
+    transaction: t,
+  });
+  return canal.id;
+}
+
+/**
+ * Crea un contacto (dueño = el agente) Y una conversación nueva asignada a él,
+ * para iniciar una conversación saliente. La ventana de 24h queda cerrada
+ * (el cliente no ha escrito): el envío del primer mensaje requerirá plantilla.
+ */
 async function crear(req, res) {
   const telefono = soloDigitos(req.body && req.body.telefono);
   const nombre = (req.body && req.body.nombre ? String(req.body.nombre) : '').trim();
@@ -14,12 +32,41 @@ async function crear(req, res) {
   try {
     const existente = await Contacto.findOne({ where: { waId } });
     if (existente) return res.status(409).json({ error: 'el contacto ya existe', codigo: 'existe' });
-    const contacto = await Contacto.create({
-      waId, telefono, nombreDisplay: nombre || null, agenteDuenoId: req.agente.id,
+
+    const { contacto, conv } = await sequelize.transaction(async (t) => {
+      const nuevoContacto = await Contacto.create(
+        { waId, telefono, nombreDisplay: nombre || null, agenteDuenoId: req.agente.id },
+        { transaction: t },
+      );
+      const canalId = await resolverCanalId(t);
+      const nuevaConv = await Conversacion.create(
+        {
+          canalId,
+          contactoId: nuevoContacto.id,
+          agenteId: req.agente.id,
+          estado: ESTADO_CONVERSACION.ABIERTA,
+          origen: ORIGEN_CONVERSACION.SALIENTE,
+        },
+        { transaction: t },
+      );
+      await Asignacion.create(
+        {
+          conversacionId: nuevaConv.id,
+          deAgenteId: null,
+          aAgenteId: req.agente.id,
+          tipo: TIPO_ASIGNACION.TOMA_MANUAL,
+          ejecutadoPorId: req.agente.id,
+          motivo: 'contacto creado por el agente',
+        },
+        { transaction: t },
+      );
+      return { contacto: nuevoContacto, conv: nuevaConv };
     });
-    return res.status(201).json({ contacto });
+
+    const conversacion = conv.toJSON();
+    conversacion.contacto = contacto;
+    return res.status(201).json({ contacto, conversacion });
   } catch (err) {
-    // Carrera: dos creaciones del mismo número a la vez → el índice único salta.
     if (err.name === 'SequelizeUniqueConstraintError') {
       return res.status(409).json({ error: 'el contacto ya existe', codigo: 'existe' });
     }

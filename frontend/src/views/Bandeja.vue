@@ -47,9 +47,8 @@ async function crearContacto() {
   nuevoOk.value = '';
   try {
     await acc.crearContacto(nuevoTelefono.value.trim(), nuevoNombre.value.trim());
-    nuevoOk.value = 'Contacto creado.';
-    nuevoTelefono.value = '';
-    nuevoNombre.value = '';
+    // El contacto quedó en Míos y su chat se abrió: cerramos el modal.
+    mostrarNuevo.value = false;
   } catch (e) {
     nuevoError.value = e.message || 'No se pudo crear el contacto.';
   }

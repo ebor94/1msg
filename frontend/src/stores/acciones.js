@@ -37,7 +37,12 @@ export const useAcciones = defineStore('acciones', {
       this.notas.push(r.nota);
     },
     async crearContacto(telefono, nombre) {
-      return (await apiFetch('/contactos', { method: 'POST', body: JSON.stringify({ telefono, nombre }) })).contacto;
+      const r = await apiFetch('/contactos', { method: 'POST', body: JSON.stringify({ telefono, nombre }) });
+      // Aparece en Míos (la conversación se creó asignada al agente) y se abre.
+      const conv = useConversaciones();
+      await conv.cargar('mias');
+      useChat().abrir(r.conversacion);
+      return r.conversacion;
     },
   },
 });
