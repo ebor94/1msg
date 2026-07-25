@@ -49,6 +49,7 @@ export const useAcciones = defineStore('acciones', {
     async cargarAsignaciones(convId) {
       // Guard anti-carrera: descarta la respuesta si ya cambiaron de chat.
       this.asignacionesConvId = convId;
+      this.asignaciones = []; // no dejar visible el historial del chat anterior
       try {
         const r = await apiFetch(`/conversaciones/${convId}/asignaciones`);
         if (this.asignacionesConvId === convId) this.asignaciones = r.asignaciones;
