@@ -28,8 +28,9 @@ function puedeVer(agente, conv) {
   return conv.agenteId === agente.id || conv.agenteId === null;
 }
 
-async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, q = null, pagina = 0, tam = 25 }) {
+async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, q = null, soloNoLeidos = false, pagina = 0, tam = 25 }) {
   const where = construirFiltro({ bandeja, agenteSolicitante, agenteFiltro });
+  if (soloNoLeidos) where.noLeidos = { [Op.gt]: 0 };
   const orden = bandeja === 'general'
     ? [['ultimoMensajeEn', 'ASC']]
     : [['ultimoMensajeEn', 'DESC']];
