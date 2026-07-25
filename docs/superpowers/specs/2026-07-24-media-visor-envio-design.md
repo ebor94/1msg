@@ -88,25 +88,46 @@ subida ni envío. Sin migraciones.
 
 ## Plan 9 — Envío de adjuntos
 
+### Cómo entrega 1msg el archivo (decisión confirmada 2026-07-24)
+
+`sendFile` recibe el archivo como una **URL** (`body`) que Meta descarga, o un `mediaId`.
+`uploadMedia` está mal documentado (pruebas empíricas: multipart/binario/JSON-URL →
+todas `{"sent":false,"message":"wrong file"}`), así que **no** se usa. En su lugar,
+`sendFile` con `body` = una URL pública **efímera e impredecible** del archivo — el
+mismo mecanismo ya probado con las imágenes de plantillas (`image.link` = URL pública).
+
 ### Backend: endpoint de subida y envío
 
 `POST /api/conversaciones/:id/media` (`requireAuth`, multipart con **`multer`** en memoria):
 - Valida: conversación existe + `puedeVer`; agente activo; **ventana 24h abierta**
-  (`sendFile` exige sesión abierta, igual que el texto) → 409/403 si no; tamaño ≤
-  `env.media.maxUploadBytes` (**16 MB**, nuevo env `MEDIA_MAX_UPLOAD_BYTES` default 16777216);
-  `mediaType` permitido derivado del mime (`image`/`audio`/`video`/`document`).
-- `caption` opcional (texto que acompaña; se le antepone la firma del agente como en el texto).
-- Flujo con 1msg (en `src/integrations/onemsg/media.js`, aislado):
-  1. `subirMedia(buffer, { mime, filename })` → `POST /uploadMedia` (multipart) → `mediaId`.
-  2. `enviarArchivo({ chatId, mediaId, mediaType, caption, filename })` → `POST /sendFile`
-     (form-urlencoded, token en query) → `{ id, sent }`. Reintento con backoff en 429.
-- Guarda **copia propia** del archivo en disco reutilizando la convención de `media.js`
-  (`MEDIA_PATH/{año}/{mes}/{convId}/{id}.{ext}`) para poder pintarlo y conservar historial.
+  (`sendFile` exige sesión abierta) → 409/403 si no; tamaño ≤ `env.media.maxUploadBytes`
+  (**16 MB**, nuevo env `MEDIA_MAX_UPLOAD_BYTES` default 16777216); `mediaType` permitido
+  derivado del mime (`image`/`audio`/`video`/`document`).
+- `caption` opcional (con firma del agente, como el texto).
+- Flujo:
+  1. Guarda **copia propia** del buffer en disco (nuevo helper `guardarBufferComoMedia`
+     en `media.js`, reutilizando su convención de rutas/extensión) →
+     `MEDIA_PATH/{año}/{mes}/{convId}/out-{token}.{ext}`, con `token` = 32 bytes aleatorios (hex).
+  2. Registra `token → { rutaRelativa, mime, expira }` en un store en memoria con TTL corto
+     (~15 min) — `src/services/mediaPublica.js`. Construye `urlPublica = {PUBLIC_BASE_URL}/media-publico/{token}`.
+  3. `enviarArchivo({ chatId, url: urlPublica, mediaType, caption, filename })` (en
+     `src/integrations/onemsg/media.js`, aislado) → `POST /sendFile` (form-urlencoded,
+     token en query, `body`=url) → `{ id, sent }`. Reintento con backoff en 429.
 - Persiste el saliente en `wa_mensajes` (idempotente por `wa_message_id = id`): `tipo`
-  (image/audio/video/document), `direccion = out`, `media_ruta`/`media_mime`/`media_nombre`/`media_bytes`,
-  `texto = caption` (con firma), `estado = enviado`, `enviado_por_id = agente`.
-- Actualiza desnormalizados de la conversación y emite `mensaje:nuevo` a los rooms correctos.
-- Persistir **antes** de emitir. El echo del webhook (mismo `id`) luego hace upsert sin duplicar.
+  (image/audio/video/document), `direccion = out`, `media_ruta`=la ruta `out-{token}.{ext}`,
+  `media_mime`/`media_nombre`/`media_bytes`, `texto = caption`, `estado = enviado`, `enviado_por_id`.
+- Actualiza desnormalizados y emite `mensaje:nuevo`. **Persistir antes de emitir**; el echo
+  del webhook (mismo `id`) hace upsert sin duplicar.
+
+### Backend: ruta pública efímera para que Meta baje el archivo
+
+`GET /media-publico/:token` (**sin** `requireAuth`, montada en `routes/index.js` junto a
+`/webhook` y `/health`, antes del fallback SPA):
+- Busca el token en el store; si no existe o expiró → 404. Si vale, sirve el archivo con
+  `res.sendFile` (ruta blindada con `rutaMediaSegura`). El token es impredecible (32 bytes)
+  y de vida corta; tras el TTL deja de resolver. El archivo en disco permanece (lo pinta la
+  burbuja por el endpoint autenticado `/api/mensajes/:id/media`).
+- Nuevo env `PUBLIC_BASE_URL` (= `https://wa.losolivoscucuta.com` en prod) para armar la URL.
 
 ### Frontend: adjuntar en el compositor
 
