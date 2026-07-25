@@ -68,7 +68,8 @@ function onDrop(e) {
       <div class="w-9 h-9 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold">{{ iniciales(nombre(chat.conversacion)) }}</div>
       <b class="text-sm text-gray-900">{{ nombre(chat.conversacion) }}</b>
       <div class="ml-auto flex items-center gap-3">
-        <button @click="resolver" title="Marcar como resuelto"
+        <button v-if="chat.conversacion.agenteId != null && chat.conversacion.estado !== 'cerrada'"
+          @click="resolver" title="Marcar como resuelto"
           class="text-gray-400 hover:text-green-600 text-lg">✓</button>
         <button @click="marcarNoLeido" title="Marcar como no leído"
           class="text-gray-400 hover:text-marca-oscuro text-lg">✉</button>

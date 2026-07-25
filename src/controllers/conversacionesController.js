@@ -114,6 +114,11 @@ async function resolver(req, res) {
   try {
     const conv = await accesible(req, res);
     if (!conv) return undefined;
+    // Un chat sin dueño (general) no se puede resolver: se caería de la cola sin
+    // quedar en la bandeja de resueltos de nadie. Hay que tomarlo primero.
+    if (conv.agenteId == null) {
+      return res.status(409).json({ error: 'toma el chat antes de resolverlo', codigo: 'sin_asignar' });
+    }
     await Conversacion.update(
       { estado: ESTADO_CONVERSACION.CERRADA, cerradaEn: new Date() },
       { where: { id: conv.id } },
