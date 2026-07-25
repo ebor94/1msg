@@ -104,4 +104,16 @@ async function guardarMediaDeMensaje({ mediaUrl, conversacionId, waMessageId, fe
   };
 }
 
-module.exports = { guardarMediaDeMensaje };
+/**
+ * Devuelve la ruta absoluta del archivo si queda dentro de `base`; si no, null.
+ * Defensa contra rutas con `..` (media_ruta la generamos nosotros, pero se valida).
+ */
+function rutaMediaSegura(mediaRuta, base) {
+  if (!mediaRuta) return null;
+  const baseAbs = path.resolve(base);
+  const abs = path.resolve(baseAbs, mediaRuta);
+  if (abs !== baseAbs && !abs.startsWith(baseAbs + path.sep)) return null;
+  return abs;
+}
+
+module.exports = { guardarMediaDeMensaje, rutaMediaSegura };
