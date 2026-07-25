@@ -148,6 +148,10 @@ async function enviarMedia(req, res) {
     if (!ventanaAbierta(conv.ventanaExpiraEn)) {
       return res.status(409).json({ error: 'la ventana de 24h está cerrada', codigo: 'fuera_de_ventana' });
     }
+    if (!/^https?:\/\//.test(env.publicBaseUrl)) {
+      logger.error('enviarMedia: PUBLIC_BASE_URL no configurada (Meta no podría descargar el adjunto)');
+      return res.status(500).json({ error: 'envío de adjuntos no configurado' });
+    }
 
     const categoria = categoriaMedia(archivo.mimetype);
     const token = crypto.randomBytes(32).toString('hex');
