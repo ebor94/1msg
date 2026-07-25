@@ -2,10 +2,12 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
+import { useAuth } from '../stores/auth';
 import { iniciales, horaCorta, etiquetaAsignacion } from '../utils/formato';
 
 const chat = useChat();
 const acc = useAcciones();
+const auth = useAuth();
 const c = computed(() => chat.conversacion);
 const nombre = computed(() => c.value?.contacto?.nombreDisplay || c.value?.contacto?.nombreWa || c.value?.contacto?.telefono || 'Sin nombre');
 const nuevaNota = ref('');
@@ -29,7 +31,11 @@ async function tomar() {
 }
 async function asignarA() {
   const nuevo = seleccion.value === '' ? null : Number(seleccion.value);
-  try { await acc.asignar(c.value.id, nuevo); } catch { aviso.value = 'No se pudo reasignar.'; }
+  try {
+    await acc.asignar(c.value.id, nuevo);
+    // Si se reasignó a otro agente (o a general), ya no es tu chat activo: cerrar.
+    if (nuevo !== auth.agente?.id) chat.cerrar();
+  } catch { aviso.value = 'No se pudo reasignar.'; }
 }
 async function guardarNota() {
   const t = nuevaNota.value.trim();
