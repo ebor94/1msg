@@ -32,6 +32,9 @@ export function conectarSocket() {
       ultimoMensajeTexto: mensaje.texto, ultimoMensajeEn: mensaje.tsProveedor, ultimoMensajeDir: mensaje.direccion,
     });
     if (item && !abierta && mensaje.direccion === 'in') item.noLeidos = (item.noLeidos || 0) + 1;
+    // Entrante de una conversación que NO está en la lista actual (p. ej. un chat
+    // resuelto que el cliente reabre, o uno nuevo): recargar para que aparezca.
+    if (!item && mensaje.direccion === 'in') useConversaciones().cargar();
     if (!abierta && mensaje.direccion === 'in') useSonido().reproducir();
   });
 

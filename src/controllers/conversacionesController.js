@@ -110,6 +110,26 @@ async function leer(req, res) {
   }
 }
 
+async function resolver(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    // Un chat sin dueño (general) no se puede resolver: se caería de la cola sin
+    // quedar en la bandeja de resueltos de nadie. Hay que tomarlo primero.
+    if (conv.agenteId == null) {
+      return res.status(409).json({ error: 'toma el chat antes de resolverlo', codigo: 'sin_asignar' });
+    }
+    await Conversacion.update(
+      { estado: ESTADO_CONVERSACION.CERRADA, cerradaEn: new Date() },
+      { where: { id: conv.id } },
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`resolver conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
 async function noLeido(req, res) {
   try {
     const conv = await accesible(req, res);
@@ -487,4 +507,4 @@ async function asignaciones(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, historial, leer, noLeido, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };
+module.exports = { listarHandler, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };

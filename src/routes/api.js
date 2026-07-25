@@ -44,6 +44,7 @@ router.post('/conversaciones/:id/media', requireAuth, subirUno, convCtrl.enviarM
 router.post('/conversaciones/:id/plantilla', requireAuth, convCtrl.enviarPlantilla);
 router.post('/conversaciones/:id/leer', requireAuth, convCtrl.leer);
 router.post('/conversaciones/:id/no-leido', requireAuth, convCtrl.noLeido);
+router.post('/conversaciones/:id/resolver', requireAuth, convCtrl.resolver);
 router.post('/conversaciones/:id/historial', requireAuth, convCtrl.historial);
 router.post('/conversaciones/:id/tomar', requireAuth, convCtrl.tomar);
 router.post('/conversaciones/:id/asignar', requireAuth, convCtrl.asignar);

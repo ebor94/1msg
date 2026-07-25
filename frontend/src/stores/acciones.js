@@ -101,6 +101,15 @@ export const useAcciones = defineStore('acciones', {
       const chat = useChat();
       if (chat.conversacion && chat.conversacion.id === convId) chat.conversacion.noLeidos = Math.max(chat.conversacion.noLeidos || 0, 1);
     },
+    async resolver(convId) {
+      await apiFetch(`/conversaciones/${convId}/resolver`, { method: 'POST' });
+      const conv = useConversaciones();
+      // Sale de las bandejas activas; en Resueltos/Todos permanece.
+      if (conv.bandeja !== 'resueltos' && conv.bandeja !== 'todos') {
+        const i = conv.items.findIndex((c) => c.id === convId);
+        if (i !== -1) conv.items.splice(i, 1);
+      }
+    },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {
         method: 'PATCH',

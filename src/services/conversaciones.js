@@ -17,8 +17,12 @@ function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = n
       throw e;
     }
     if (agenteFiltro) where.agenteId = agenteFiltro;
+  } else if (bandeja === 'resueltos') {
+    where.agenteId = agenteSolicitante.id;
+    where.estado = ESTADO_CONVERSACION.CERRADA;
   } else {
     where.agenteId = agenteSolicitante.id;
+    where.estado = { [Op.in]: ABIERTAS };
   }
   return where;
 }
