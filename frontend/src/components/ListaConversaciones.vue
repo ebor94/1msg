@@ -24,11 +24,13 @@ watch(texto, (v) => {
 
 const soloDigitos = (s) => s.replace(/\D/g, '');
 const porConfirmar = ref(null); // resultado de otro agente pendiente de confirmar
+const errorAccion = ref('');
 
 function limpiar() {
   texto.value = '';
   busqueda.limpiar();
   porConfirmar.value = null;
+  errorAccion.value = '';
 }
 
 async function elegir(r) {
@@ -43,17 +45,34 @@ async function elegir(r) {
 async function confirmarToma() {
   const r = porConfirmar.value;
   porConfirmar.value = null;
-  await acc.asignar(r.conversacionId, auth.agente.id);
-  r.conversacion.agenteId = auth.agente.id;
-  await conv.cargar('mias');
-  chat.abrir(r.conversacion);
-  limpiar();
+  errorAccion.value = '';
+  try {
+    // asignar → aplicarAsignacion ya recarga Míos; se actualiza el agenteId local
+    // para que puedeVer pase al abrir.
+    await acc.asignar(r.conversacionId, auth.agente.id);
+    r.conversacion.agenteId = auth.agente.id;
+    chat.abrir(r.conversacion);
+    limpiar();
+  } catch {
+    errorAccion.value = 'No se pudo tomar el chat.';
+  }
 }
 
 async function iniciar() {
   const tel = soloDigitos(texto.value);
-  await acc.crearContacto(tel, '');
-  limpiar();
+  errorAccion.value = '';
+  try {
+    await acc.crearContacto(tel, '');
+    limpiar();
+  } catch (e) {
+    if (e.codigo === 'existe') {
+      // El contacto ya existía: se re-busca para que el chat existente aparezca y se abra.
+      errorAccion.value = 'Ese contacto ya existe — elígelo abajo.';
+      await busqueda.buscar(tel);
+    } else {
+      errorAccion.value = 'No se pudo iniciar el chat.';
+    }
+  }
 }
 </script>
 
@@ -69,6 +88,7 @@ async function iniciar() {
 
     <!-- Resultados de búsqueda -->
     <div v-if="busqueda.termino" class="flex-1 overflow-auto">
+      <div v-if="errorAccion" class="px-3 py-2 text-[12px] text-red-500">{{ errorAccion }}</div>
       <div v-if="busqueda.buscando" class="p-4 text-center text-gray-400 text-sm">Buscando…</div>
       <template v-else>
         <div v-for="r in busqueda.resultados" :key="r.contactoId" @click="elegir(r)"
@@ -82,7 +102,7 @@ async function iniciar() {
             {{ r.esMio ? 'Tuyo' : r.esGeneral ? 'General' : ('de ' + (r.agenteActualNombre || 'otro')) }}
           </span>
         </div>
-        <div v-if="!busqueda.resultados.length && soloDigitos(texto).length >= 7"
+        <div v-if="!busqueda.resultados.length && soloDigitos(texto).length >= 10"
           @click="iniciar" class="px-3 py-3 cursor-pointer hover:bg-gray-50 text-marca-oscuro text-[13px] font-semibold">
           ＋ Iniciar chat con {{ soloDigitos(texto) }}
         </div>
