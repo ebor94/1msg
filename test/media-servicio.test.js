@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
-const { rutaMediaSegura } = require('../src/services/media');
+const { rutaMediaSegura, categoriaMedia } = require('../src/services/media');
 
 const BASE = '/var/wa/media';
 
@@ -23,4 +23,12 @@ test('rutaMediaSegura: vacío → null', () => {
 test('rutaMediaSegura: la base misma (. o vacío resuelto) → null', () => {
   assert.equal(rutaMediaSegura('.', BASE), null);
   assert.equal(rutaMediaSegura('2026/..', BASE), null);
+});
+
+test('categoriaMedia mapea por mime', () => {
+  assert.equal(categoriaMedia('image/png'), 'image');
+  assert.equal(categoriaMedia('audio/ogg'), 'audio');
+  assert.equal(categoriaMedia('video/mp4'), 'video');
+  assert.equal(categoriaMedia('application/pdf'), 'document');
+  assert.equal(categoriaMedia(''), 'document');
 });
