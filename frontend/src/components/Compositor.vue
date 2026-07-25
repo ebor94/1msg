@@ -24,6 +24,8 @@ async function enviar() {
       <button class="ml-2 underline text-marca-oscuro font-semibold" @click="mostrarSelector = true">Usar plantilla</button>
     </div>
     <div v-else class="flex items-center gap-2">
+      <button @click="mostrarSelector = true" title="Usar plantilla"
+        class="w-10 h-10 rounded-full bg-white text-marca-oscuro grid place-items-center shrink-0 hover:bg-gray-100">📄</button>
       <input v-model="texto" @keydown.enter="enviar" :disabled="chat.enviando"
         placeholder="Escribe un mensaje…" class="flex-1 bg-white rounded-full px-4 py-2 text-[13px] outline-none" />
       <button @click="enviar" :disabled="chat.enviando || !texto.trim()"
