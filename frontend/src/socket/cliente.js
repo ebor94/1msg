@@ -2,6 +2,7 @@ import { io } from 'socket.io-client';
 import { tokenGuardado } from '../api/cliente';
 import { useConversaciones } from '../stores/conversaciones';
 import { useChat } from '../stores/chat';
+import { useAuth } from '../stores/auth';
 
 let socket = null;
 
@@ -43,6 +44,17 @@ export function conectarSocket() {
     if (conv.items.length || conv.bandeja) conv.cargar(conv.bandeja);
     const chat = useChat();
     if (chat.conversacion) chat.abrir(chat.conversacion);
+  });
+
+  // socket.io v4 NO reconecta ante un fallo de autenticación (JWT expirado).
+  // Si el token venció, cerramos sesión y mandamos a login para no dejar la
+  // bandeja "muerta" en silencio.
+  socket.on('connect_error', (err) => {
+    if (/auten|token|inv[aá]lid/i.test(err.message || '')) {
+      desconectarSocket();
+      useAuth().logout();
+      window.location.href = '/login';
+    }
   });
 }
 
