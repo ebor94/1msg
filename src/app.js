@@ -12,7 +12,19 @@ function crearApp() {
   const app = express();
 
   app.disable('x-powered-by');
-  app.use(helmet());
+  // CSP: el visor de media pinta imágenes/audio/video desde `blob:` (objectURL del
+  // archivo descargado con token en header), así que se permite blob: en img/media.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'img-src': ["'self'", 'data:', 'blob:'],
+          'media-src': ["'self'", 'blob:'],
+        },
+      },
+    }),
+  );
   // El body del webhook es JSON. Límite holgado por si trae metadatos grandes;
   // los medios NO viajan aquí (se descargan aparte con retrieveMedia).
   app.use(express.json({ limit: '2mb' }));
