@@ -6,7 +6,8 @@ const { listar, puedeVer } = require('../services/conversaciones');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
 const { ventanaAbierta, conFirma } = require('../services/envio');
-const { construirParams } = require('../services/plantillas');
+const { construirParams, renderizarCuerpo } = require('../services/plantillas');
+const { obtenerCatalogo } = require('./plantillasController');
 const { tipoDeAsignacion, roomsDeAsignacion } = require('../services/asignacionManual');
 const { emitir, emitirARooms } = require('../sockets/emisor');
 const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
@@ -155,7 +156,14 @@ async function enviarPlantilla(req, res) {
       return res.status(502).json({ error: 'no se pudo enviar la plantilla', codigo: err.codigo || null });
     }
 
-    const textoMostrar = `[plantilla: ${template}]`;
+    let textoMostrar = `[plantilla: ${template}]`;
+    try {
+      const catalogo = await obtenerCatalogo();
+      const def = catalogo.find((p) => p.name === template);
+      textoMostrar = def ? renderizarCuerpo(def.cuerpo, vars) : `[plantilla: ${template}]`;
+    } catch (err) {
+      logger.warn(`catálogo de plantillas no disponible, uso placeholder (conv ${conv.id}): ${err.message}`);
+    }
     const ahora = new Date();
     const [mensaje] = await Mensaje.findOrCreate({
       where: { waMessageId: enviado.id },
