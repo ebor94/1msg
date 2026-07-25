@@ -12,6 +12,13 @@ function construirUrl(path) {
 async function listarPlantillas(deps = {}) {
   const http = deps.http || axios;
   const r = await http.get(construirUrl('templates'), { timeout: 20000, validateStatus: (s) => s < 500 });
+  if (r.status >= 400) {
+    const data = r.data || {};
+    const codigo = data.error && (data.error.code ?? data.error.error_code);
+    throw new OneMsgError(data.message || `listar plantillas: 1msg respondió ${r.status}`, {
+      codigo: codigo != null ? String(codigo) : String(r.status),
+    });
+  }
   const t = (r.data && r.data.templates) || [];
   return t.filter((p) => p.status === 'approved');
 }

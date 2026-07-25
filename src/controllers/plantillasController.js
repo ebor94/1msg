@@ -15,7 +15,7 @@ async function listar(req, res) {
     }
     return res.json({ plantillas: cache.datos });
   } catch (err) {
-    logger.error(`listar plantillas: ${err.message}`);
+    logger.error(`listar plantillas: ${err.message} [${err.codigo || ''}]`);
     return res.status(502).json({ error: 'no se pudieron traer las plantillas' });
   }
 }
