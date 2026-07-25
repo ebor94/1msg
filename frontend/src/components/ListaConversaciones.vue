@@ -13,7 +13,7 @@ const busqueda = useBusqueda();
 const chat = useChat();
 const acc = useAcciones();
 
-onMounted(() => conv.cargar('mias'));
+onMounted(() => { conv.cargar('mias'); acc.cargarAgentes(); });
 
 const texto = ref('');
 let debounce = null;
@@ -121,6 +121,13 @@ function onScrollLista(e) {
         <button class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'mias' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('mias')">Míos</button>
         <button class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'general' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('general')">General</button>
         <button v-if="auth.esAdministrador" class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'todos' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('todos')">Todos</button>
+      </div>
+      <div v-if="conv.bandeja === 'todos'" class="px-2.5 pb-1">
+        <select :value="conv.agenteFiltro || ''" @change="conv.setAgenteFiltro($event.target.value ? Number($event.target.value) : null)"
+          class="w-full border rounded-lg px-2 py-1.5 text-[13px]">
+          <option value="">Todos los agentes</option>
+          <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
+        </select>
       </div>
       <div class="px-2.5 pb-1">
         <button @click="conv.alternarNoLeidos()"

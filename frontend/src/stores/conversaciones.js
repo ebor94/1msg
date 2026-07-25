@@ -11,6 +11,7 @@ export const useConversaciones = defineStore('conversaciones', {
     cargandoMas: false,
     error: '',
     soloNoLeidos: false,
+    agenteFiltro: null,
   }),
   getters: {
     hayMas: (s) => s.items.length < s.total,
@@ -19,6 +20,7 @@ export const useConversaciones = defineStore('conversaciones', {
     _url(pagina) {
       let url = `/conversaciones?bandeja=${this.bandeja}&pagina=${pagina}`;
       if (this.soloNoLeidos) url += '&noLeidos=1';
+      if (this.bandeja === 'todos' && this.agenteFiltro) url += `&agente=${this.agenteFiltro}`;
       return url;
     },
     async cargar(bandeja = this.bandeja) {
@@ -59,10 +61,16 @@ export const useConversaciones = defineStore('conversaciones', {
       }
     },
     cambiarBandeja(b) {
-      if (b !== this.bandeja) this.cargar(b);
+      if (b === this.bandeja) return;
+      if (b !== 'todos') this.agenteFiltro = null;
+      this.cargar(b);
     },
     alternarNoLeidos() {
       this.soloNoLeidos = !this.soloNoLeidos;
+      this.cargar();
+    },
+    setAgenteFiltro(id) {
+      this.agenteFiltro = id || null;
       this.cargar();
     },
   },
