@@ -38,3 +38,12 @@ export function ventanaAbierta(fecha) {
   const d = new Date(fecha);
   return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
 }
+
+export function tamanoLegible(bytes) {
+  if (!bytes || bytes < 0) return '';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i += 1; }
+  return `${i === 0 ? Math.round(n) : n.toFixed(1)} ${u[i]}`;
+}
