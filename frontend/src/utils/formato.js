@@ -39,6 +39,18 @@ export function ventanaAbierta(fecha) {
   return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
 }
 
+export function etiquetaAsignacion(tipo) {
+  return {
+    auto_continuidad: 'continuidad',
+    auto_regla: 'regla',
+    auto_rotacion: 'rotación',
+    toma_manual: 'toma manual',
+    reasignacion: 'reasignación',
+    devuelta_general: 'devuelto a general',
+    escalado_bot: 'escalado',
+  }[tipo] || tipo;
+}
+
 export function tamanoLegible(bytes) {
   if (!bytes || bytes < 0) return '';
   const u = ['B', 'KB', 'MB', 'GB'];
