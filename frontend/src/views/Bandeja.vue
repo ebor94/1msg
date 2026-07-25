@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuth } from '../stores/auth';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
+import { useSonido } from '../stores/sonido';
 import { iniciales } from '../utils/formato';
 import { conectarSocket, desconectarSocket } from '../socket/cliente';
 import ListaConversaciones from '../components/ListaConversaciones.vue';
@@ -13,6 +14,7 @@ import PanelCliente from '../components/PanelCliente.vue';
 const auth = useAuth();
 const chat = useChat();
 const acc = useAcciones();
+const sonido = useSonido();
 const router = useRouter();
 
 onMounted(conectarSocket);
@@ -61,6 +63,9 @@ async function crearContacto() {
       <div class="font-bold">Serfunorte · Bandeja</div>
       <div class="flex items-center gap-2 text-sm">
         <button class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="abrirNuevo">＋ Contacto</button>
+        <button class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[13px]"
+          :title="sonido.activado ? 'Silenciar notificaciones' : 'Activar notificaciones'"
+          @click="sonido.alternar()">{{ sonido.activado ? '🔔' : '🔕' }}</button>
         <span class="bg-white/20 px-2 py-0.5 rounded-full text-[11px] capitalize">{{ auth.agente?.rol }}</span>
         <span>{{ auth.agente?.nombre }}</span>
         <div class="w-7 h-7 rounded-full bg-marca grid place-items-center text-xs font-bold">{{ iniciales(auth.agente?.nombre) }}</div>
