@@ -20,6 +20,15 @@ async function marcarNoLeido() {
   }
 }
 
+async function resolver() {
+  try {
+    await acc.resolver(chat.conversacion.id);
+    chat.cerrar(); // vuelve a la lista; el chat pasa a Resueltos
+  } catch {
+    /* si falla, el chat queda abierto */
+  }
+}
+
 async function alFondo() {
   await nextTick();
   if (contenedor.value) contenedor.value.scrollTop = contenedor.value.scrollHeight;
@@ -58,8 +67,12 @@ function onDrop(e) {
     <div class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-2.5 flex items-center gap-3">
       <div class="w-9 h-9 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold">{{ iniciales(nombre(chat.conversacion)) }}</div>
       <b class="text-sm text-gray-900">{{ nombre(chat.conversacion) }}</b>
-      <button @click="marcarNoLeido" title="Marcar como no leído"
-        class="ml-auto text-gray-400 hover:text-marca-oscuro text-lg">✉</button>
+      <div class="ml-auto flex items-center gap-3">
+        <button @click="resolver" title="Marcar como resuelto"
+          class="text-gray-400 hover:text-green-600 text-lg">✓</button>
+        <button @click="marcarNoLeido" title="Marcar como no leído"
+          class="text-gray-400 hover:text-marca-oscuro text-lg">✉</button>
+      </div>
     </div>
     <div ref="contenedor" class="flex-1 overflow-auto p-4 flex flex-col gap-1.5" @scroll="onScroll">
       <div v-if="chat.cargandoMas" class="text-center text-[11px] text-gray-400 py-1">Cargando más…</div>
