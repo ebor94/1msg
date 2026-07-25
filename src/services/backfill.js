@@ -33,12 +33,14 @@ async function recuperarHistorial(conv, deps = {}) {
   let cursor = 0;
   let paginas = 0;
   let recuperados = 0;
-  const tareasMedia = [];
+  let mediaOk = 0;
+  let mediaFallida = 0;
 
   while (paginas < MAX_PAGINAS) {
     const pagina = await paginar({ chatId, lastMessageNumber: cursor, limit });
     if (!pagina.length) break;
 
+    const tareasMedia = [];
     for (const m of pagina) {
       const norm = normalizarMensaje(m);
       if (!norm.waMessageId) continue;
@@ -63,24 +65,28 @@ async function recuperarHistorial(conv, deps = {}) {
       }
     }
 
-    cursor = Math.max(...pagina.map((x) => x.messageNumber || 0));
+    // Descargar la media de ESTA página antes de seguir: las URLs de 1msg expiran
+    // (~5 min), así que la descarga debe ir cerca del fetch, no al final de todo.
+    await enTandas(tareasMedia, CONCURRENCIA_MEDIA, async (t) => {
+      try {
+        const campos = await guardarMedia(t);
+        if (campos) { await Mensaje.update(campos, { where: { id: t.mensajeId } }); mediaOk += 1; }
+        else mediaFallida += 1;
+      } catch (e) {
+        mediaFallida += 1;
+        logger.error(`backfill media msg ${t.mensajeId}: ${e.message}`);
+      }
+    });
+
+    const nuevoCursor = Math.max(...pagina.map((x) => x.messageNumber || 0));
     paginas += 1;
+    // Defensa: si el cursor no avanza (messageNumber ausente), cortar en vez de
+    // re-pedir la misma página hasta el tope.
+    if (nuevoCursor <= cursor) break;
+    cursor = nuevoCursor;
     if (pagina.length < limit) break;
   }
   if (paginas >= MAX_PAGINAS) logger.warn(`backfill conv ${conv.id}: alcanzó el tope de ${MAX_PAGINAS} páginas`);
-
-  let mediaOk = 0;
-  let mediaFallida = 0;
-  await enTandas(tareasMedia, CONCURRENCIA_MEDIA, async (t) => {
-    try {
-      const campos = await guardarMedia(t);
-      if (campos) { await Mensaje.update(campos, { where: { id: t.mensajeId } }); mediaOk += 1; }
-      else mediaFallida += 1;
-    } catch (e) {
-      mediaFallida += 1;
-      logger.error(`backfill media msg ${t.mensajeId}: ${e.message}`);
-    }
-  });
 
   await conv.update({ historicoCargadoEn: new Date() });
   return { recuperados, mediaOk, mediaFallida };

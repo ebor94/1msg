@@ -90,7 +90,8 @@ export const useChat = defineStore('chat', {
       if (!this.conversacion || !this.hayMas || this.cargandoMas) return;
       const id = this.conversacion.id;
       const primero = this.mensajes[0];
-      if (!primero) return;
+      // Sin un cursor válido (id + tsProveedor) no se puede paginar hacia atrás.
+      if (!primero || !primero.tsProveedor || primero.id == null) { this.hayMas = false; return; }
       this.cargandoMas = true;
       try {
         const qs = `antesDeTs=${encodeURIComponent(primero.tsProveedor)}&antesDeId=${primero.id}`;
@@ -98,6 +99,8 @@ export const useChat = defineStore('chat', {
         if (this.conversacion?.id !== id) return;
         if (r.mensajes.length < 30) this.hayMas = false;
         if (r.mensajes.length) this.mensajes = [...r.mensajes, ...this.mensajes];
+      } catch {
+        /* error de red/cursor: no romper el scroll; se puede reintentar */
       } finally {
         if (this.conversacion?.id === id) this.cargandoMas = false;
       }
