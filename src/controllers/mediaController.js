@@ -4,7 +4,11 @@ const { Mensaje, Conversacion } = require('../models');
 const { puedeVer } = require('../services/conversaciones');
 const { rutaMediaSegura } = require('../services/media');
 const env = require('../config/env');
+const { TIPO_MENSAJE } = require('../config/constants');
 const logger = require('../utils/logger');
+
+/** Solo estos se muestran embebidos; el resto (documentos) se fuerza a descarga. */
+const TIPOS_INLINE = new Set([TIPO_MENSAJE.IMAGE, TIPO_MENSAJE.STICKER, TIPO_MENSAJE.AUDIO, TIPO_MENSAJE.VIDEO]);
 
 /** GET /api/mensajes/:id/media — sirve el archivo guardado si el agente puede ver la conversación. */
 async function servir(req, res) {
@@ -22,7 +26,10 @@ async function servir(req, res) {
     if (!abs) return res.status(404).json({ error: 'sin archivo' });
 
     const nombre = String(msg.mediaNombre || 'archivo').replace(/["\\\r\n]/g, '_');
-    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    // Documentos (HTML/SVG/etc. de terceros) se fuerzan a descarga; media embebible va inline.
+    const disposicion = TIPOS_INLINE.has(msg.tipo) ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${disposicion}; filename="${nombre}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'private, max-age=86400');
 
     return res.sendFile(abs, (err) => {
