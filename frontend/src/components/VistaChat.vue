@@ -13,7 +13,20 @@ async function alFondo() {
   await nextTick();
   if (contenedor.value) contenedor.value.scrollTop = contenedor.value.scrollHeight;
 }
-watch(() => chat.mensajes, alFondo, { deep: true });
+let ultimoId = null;
+watch(() => chat.mensajes, (msgs) => {
+  const nuevoUltimo = msgs.length ? msgs[msgs.length - 1].id : null;
+  if (nuevoUltimo !== ultimoId) { ultimoId = nuevoUltimo; alFondo(); }
+}, { deep: true });
+
+async function onScroll() {
+  const el = contenedor.value;
+  if (!el || el.scrollTop > 60 || chat.cargandoMas || !chat.hayMas) return;
+  const prevH = el.scrollHeight;
+  await chat.cargarMas();
+  await nextTick();
+  if (contenedor.value) contenedor.value.scrollTop = contenedor.value.scrollHeight - prevH;
+}
 
 // Arrastrar-soltar: entrega el archivo al Compositor.
 const compositorRef = ref(null);
@@ -35,7 +48,9 @@ function onDrop(e) {
       <div class="w-9 h-9 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold">{{ iniciales(nombre(chat.conversacion)) }}</div>
       <b class="text-sm text-gray-900">{{ nombre(chat.conversacion) }}</b>
     </div>
-    <div ref="contenedor" class="flex-1 overflow-auto p-4 flex flex-col gap-1.5">
+    <div ref="contenedor" class="flex-1 overflow-auto p-4 flex flex-col gap-1.5" @scroll="onScroll">
+      <div v-if="chat.cargandoMas" class="text-center text-[11px] text-gray-400 py-1">Cargando más…</div>
+      <div v-if="chat.recuperando" class="text-center text-[11px] text-gray-400 py-1">Recuperando historial…</div>
       <div v-if="chat.cargando" class="text-center text-gray-500 text-sm">Cargando…</div>
       <div v-else-if="chat.error" class="text-center text-red-500 text-sm">{{ chat.error }}</div>
       <BurbujaMensaje v-for="m in chat.mensajes" :key="m.id" :mensaje="m" />
