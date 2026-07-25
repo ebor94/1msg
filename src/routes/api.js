@@ -49,6 +49,7 @@ router.get('/conversaciones/:id/notas', requireAuth, convCtrl.listarNotas);
 router.post('/conversaciones/:id/notas', requireAuth, convCtrl.agregarNota);
 router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
 router.get('/agentes', requireAuth, agentesCtrl.listar);
+router.get('/contactos/buscar', requireAuth, contactosCtrl.buscar);
 router.post('/contactos', requireAuth, contactosCtrl.crear);
 router.get('/plantillas', requireAuth, plantillasCtrl.listar);
 

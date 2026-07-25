@@ -1,9 +1,11 @@
 'use strict';
-const { Contacto, Conversacion, Asignacion, Canal } = require('../models');
+const { Op } = require('sequelize');
+const { Contacto, Conversacion, Asignacion, Canal, Agente } = require('../models');
 const { sequelize } = require('../config/database');
 const env = require('../config/env');
 const { ESTADO_CONVERSACION, ORIGEN_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
 const logger = require('../utils/logger');
+const { construirResultado } = require('../services/busquedaContactos');
 
 function soloDigitos(s) {
   return String(s || '').replace(/\D/g, '');
@@ -75,4 +77,41 @@ async function crear(req, res) {
   }
 }
 
-module.exports = { crear };
+/**
+ * Buscador GLOBAL por teléfono (parcial, sobre dígitos). Devuelve solo metadatos:
+ * dueño actual de la conversación (si existe) y una `conversacion` lista para
+ * abrir en el frontend. No filtra por agente: cualquier agente autenticado ve
+ * cualquier contacto (la bandeja decide después si puede abrir la conversación).
+ */
+async function buscar(req, res) {
+  const telefono = soloDigitos(req.query.telefono);
+  if (telefono.length < 3) return res.json({ resultados: [] });
+  try {
+    const contactos = await Contacto.findAll({
+      where: {
+        [Op.or]: [
+          { telefono: { [Op.like]: `%${telefono}%` } },
+          { waId: { [Op.like]: `%${telefono}%` } },
+        ],
+      },
+      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay'],
+      limit: 10,
+    });
+
+    const resultados = [];
+    for (const c of contactos) {
+      const conv = await Conversacion.findOne({
+        where: { contactoId: c.id },
+        order: [['ultimoMensajeEn', 'DESC'], ['id', 'DESC']],
+        include: [{ model: Agente, as: 'agente', attributes: ['id', 'nombre'] }],
+      });
+      resultados.push(construirResultado(c, conv, req.agente.id));
+    }
+    return res.json({ resultados });
+  } catch (err) {
+    logger.error(`buscar contactos: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { crear, buscar };
