@@ -22,13 +22,14 @@ function subirUno(req, res, next) {
   });
 }
 
-// Máximo 10 intentos de login por IP cada 15 minutos (freno a fuerza bruta).
+// Máximo 10 intentos de login por (IP + usuario) cada 15 minutos: frena la fuerza
+// bruta por cuenta sin bloquear a toda una oficina que comparte una IP pública (NAT).
 const limiteLogin = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => obtenerIpCliente(req),
+  keyGenerator: (req) => `${obtenerIpCliente(req)}:${(req.body && req.body.usuario) || ''}`,
   message: { error: 'demasiados intentos, espera unos minutos' },
 });
 
