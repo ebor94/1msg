@@ -94,6 +94,13 @@ export const useAcciones = defineStore('acciones', {
       }
       return cuerpo.mensaje;
     },
+    async marcarNoLeido(convId) {
+      await apiFetch(`/conversaciones/${convId}/no-leido`, { method: 'POST' });
+      const item = useConversaciones().items.find((c) => c.id === convId);
+      if (item) item.noLeidos = Math.max(item.noLeidos || 0, 1);
+      const chat = useChat();
+      if (chat.conversacion && chat.conversacion.id === convId) chat.conversacion.noLeidos = Math.max(chat.conversacion.noLeidos || 0, 1);
+    },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {
         method: 'PATCH',
