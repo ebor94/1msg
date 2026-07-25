@@ -23,3 +23,9 @@ test('enviarArchivo sin sent → OneMsgError', async () => {
   const http = httpFalso([{ status: 200, data: { sent: false, message: 'wrong file' } }]);
   await assert.rejects(() => enviarArchivo({ chatId: '1', url: 'https://x/y.jpg', mediaType: 'image' }, { http, baseMs: 1 }));
 });
+
+test('enviarArchivo con voice=true manda voice', async () => {
+  const http = httpFalso([{ status: 200, data: { sent: true, id: 'wamid.V1' } }]);
+  await enviarArchivo({ chatId: 'x@c.us', url: 'https://x/v.ogg', mediaType: 'audio', voice: true }, { http });
+  assert.equal(http.llamadas[0].body.get('voice'), 'true');
+});

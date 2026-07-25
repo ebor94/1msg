@@ -69,10 +69,11 @@ export const useAcciones = defineStore('acciones', {
       useChat().abrir(r.conversacion);
       return r.conversacion;
     },
-    async enviarMedia(convId, file, caption) {
+    async enviarMedia(convId, file, caption, voz) {
       const fd = new FormData();
       fd.append('archivo', file);
       if (caption) fd.append('caption', caption);
+      if (voz) fd.append('voz', '1');
       const token = tokenGuardado();
       const resp = await fetch(`/api/conversaciones/${convId}/media`, {
         method: 'POST',
