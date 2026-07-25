@@ -10,6 +10,7 @@ const c = computed(() => chat.conversacion);
 const nombre = computed(() => c.value?.contacto?.nombreDisplay || c.value?.contacto?.nombreWa || c.value?.contacto?.telefono || 'Sin nombre');
 const nuevaNota = ref('');
 const aviso = ref('');
+const mostrarHistorial = ref(false);
 
 // El select refleja el agente actual (se sincroniza también con cambios en vivo).
 const seleccion = ref('');
@@ -92,18 +93,7 @@ async function guardarNombre() {
         <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
       </select>
     </div>
-    <div v-if="acc.asignaciones.length" class="mt-3">
-      <div class="text-[11px] text-gray-400 uppercase mb-1">Historial de asignaciones</div>
-      <div v-for="a in acc.asignaciones" :key="a.id" class="text-[12px] text-gray-600 border-l-2 border-gray-200 pl-2 mb-1.5">
-        <div>
-          <b>{{ a.de || 'General' }}</b> → <b>{{ a.a || 'General' }}</b>
-          <span class="text-gray-400">· {{ etiquetaAsignacion(a.tipo) }}</span>
-        </div>
-        <div class="text-[11px] text-gray-400">
-          {{ horaCorta(a.creadoEn) }}<span v-if="a.ejecutadoPor"> · por {{ a.ejecutadoPor }}</span><span v-if="a.motivo"> · {{ a.motivo }}</span>
-        </div>
-      </div>
-    </div>
+    <!-- Notas internas: justo después de la asignación -->
     <div class="mt-4">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Notas internas</div>
       <div v-for="n in acc.notas" :key="n.id" class="bg-amber-50 border border-amber-100 rounded p-2 text-[12px] text-gray-700 mb-1">
@@ -112,6 +102,26 @@ async function guardarNombre() {
       <div class="flex gap-1 mt-1">
         <input v-model="nuevaNota" @keydown.enter="guardarNota" placeholder="Agregar nota…" class="flex-1 border rounded px-2 py-1 text-[12px]" />
         <button @click="guardarNota" class="bg-gray-200 rounded px-2 text-[12px]">+</button>
+      </div>
+    </div>
+
+    <!-- Historial de asignaciones: al fondo, colapsable (cerrado por defecto) -->
+    <div v-if="acc.asignaciones.length" class="mt-4 border-t border-gray-100 pt-2">
+      <button class="w-full flex items-center justify-between text-[11px] text-gray-400 uppercase hover:text-gray-600"
+        @click="mostrarHistorial = !mostrarHistorial">
+        <span>Historial de asignaciones ({{ acc.asignaciones.length }})</span>
+        <span>{{ mostrarHistorial ? '▾' : '▸' }}</span>
+      </button>
+      <div v-if="mostrarHistorial" class="mt-2">
+        <div v-for="a in acc.asignaciones" :key="a.id" class="text-[12px] text-gray-600 border-l-2 border-gray-200 pl-2 mb-1.5">
+          <div>
+            <b>{{ a.de || 'General' }}</b> → <b>{{ a.a || 'General' }}</b>
+            <span class="text-gray-400">· {{ etiquetaAsignacion(a.tipo) }}</span>
+          </div>
+          <div class="text-[11px] text-gray-400">
+            {{ horaCorta(a.creadoEn) }}<span v-if="a.ejecutadoPor"> · por {{ a.ejecutadoPor }}</span><span v-if="a.motivo"> · {{ a.motivo }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
