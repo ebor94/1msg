@@ -79,5 +79,17 @@ export const useAcciones = defineStore('acciones', {
       }
       return cuerpo.mensaje;
     },
+    async editarNombre(contactoId, nombre) {
+      const r = await apiFetch(`/contactos/${contactoId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nombreDisplay: nombre }),
+      });
+      const nuevo = r.contacto.nombreDisplay;
+      const chat = useChat();
+      if (chat.conversacion?.contacto?.id === contactoId) chat.conversacion.contacto.nombreDisplay = nuevo;
+      const item = useConversaciones().items.find((c) => c.contacto?.id === contactoId);
+      if (item?.contacto) item.contacto.nombreDisplay = nuevo;
+      return nuevo;
+    },
   },
 });

@@ -114,4 +114,34 @@ async function buscar(req, res) {
   }
 }
 
-module.exports = { crear, buscar };
+/** Normaliza el nombre editable: trim, máx 120, vacío → null. */
+function normalizarNombre(s) {
+  const t = String(s == null ? '' : s).trim().slice(0, 120);
+  return t || null;
+}
+
+/** PATCH /api/contactos/:id — edita el nombre visible (nombre_display). */
+async function actualizar(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  const nombreDisplay = normalizarNombre(req.body && req.body.nombreDisplay);
+  try {
+    const contacto = await Contacto.findByPk(id);
+    if (!contacto) return res.status(404).json({ error: 'no encontrado' });
+    await contacto.update({ nombreDisplay });
+    return res.json({
+      contacto: {
+        id: contacto.id,
+        waId: contacto.waId,
+        telefono: contacto.telefono,
+        nombreWa: contacto.nombreWa,
+        nombreDisplay: contacto.nombreDisplay,
+      },
+    });
+  } catch (err) {
+    logger.error(`actualizar contacto ${id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { crear, buscar, actualizar };

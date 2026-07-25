@@ -51,6 +51,7 @@ router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
 router.get('/agentes', requireAuth, agentesCtrl.listar);
 router.get('/contactos/buscar', requireAuth, contactosCtrl.buscar);
 router.post('/contactos', requireAuth, contactosCtrl.crear);
+router.patch('/contactos/:id', requireAuth, contactosCtrl.actualizar);
 router.get('/plantillas', requireAuth, plantillasCtrl.listar);
 
 module.exports = router;
