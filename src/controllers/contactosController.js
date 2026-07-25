@@ -19,6 +19,10 @@ async function crear(req, res) {
     });
     return res.status(201).json({ contacto });
   } catch (err) {
+    // Carrera: dos creaciones del mismo número a la vez → el índice único salta.
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ error: 'el contacto ya existe', codigo: 'existe' });
+    }
     logger.error(`crear contacto: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }

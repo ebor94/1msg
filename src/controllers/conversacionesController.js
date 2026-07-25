@@ -177,14 +177,17 @@ async function asignar(req, res) {
       const ag = await Agente.findByPk(nuevo);
       if (!ag || !ag.activo) return res.status(400).json({ error: 'agente destino inválido' });
     }
-    const anterior = conv.agenteId;
-
+    let anterior = null;
     await sequelize.transaction(async (t) => {
+      // Leer el dueño anterior DENTRO de la transacción (con lock) para que el
+      // audit y el evento reflejen el estado real aunque haya una toma concurrente.
+      const actual = await Conversacion.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+      anterior = actual.agenteId;
       await Conversacion.update(
         { agenteId: nuevo, estado: nuevo ? ESTADO_CONVERSACION.ABIERTA : ESTADO_CONVERSACION.NUEVA },
         { where: { id }, transaction: t },
       );
-      await Contacto.update({ agenteDuenoId: nuevo }, { where: { id: conv.contactoId }, transaction: t });
+      await Contacto.update({ agenteDuenoId: nuevo }, { where: { id: actual.contactoId }, transaction: t });
       await Asignacion.create(
         { conversacionId: id, deAgenteId: anterior, aAgenteId: nuevo, tipo: tipoDeAsignacion(anterior, nuevo), ejecutadoPorId: me },
         { transaction: t },

@@ -9,13 +9,33 @@ const acc = useAcciones();
 const c = computed(() => chat.conversacion);
 const nombre = computed(() => c.value?.contacto?.nombreDisplay || c.value?.contacto?.nombreWa || c.value?.contacto?.telefono || 'Sin nombre');
 const nuevaNota = ref('');
+const aviso = ref('');
+
+// El select refleja el agente actual (se sincroniza también con cambios en vivo).
+const seleccion = ref('');
+watch(() => c.value?.agenteId, (v) => { seleccion.value = v == null ? '' : v; }, { immediate: true });
 
 onMounted(() => acc.cargarAgentes());
 watch(() => c.value?.id, (id) => { if (id) acc.cargarNotas(id); }, { immediate: true });
 
-async function tomar() { await acc.tomar(c.value.id); }
-async function asignarA(e) { await acc.asignar(c.value.id, e.target.value ? Number(e.target.value) : null); }
-async function guardarNota() { const t = nuevaNota.value.trim(); if (!t) return; nuevaNota.value = ''; await acc.agregarNota(c.value.id, t); }
+async function tomar() {
+  aviso.value = '';
+  try {
+    await acc.tomar(c.value.id);
+  } catch (e) {
+    aviso.value = e.codigo === 'tomada' ? 'Otro agente ya tomó este chat.' : 'No se pudo tomar el chat.';
+  }
+}
+async function asignarA() {
+  const nuevo = seleccion.value === '' ? null : Number(seleccion.value);
+  try { await acc.asignar(c.value.id, nuevo); } catch { aviso.value = 'No se pudo reasignar.'; }
+}
+async function guardarNota() {
+  const t = nuevaNota.value.trim();
+  if (!t) return;
+  nuevaNota.value = '';
+  await acc.agregarNota(c.value.id, t);
+}
 </script>
 
 <template>
@@ -30,11 +50,12 @@ async function guardarNota() { const t = nuevaNota.value.trim(); if (!t) return;
     <div class="text-[12.5px] text-gray-700 py-2 border-t border-gray-100 flex justify-between"><span class="text-gray-400">Origen</span><span class="capitalize">{{ c.origen }}</span></div>
 
     <button v-if="!c.agenteId" @click="tomar" class="w-full mt-2 bg-marca text-white rounded-lg py-2 text-sm font-semibold">Tomar chat</button>
+    <p v-if="aviso" class="text-[12px] text-red-600 text-center mt-1">{{ aviso }}</p>
     <div class="mt-3">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Asignar a</div>
-      <select @change="asignarA" class="w-full border rounded-lg px-2 py-1.5 text-[13px]">
+      <select v-model="seleccion" @change="asignarA" class="w-full border rounded-lg px-2 py-1.5 text-[13px]">
         <option value="">— Bandeja general —</option>
-        <option v-for="a in acc.agentes" :key="a.id" :value="a.id" :selected="a.id === c.agenteId">{{ a.nombre }}</option>
+        <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
       </select>
     </div>
     <div class="mt-4">
