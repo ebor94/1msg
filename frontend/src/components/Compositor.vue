@@ -4,12 +4,19 @@ import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import { ventanaAbierta } from '../utils/formato';
 import SelectorPlantilla from './SelectorPlantilla.vue';
+import PanelRespuestas from './PanelRespuestas.vue';
 
 const chat = useChat();
 const acc = useAcciones();
 const texto = ref('');
 const mostrarSelector = ref(false);
+const mostrarRespuestas = ref(false);
 const abierta = computed(() => ventanaAbierta(chat.conversacion?.ventanaExpiraEn));
+
+function insertarRespuesta(t) {
+  texto.value = texto.value.trim() ? `${texto.value.trim()} ${t}` : t;
+  mostrarRespuestas.value = false;
+}
 
 const adjunto = ref(null); // File
 const previewUrl = ref('');
@@ -174,6 +181,8 @@ async function enviar() {
         class="w-10 h-10 rounded-full bg-white text-marca-oscuro grid place-items-center shrink-0 hover:bg-gray-100">📎</button>
       <button @click="iniciarGrabacion" title="Grabar nota de voz"
         class="w-10 h-10 rounded-full bg-white text-marca-oscuro grid place-items-center shrink-0 hover:bg-gray-100">🎤</button>
+      <button @click="mostrarRespuestas = true" title="Respuestas rápidas"
+        class="w-10 h-10 rounded-full bg-white text-marca-oscuro grid place-items-center shrink-0 hover:bg-gray-100">⚡</button>
       <input ref="fileInput" type="file" class="hidden" @change="elegirArchivo" />
       <input v-model="texto" @keydown.enter="enviar" @paste="onPaste" :disabled="chat.enviando"
         placeholder="Escribe un mensaje…" class="flex-1 bg-white rounded-full px-4 py-2 text-[13px] outline-none" />
@@ -183,5 +192,6 @@ async function enviar() {
 
     <div v-if="chat.errorEnvio" class="text-center text-[12px] text-red-600 mt-1">{{ chat.errorEnvio }}</div>
     <SelectorPlantilla v-if="mostrarSelector" @cerrar="mostrarSelector = false" />
+    <PanelRespuestas v-if="mostrarRespuestas" @elegir="insertarRespuesta" @cerrar="mostrarRespuestas = false" />
   </div>
 </template>

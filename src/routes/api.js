@@ -10,6 +10,7 @@ const agentesCtrl = require('../controllers/agentesController');
 const contactosCtrl = require('../controllers/contactosController');
 const plantillasCtrl = require('../controllers/plantillasController');
 const mediaCtrl = require('../controllers/mediaController');
+const respuestasCtrl = require('../controllers/respuestasController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -57,5 +58,9 @@ router.get('/contactos/buscar', requireAuth, contactosCtrl.buscar);
 router.post('/contactos', requireAuth, contactosCtrl.crear);
 router.patch('/contactos/:id', requireAuth, contactosCtrl.actualizar);
 router.get('/plantillas', requireAuth, plantillasCtrl.listar);
+router.get('/respuestas', requireAuth, respuestasCtrl.listar);
+router.post('/respuestas', requireAuth, respuestasCtrl.crear);
+router.patch('/respuestas/:id', requireAuth, respuestasCtrl.actualizar);
+router.delete('/respuestas/:id', requireAuth, respuestasCtrl.eliminar);
 
 module.exports = router;

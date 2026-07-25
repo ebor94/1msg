@@ -24,6 +24,7 @@ const ConversacionEtiqueta = require('./ConversacionEtiqueta')(sequelize, DataTy
 const EventoWebhook = require('./EventoWebhook')(sequelize, DataTypes);
 const Difusion = require('./Difusion')(sequelize, DataTypes);
 const DifusionDestinatario = require('./DifusionDestinatario')(sequelize, DataTypes);
+const RespuestaRapida = require('./RespuestaRapida')(sequelize, DataTypes);
 
 // -------------------------------------------------------------------
 // Asociaciones. foreignKey apunta al atributo ya declarado en el modelo,
@@ -109,6 +110,7 @@ const db = {
   EventoWebhook,
   Difusion,
   DifusionDestinatario,
+  RespuestaRapida,
 };
 
 module.exports = db;
