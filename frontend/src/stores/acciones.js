@@ -4,7 +4,7 @@ import { useChat } from './chat';
 import { useConversaciones } from './conversaciones';
 
 export const useAcciones = defineStore('acciones', {
-  state: () => ({ agentes: [], notas: [], error: '' }),
+  state: () => ({ agentes: [], notas: [], notasConvId: null, error: '' }),
   actions: {
     async cargarAgentes() {
       try { this.agentes = (await apiFetch('/agentes')).agentes; } catch { this.agentes = []; }
@@ -23,7 +23,14 @@ export const useAcciones = defineStore('acciones', {
       useConversaciones().cargar();
     },
     async cargarNotas(convId) {
-      try { this.notas = (await apiFetch(`/conversaciones/${convId}/notas`)).notas; } catch { this.notas = []; }
+      // Guard anti-carrera: descarta la respuesta si ya cambiaron de chat.
+      this.notasConvId = convId;
+      try {
+        const r = await apiFetch(`/conversaciones/${convId}/notas`);
+        if (this.notasConvId === convId) this.notas = r.notas;
+      } catch {
+        if (this.notasConvId === convId) this.notas = [];
+      }
     },
     async agregarNota(convId, texto) {
       const r = await apiFetch(`/conversaciones/${convId}/notas`, { method: 'POST', body: JSON.stringify({ nota: texto }) });
