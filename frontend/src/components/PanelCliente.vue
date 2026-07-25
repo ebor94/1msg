@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
-import { iniciales } from '../utils/formato';
+import { iniciales, horaCorta, etiquetaAsignacion } from '../utils/formato';
 
 const chat = useChat();
 const acc = useAcciones();
@@ -16,7 +16,7 @@ const seleccion = ref('');
 watch(() => c.value?.agenteId, (v) => { seleccion.value = v == null ? '' : v; }, { immediate: true });
 
 onMounted(() => acc.cargarAgentes());
-watch(() => c.value?.id, (id) => { if (id) acc.cargarNotas(id); }, { immediate: true });
+watch(() => c.value?.id, (id) => { if (id) { acc.cargarNotas(id); acc.cargarAsignaciones(id); } }, { immediate: true });
 
 async function tomar() {
   aviso.value = '';
@@ -91,6 +91,18 @@ async function guardarNombre() {
         <option value="">— Bandeja general —</option>
         <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
       </select>
+    </div>
+    <div v-if="acc.asignaciones.length" class="mt-3">
+      <div class="text-[11px] text-gray-400 uppercase mb-1">Historial de asignaciones</div>
+      <div v-for="a in acc.asignaciones" :key="a.id" class="text-[12px] text-gray-600 border-l-2 border-gray-200 pl-2 mb-1.5">
+        <div>
+          <b>{{ a.de || 'General' }}</b> → <b>{{ a.a || 'General' }}</b>
+          <span class="text-gray-400">· {{ etiquetaAsignacion(a.tipo) }}</span>
+        </div>
+        <div class="text-[11px] text-gray-400">
+          {{ horaCorta(a.creadoEn) }}<span v-if="a.ejecutadoPor"> · por {{ a.ejecutadoPor }}</span><span v-if="a.motivo"> · {{ a.motivo }}</span>
+        </div>
+      </div>
     </div>
     <div class="mt-4">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Notas internas</div>

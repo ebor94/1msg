@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { iniciales, iconoEstado, esLeido, etiquetaTipo, ventanaAbierta, tamanoLegible } from './formato';
+import { iniciales, iconoEstado, esLeido, etiquetaTipo, ventanaAbierta, tamanoLegible, etiquetaAsignacion } from './formato';
 
 describe('formato', () => {
   it('iniciales toma hasta 2 palabras', () => {
@@ -39,5 +39,14 @@ describe('tamanoLegible', () => {
     expect(tamanoLegible(512)).toBe('512 B');
     expect(tamanoLegible(2048)).toBe('2.0 KB');
     expect(tamanoLegible(5 * 1024 * 1024)).toBe('5.0 MB');
+  });
+});
+
+describe('etiquetaAsignacion', () => {
+  it('mapea los tipos conocidos', () => {
+    expect(etiquetaAsignacion('toma_manual')).toBe('toma manual');
+    expect(etiquetaAsignacion('reasignacion')).toBe('reasignación');
+    expect(etiquetaAsignacion('devuelta_general')).toBe('devuelto a general');
+    expect(etiquetaAsignacion('desconocido')).toBe('desconocido');
   });
 });

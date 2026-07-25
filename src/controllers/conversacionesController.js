@@ -62,7 +62,12 @@ async function mensajes(req, res) {
         { tsProveedor: ts, id: { [Op.lt]: id } },
       ];
     }
-    const filas = await Mensaje.findAll({ where, order: [['tsProveedor', 'DESC'], ['id', 'DESC']], limit: 30 });
+    const filas = await Mensaje.findAll({
+      where,
+      order: [['tsProveedor', 'DESC'], ['id', 'DESC']],
+      limit: 30,
+      include: [{ model: Agente, as: 'enviadoPor', attributes: ['id', 'nombre'] }],
+    });
     return res.json({ mensajes: filas.reverse() });
   } catch (err) {
     logger.error(`mensajes conversación ${req.params.id}: ${err.message}`);
@@ -151,10 +156,11 @@ async function enviar(req, res) {
       ultimoMensajeDir: DIRECCION.OUT,
     });
 
+    const salida = { ...mensaje.toJSON(), enviadoPor: { id: agente.id, nombre: agente.nombre } };
     const destino = { agenteId: conv.agenteId, general: !conv.agenteId };
-    emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje });
+    emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje: salida });
 
-    return res.status(201).json({ mensaje });
+    return res.status(201).json({ mensaje: salida });
   } catch (err) {
     logger.error(`enviar conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
@@ -223,8 +229,9 @@ async function enviarMedia(req, res) {
       },
     });
     await conv.update({ ultimoMensajeEn: ahora, ultimoMensajeTexto: String(desnorm).slice(0, 255), ultimoMensajeDir: DIRECCION.OUT });
-    emitir('mensaje:nuevo', { agenteId: conv.agenteId, general: !conv.agenteId }, { conversacionId: conv.id, mensaje });
-    return res.status(201).json({ mensaje });
+    const salida = { ...mensaje.toJSON(), enviadoPor: { id: agente.id, nombre: agente.nombre } };
+    emitir('mensaje:nuevo', { agenteId: conv.agenteId, general: !conv.agenteId }, { conversacionId: conv.id, mensaje: salida });
+    return res.status(201).json({ mensaje: salida });
   } catch (err) {
     logger.error(`enviarMedia conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
@@ -293,10 +300,11 @@ async function enviarPlantilla(req, res) {
       ultimoMensajeDir: DIRECCION.OUT,
     });
 
+    const salida = { ...mensaje.toJSON(), enviadoPor: { id: agente.id, nombre: agente.nombre } };
     const destino = { agenteId: conv.agenteId, general: !conv.agenteId };
-    emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje });
+    emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje: salida });
 
-    return res.status(201).json({ mensaje });
+    return res.status(201).json({ mensaje: salida });
   } catch (err) {
     logger.error(`enviarPlantilla conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
@@ -415,4 +423,33 @@ async function listarNotas(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, historial, leer, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas };
+async function asignaciones(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    const filas = await Asignacion.findAll({
+      where: { conversacionId: conv.id },
+      order: [['id', 'ASC']],
+      include: [
+        { model: Agente, as: 'deAgente', attributes: ['nombre'] },
+        { model: Agente, as: 'aAgente', attributes: ['nombre'] },
+        { model: Agente, as: 'ejecutadoPor', attributes: ['nombre'] },
+      ],
+    });
+    const asignaciones = filas.map((a) => ({
+      id: a.id,
+      de: a.deAgente ? a.deAgente.nombre : null,
+      a: a.aAgente ? a.aAgente.nombre : null,
+      ejecutadoPor: a.ejecutadoPor ? a.ejecutadoPor.nombre : null,
+      tipo: a.tipo,
+      motivo: a.motivo,
+      creadoEn: a.creado_en,
+    }));
+    return res.json({ asignaciones });
+  } catch (err) {
+    logger.error(`asignaciones ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { listarHandler, mensajes, historial, leer, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };

@@ -45,6 +45,7 @@ router.post('/conversaciones/:id/leer', requireAuth, convCtrl.leer);
 router.post('/conversaciones/:id/historial', requireAuth, convCtrl.historial);
 router.post('/conversaciones/:id/tomar', requireAuth, convCtrl.tomar);
 router.post('/conversaciones/:id/asignar', requireAuth, convCtrl.asignar);
+router.get('/conversaciones/:id/asignaciones', requireAuth, convCtrl.asignaciones);
 router.get('/conversaciones/:id/notas', requireAuth, convCtrl.listarNotas);
 router.post('/conversaciones/:id/notas', requireAuth, convCtrl.agregarNota);
 router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);

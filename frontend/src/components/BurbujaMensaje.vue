@@ -47,6 +47,8 @@ onUnmounted(() => {
     <div class="max-w-[75%] px-2.5 py-1.5 rounded-lg text-[13.5px] leading-snug shadow-sm"
       :class="saliente ? 'bg-[#d9fdd3] rounded-tr-sm' : 'bg-white rounded-tl-sm'">
 
+      <div v-if="saliente && mensaje.enviadoPor" class="text-[10px] text-gray-500 font-medium mb-0.5">{{ mensaje.enviadoPor.nombre }}</div>
+
       <div v-if="esMedia" class="mb-0.5">
         <div v-if="estado === 'cargando' || estado === 'idle'" class="text-[12px] text-gray-400 py-3 text-center">Cargando…</div>
         <div v-else-if="estado === 'error'" class="text-[12px] text-gray-400 py-3 text-center">📎 Archivo no disponible</div>

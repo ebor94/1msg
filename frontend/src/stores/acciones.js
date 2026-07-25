@@ -4,7 +4,10 @@ import { useChat } from './chat';
 import { useConversaciones } from './conversaciones';
 
 export const useAcciones = defineStore('acciones', {
-  state: () => ({ agentes: [], notas: [], notasConvId: null, error: '', plantillas: [] }),
+  state: () => ({
+    agentes: [], notas: [], notasConvId: null, error: '', plantillas: [],
+    asignaciones: [], asignacionesConvId: null,
+  }),
   actions: {
     async cargarAgentes() {
       try { this.agentes = (await apiFetch('/agentes')).agentes; } catch { this.agentes = []; }
@@ -41,6 +44,17 @@ export const useAcciones = defineStore('acciones', {
         if (this.notasConvId === convId) this.notas = r.notas;
       } catch {
         if (this.notasConvId === convId) this.notas = [];
+      }
+    },
+    async cargarAsignaciones(convId) {
+      // Guard anti-carrera: descarta la respuesta si ya cambiaron de chat.
+      this.asignacionesConvId = convId;
+      this.asignaciones = []; // no dejar visible el historial del chat anterior
+      try {
+        const r = await apiFetch(`/conversaciones/${convId}/asignaciones`);
+        if (this.asignacionesConvId === convId) this.asignaciones = r.asignaciones;
+      } catch {
+        if (this.asignacionesConvId === convId) this.asignaciones = [];
       }
     },
     async agregarNota(convId, texto) {
