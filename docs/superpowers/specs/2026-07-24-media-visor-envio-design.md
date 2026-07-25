@@ -51,14 +51,16 @@ documentos) y puedan **enviar** adjuntos al cliente dentro de la ventana de 24h.
   - `res.sendFile` da **soporte de Range** y caché (`Last-Modified`/`ETag`) sin código extra → audio/video se reproducen y permiten seek.
   - Blindaje de path: `media_ruta` es generada por nosotros (no input del usuario), pero se valida que la ruta absoluta resuelta quede **dentro** de `env.media.path` (defensa en profundidad contra `..`).
 
-### Backend: aviso en tiempo real cuando la descarga termina
+### Tiempo real: sin cambios de backend
 
-Un media recién recibido en vivo emite `mensaje:nuevo` **antes** de que el archivo
-esté en disco (la descarga es post-commit). Para que la burbuja se actualice sin
-recargar, al terminar `guardarMediaDeMensaje` con éxito en `ingesta.js`, se **agrega
-un evento** `mensaje:media` a `eventosSocket` (mismo puente interno, mismos rooms que
-el `mensaje:nuevo` de ese mensaje) con `{ conversacionId, mensajeId, tipo, mediaNombre, mediaMime, mediaBytes }`.
-El frontend, al recibirlo, marca ese mensaje como "media listo" y lo carga.
+Verificado en el código: `procesarEventoWebhook` retorna `eventosSocket` **después**
+del bucle de descarga de media (la descarga corre tras el commit y antes del return),
+y el worker emite ese arreglo por el puente interno. Por tanto, cuando el frontend
+recibe `mensaje:nuevo` de un mensaje con media, el archivo **ya está en disco**
+(`media_ruta` seteada) y el endpoint lo sirve de inmediato. No se necesita un evento
+`mensaje:media` adicional. Como red de seguridad (si la descarga falló → `media_ruta`
+NULL → 404), el frontend muestra un placeholder y reintenta la carga una vez tras un
+breve retardo; si sigue 404, queda el placeholder "no disponible".
 
 ### Frontend: render por tipo en `BurbujaMensaje.vue`
 
