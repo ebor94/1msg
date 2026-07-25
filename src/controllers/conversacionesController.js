@@ -36,6 +36,7 @@ async function listarHandler(req, res) {
       agenteSolicitante: req.agente,
       agenteFiltro: req.query.agente ? Number(req.query.agente) : null,
       q: req.query.q || null,
+      soloNoLeidos: req.query.noLeidos === '1',
       pagina: Number(req.query.pagina) || 0,
     });
     return res.json(r);
@@ -105,6 +106,21 @@ async function leer(req, res) {
     return res.json({ ok: true });
   } catch (err) {
     logger.error(`leer conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function noLeido(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    await Conversacion.update(
+      { noLeidos: sequelize.literal('GREATEST(no_leidos, 1)') },
+      { where: { id: conv.id } },
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`marcar no leído ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
 }
@@ -471,4 +487,4 @@ async function asignaciones(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, historial, leer, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };
+module.exports = { listarHandler, mensajes, historial, leer, noLeido, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };

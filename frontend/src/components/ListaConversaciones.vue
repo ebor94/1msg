@@ -117,6 +117,13 @@ async function iniciar() {
         <button class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'general' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('general')">General</button>
         <button v-if="auth.esAdministrador" class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'todos' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('todos')">Todos</button>
       </div>
+      <div class="px-2.5 pb-1">
+        <button @click="conv.alternarNoLeidos()"
+          class="text-[12px] px-2.5 py-1 rounded-full border"
+          :class="conv.soloNoLeidos ? 'bg-marca text-white border-marca' : 'text-gray-500 border-gray-200'">
+          ✉ No leídos
+        </button>
+      </div>
       <div class="flex-1 overflow-auto">
         <div v-if="conv.cargando" class="p-4 text-center text-gray-400 text-sm">Cargando…</div>
         <div v-else-if="conv.error" class="p-4 text-center text-red-500 text-sm">{{ conv.error }}</div>
