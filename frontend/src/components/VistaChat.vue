@@ -12,8 +12,12 @@ const contenedor = ref(null);
 const nombre = (c) => c?.contacto?.nombreDisplay || c?.contacto?.nombreWa || c?.contacto?.telefono || 'Sin nombre';
 
 async function marcarNoLeido() {
-  await acc.marcarNoLeido(chat.conversacion.id);
-  chat.cerrar(); // vuelve a la lista; el chat queda como no leído
+  try {
+    await acc.marcarNoLeido(chat.conversacion.id);
+    chat.cerrar(); // vuelve a la lista; el chat queda como no leído
+  } catch {
+    /* si falla (permiso/red), el chat queda abierto */
+  }
 }
 
 async function alFondo() {
