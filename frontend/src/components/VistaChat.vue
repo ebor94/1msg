@@ -14,13 +14,23 @@ async function alFondo() {
   if (contenedor.value) contenedor.value.scrollTop = contenedor.value.scrollHeight;
 }
 watch(() => chat.mensajes, alFondo, { deep: true });
+
+// Arrastrar-soltar: entrega el archivo al Compositor.
+const compositorRef = ref(null);
+const arrastrando = ref(false);
+function onDrop(e) {
+  arrastrando.value = false;
+  const f = e.dataTransfer?.files?.[0];
+  if (f && compositorRef.value) compositorRef.value.tomarArchivo(f);
+}
 </script>
 
 <template>
   <div v-if="!chat.conversacion" class="h-full grid place-items-center text-gray-400 bg-gray-50">
     Selecciona un chat para ver la conversación
   </div>
-  <div v-else class="h-full flex flex-col bg-[#eae6df]">
+  <div v-else class="h-full flex flex-col bg-[#eae6df] relative"
+    @dragover.prevent="arrastrando = true" @dragleave.prevent="arrastrando = false" @drop.prevent="onDrop">
     <div class="bg-[#f0f2f5] border-b border-gray-200 px-4 py-2.5 flex items-center gap-3">
       <div class="w-9 h-9 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold">{{ iniciales(nombre(chat.conversacion)) }}</div>
       <b class="text-sm text-gray-900">{{ nombre(chat.conversacion) }}</b>
@@ -30,6 +40,9 @@ watch(() => chat.mensajes, alFondo, { deep: true });
       <div v-else-if="chat.error" class="text-center text-red-500 text-sm">{{ chat.error }}</div>
       <BurbujaMensaje v-for="m in chat.mensajes" :key="m.id" :mensaje="m" />
     </div>
-    <Compositor />
+    <Compositor ref="compositorRef" />
+    <div v-if="arrastrando" class="absolute inset-0 bg-marca/10 border-2 border-dashed border-marca grid place-items-center z-10 pointer-events-none">
+      <span class="text-marca-oscuro font-semibold">Suelta para adjuntar</span>
+    </div>
   </div>
 </template>

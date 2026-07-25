@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { apiFetch } from '../api/cliente';
+import { apiFetch, tokenGuardado } from '../api/cliente';
 import { useChat } from './chat';
 import { useConversaciones } from './conversaciones';
 
@@ -54,6 +54,30 @@ export const useAcciones = defineStore('acciones', {
       await conv.cargar('mias');
       useChat().abrir(r.conversacion);
       return r.conversacion;
+    },
+    async enviarMedia(convId, file, caption) {
+      const fd = new FormData();
+      fd.append('archivo', file);
+      if (caption) fd.append('caption', caption);
+      const token = tokenGuardado();
+      const resp = await fetch(`/api/conversaciones/${convId}/media`, {
+        method: 'POST',
+        headers: token ? { authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      let cuerpo = null;
+      try { cuerpo = await resp.json(); } catch { /* sin cuerpo */ }
+      if (!resp.ok) {
+        const e = new Error((cuerpo && cuerpo.error) || `error ${resp.status}`);
+        e.status = resp.status;
+        if (cuerpo && cuerpo.codigo) e.codigo = cuerpo.codigo;
+        throw e;
+      }
+      const chat = useChat();
+      if (chat.conversacion && chat.conversacion.id === convId && !chat.mensajes.some((m) => m.id === cuerpo.mensaje.id)) {
+        chat.mensajes.push(cuerpo.mensaje);
+      }
+      return cuerpo.mensaje;
     },
   },
 });
