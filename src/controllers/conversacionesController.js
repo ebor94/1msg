@@ -110,6 +110,21 @@ async function leer(req, res) {
   }
 }
 
+async function resolver(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    await Conversacion.update(
+      { estado: ESTADO_CONVERSACION.CERRADA, cerradaEn: new Date() },
+      { where: { id: conv.id } },
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`resolver conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
 async function noLeido(req, res) {
   try {
     const conv = await accesible(req, res);
@@ -487,4 +502,4 @@ async function asignaciones(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, historial, leer, noLeido, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };
+module.exports = { listarHandler, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };

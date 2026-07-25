@@ -81,10 +81,38 @@ async function resolverConversacion(contacto, norm, canalId, transaction) {
     order: [['id', 'DESC']],
     transaction,
   });
+
+  // Conversación activa existente → se reutiliza.
   if (ultima && ultima.estado !== ESTADO_CONVERSACION.CERRADA) {
     return { conv: ultima, creada: false };
   }
 
+  // Chat resuelto (cerrada) que recibe mensaje → REABRIR el mismo (continuidad de hilo).
+  if (ultima && ultima.estado === ESTADO_CONVERSACION.CERRADA) {
+    const asig = await cascada(contacto, { Agente, transaction }); // dueño activo o general
+    await ultima.update(
+      {
+        agenteId: asig.agenteId,
+        estado: asig.agenteId ? ESTADO_CONVERSACION.ABIERTA : ESTADO_CONVERSACION.NUEVA,
+        cerradaEn: null,
+      },
+      { transaction },
+    );
+    await Asignacion.create(
+      {
+        conversacionId: ultima.id,
+        deAgenteId: null,
+        aAgenteId: asig.agenteId,
+        tipo: asig.tipo,
+        ejecutadoPorId: null,
+        motivo: 'reapertura: cliente escribió a un chat resuelto',
+      },
+      { transaction },
+    );
+    return { conv: ultima, creada: false };
+  }
+
+  // Sin conversación previa (contacto nuevo) → crear una.
   const asig = await cascada(contacto, { Agente, transaction });
   const conv = await Conversacion.create(
     {
