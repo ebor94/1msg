@@ -14,14 +14,20 @@ const media = ref(null); // { blob, url, filename, mime }
 const estado = ref('idle'); // idle | cargando | listo | error
 const ampliada = ref(false);
 
+let vivo = true; // false tras desmontar: evita fijar estado o dejar blobs sin revocar
+let reintentoId = null;
+
 async function cargar(reintentos = 1) {
   estado.value = 'cargando';
   try {
-    media.value = await fetchMediaBlob(`/mensajes/${props.mensaje.id}/media`);
+    const r = await fetchMediaBlob(`/mensajes/${props.mensaje.id}/media`);
+    if (!vivo) { URL.revokeObjectURL(r.url); return; } // llegó tras desmontar
+    media.value = r;
     estado.value = 'listo';
   } catch (e) {
+    if (!vivo) return;
     if (e.status === 404 && reintentos > 0) {
-      setTimeout(() => cargar(reintentos - 1), 1500);
+      reintentoId = setTimeout(() => cargar(reintentos - 1), 1500);
       return;
     }
     estado.value = 'error';
@@ -29,7 +35,11 @@ async function cargar(reintentos = 1) {
 }
 
 onMounted(() => { if (esMedia.value) cargar(); });
-onUnmounted(() => { if (media.value?.url) URL.revokeObjectURL(media.value.url); });
+onUnmounted(() => {
+  vivo = false;
+  if (reintentoId) clearTimeout(reintentoId);
+  if (media.value?.url) URL.revokeObjectURL(media.value.url);
+});
 </script>
 
 <template>
