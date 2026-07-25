@@ -18,7 +18,9 @@ async function transcodificarAOgg(bufferEntrada) {
   await fs.writeFile(entrada, bufferEntrada);
   try {
     await new Promise((resolve, reject) => {
-      const ff = spawn('ffmpeg', ['-y', '-i', entrada, '-c:a', 'libopus', '-b:a', '32k', '-ar', '48000', '-ac', '1', salida]);
+      // timeout: si ffmpeg se cuelga con un audio malformado, Node lo mata (SIGTERM)
+      // y emite 'close' con code null → reject; el finally limpia los temporales.
+      const ff = spawn('ffmpeg', ['-y', '-i', entrada, '-c:a', 'libopus', '-b:a', '32k', '-ar', '48000', '-ac', '1', salida], { timeout: 20000 });
       let err = '';
       ff.stderr.on('data', (d) => { err += d.toString(); });
       ff.on('error', reject); // ffmpeg no instalado / no ejecutable
