@@ -4,10 +4,21 @@ import { useChat } from './chat';
 import { useConversaciones } from './conversaciones';
 
 export const useAcciones = defineStore('acciones', {
-  state: () => ({ agentes: [], notas: [], notasConvId: null, error: '' }),
+  state: () => ({ agentes: [], notas: [], notasConvId: null, error: '', plantillas: [] }),
   actions: {
     async cargarAgentes() {
       try { this.agentes = (await apiFetch('/agentes')).agentes; } catch { this.agentes = []; }
+    },
+    async cargarPlantillas() {
+      try { this.plantillas = (await apiFetch('/plantillas')).plantillas; } catch { this.plantillas = []; }
+    },
+    async enviarPlantilla(convId, cuerpo) {
+      const r = await apiFetch(`/conversaciones/${convId}/plantilla`, { method: 'POST', body: JSON.stringify(cuerpo) });
+      const chat = useChat();
+      if (chat.conversacion && chat.conversacion.id === convId && !chat.mensajes.some((m) => m.id === r.mensaje.id)) {
+        chat.mensajes.push(r.mensaje);
+      }
+      return r.mensaje;
     },
     async tomar(convId) {
       const r = await apiFetch(`/conversaciones/${convId}/tomar`, { method: 'POST' });
