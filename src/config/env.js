@@ -77,6 +77,8 @@ const env = Object.freeze({
 
   webhookSecret: process.env.WEBHOOK_SECRET,
 
+  publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+
   jwt: Object.freeze({
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES || '12h',
@@ -85,6 +87,7 @@ const env = Object.freeze({
   media: Object.freeze({
     path: ruta('MEDIA_PATH', './media'),
     maxBytes: entero('MEDIA_MAX_BYTES', 52428800),
+    maxUploadBytes: entero('MEDIA_MAX_UPLOAD_BYTES', 16777216),
   }),
 
   log: Object.freeze({

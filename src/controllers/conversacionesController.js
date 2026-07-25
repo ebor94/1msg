@@ -1,17 +1,24 @@
 'use strict';
+const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Conversacion, Mensaje, Contacto, Agente, Asignacion, NotaInterna } = require('../models');
 const { listar, puedeVer } = require('../services/conversaciones');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
+const { enviarArchivo } = require('../integrations/onemsg/media');
 const { ventanaAbierta, conFirma } = require('../services/envio');
+const { guardarBufferComoMedia, categoriaMedia } = require('../services/media');
+const { registrar } = require('../services/mediaPublica');
 const { construirParams, construirParamsHeader, renderizarCuerpo } = require('../services/plantillas');
 const { obtenerCatalogo } = require('./plantillasController');
 const { tipoDeAsignacion, roomsDeAsignacion } = require('../services/asignacionManual');
 const { emitir, emitirARooms } = require('../sockets/emisor');
 const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
+const env = require('../config/env');
 const logger = require('../utils/logger');
+
+const ETIQUETA_MEDIA = { image: '📷 Imagen', audio: '🎤 Audio', video: '🎬 Video', document: '📄 Documento' };
 
 async function accesible(req, res) {
   const conv = await Conversacion.findByPk(req.params.id);
@@ -121,6 +128,76 @@ async function enviar(req, res) {
     return res.status(201).json({ mensaje });
   } catch (err) {
     logger.error(`enviar conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function enviarMedia(req, res) {
+  const archivo = req.file;
+  if (!archivo) return res.status(400).json({ error: 'archivo requerido' });
+  const caption = (req.body && req.body.caption ? String(req.body.caption) : '').trim();
+
+  try {
+    const conv = await Conversacion.findByPk(req.params.id, {
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId'] }],
+    });
+    if (!conv) return res.status(404).json({ error: 'no encontrada' });
+    if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    const agente = await Agente.findByPk(req.agente.id);
+    if (!agente || !agente.activo) return res.status(403).json({ error: 'agente inactivo' });
+    if (!ventanaAbierta(conv.ventanaExpiraEn)) {
+      return res.status(409).json({ error: 'la ventana de 24h está cerrada', codigo: 'fuera_de_ventana' });
+    }
+    if (!/^https?:\/\//.test(env.publicBaseUrl)) {
+      logger.error('enviarMedia: PUBLIC_BASE_URL no configurada (Meta no podría descargar el adjunto)');
+      return res.status(500).json({ error: 'envío de adjuntos no configurado' });
+    }
+
+    const categoria = categoriaMedia(archivo.mimetype);
+    const token = crypto.randomBytes(32).toString('hex');
+    const guardado = await guardarBufferComoMedia({
+      buffer: archivo.buffer,
+      contentType: archivo.mimetype,
+      conversacionId: conv.id,
+      nombreArchivo: `out-${token}`,
+      nombreOriginal: archivo.originalname,
+      fecha: new Date(),
+    });
+    const tokenPublico = registrar(guardado.mediaRuta, guardado.mediaMime);
+    const urlPublica = `${env.publicBaseUrl}/media-publico/${tokenPublico}`;
+    const captionFinal = caption ? conFirma(agente.firma, caption) : '';
+
+    let enviado;
+    try {
+      enviado = await enviarArchivo({
+        chatId: conv.contacto.waId,
+        url: urlPublica,
+        mediaType: categoria,
+        caption: captionFinal,
+        filename: guardado.mediaNombre || undefined,
+      });
+    } catch (err) {
+      logger.error(`envío media 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      return res.status(502).json({ error: 'no se pudo enviar el archivo', codigo: err.codigo || null });
+    }
+
+    const ahora = new Date();
+    const desnorm = captionFinal || ETIQUETA_MEDIA[categoria] || '📎 Archivo';
+    const [mensaje] = await Mensaje.findOrCreate({
+      where: { waMessageId: enviado.id },
+      defaults: {
+        conversacionId: conv.id, waMessageId: enviado.id, direccion: DIRECCION.OUT,
+        tipo: categoria, texto: captionFinal || null,
+        mediaRuta: guardado.mediaRuta, mediaMime: guardado.mediaMime,
+        mediaNombre: guardado.mediaNombre, mediaBytes: guardado.mediaBytes,
+        estado: ESTADO_MENSAJE.ENVIADO, enviadoPorId: agente.id, tsProveedor: ahora,
+      },
+    });
+    await conv.update({ ultimoMensajeEn: ahora, ultimoMensajeTexto: String(desnorm).slice(0, 255), ultimoMensajeDir: DIRECCION.OUT });
+    emitir('mensaje:nuevo', { agenteId: conv.agenteId, general: !conv.agenteId }, { conversacionId: conv.id, mensaje });
+    return res.status(201).json({ mensaje });
+  } catch (err) {
+    logger.error(`enviarMedia conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
 }
@@ -309,4 +386,4 @@ async function listarNotas(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, leer, enviar, enviarPlantilla, tomar, asignar, agregarNota, listarNotas };
+module.exports = { listarHandler, mensajes, leer, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas };

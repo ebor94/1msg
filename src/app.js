@@ -34,8 +34,8 @@ function crearApp() {
   const distFront = path.resolve(__dirname, '..', 'frontend', 'dist');
   if (fs.existsSync(distFront)) {
     app.use(express.static(distFront));
-    // Fallback SPA: cualquier GET que no sea /api, /webhook, /health ni un archivo.
-    app.get(/^\/(?!api|webhook|health).*/, (req, res, next) => {
+    // Fallback SPA: cualquier GET que no sea /api, /webhook, /health, /media-publico ni un archivo.
+    app.get(/^\/(?!api|webhook|health|media-publico).*/, (req, res, next) => {
       if (req.method !== 'GET') return next();
       return res.sendFile(path.join(distFront, 'index.html'));
     });

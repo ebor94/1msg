@@ -117,4 +117,37 @@ function rutaMediaSegura(mediaRuta, base) {
   return abs;
 }
 
-module.exports = { guardarMediaDeMensaje, rutaMediaSegura };
+/** mime → categoría de envío/tipo de mensaje. */
+function categoriaMedia(mime) {
+  const m = String(mime || '');
+  if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('audio/')) return 'audio';
+  if (m.startsWith('video/')) return 'video';
+  return 'document';
+}
+
+/**
+ * Guarda un buffer (archivo saliente del agente) en disco con la misma convención
+ * que la media entrante. `nombreArchivo` es el nombre base sin extensión (ej. out-<token>).
+ * @returns campos para wa_mensajes.
+ */
+async function guardarBufferComoMedia({ buffer, contentType, conversacionId, nombreArchivo, nombreOriginal, fecha }) {
+  const ext = EXT_POR_MIME[contentType] || 'bin';
+  const cuando = fecha instanceof Date && !Number.isNaN(fecha.getTime()) ? fecha : new Date();
+  const anio = String(cuando.getFullYear());
+  const mes = String(cuando.getMonth() + 1).padStart(2, '0');
+
+  const rutaRelativa = path.join(anio, mes, String(conversacionId), `${sanitizar(nombreArchivo)}.${ext}`);
+  const rutaAbsoluta = path.join(env.media.path, rutaRelativa);
+  await fs.mkdir(path.dirname(rutaAbsoluta), { recursive: true });
+  await fs.writeFile(rutaAbsoluta, buffer);
+
+  return {
+    mediaRuta: rutaRelativa,
+    mediaMime: contentType || 'application/octet-stream',
+    mediaNombre: nombreOriginal ? sanitizar(nombreOriginal) : null,
+    mediaBytes: buffer.length,
+  };
+}
+
+module.exports = { guardarMediaDeMensaje, rutaMediaSegura, categoriaMedia, guardarBufferComoMedia };

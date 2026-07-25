@@ -3,6 +3,7 @@
 const { Mensaje, Conversacion } = require('../models');
 const { puedeVer } = require('../services/conversaciones');
 const { rutaMediaSegura } = require('../services/media');
+const { resolver } = require('../services/mediaPublica');
 const env = require('../config/env');
 const { TIPO_MENSAJE } = require('../config/constants');
 const logger = require('../utils/logger');
@@ -42,4 +43,26 @@ async function servir(req, res) {
   }
 }
 
-module.exports = { servir };
+/** GET /media-publico/:token — sirve el archivo por token efímero (para que Meta lo descargue). */
+async function servirPublico(req, res) {
+  try {
+    const e = resolver(req.params.token);
+    if (!e) return res.status(404).json({ error: 'no disponible' });
+    const abs = rutaMediaSegura(e.rutaRelativa, env.media.path);
+    if (!abs) return res.status(404).json({ error: 'no disponible' });
+    res.setHeader('Content-Type', e.mime || 'application/octet-stream');
+    // Ruta pública sin auth en el mismo origen que la SPA: se fuerza descarga y
+    // nosniff para que un archivo subido (HTML/SVG) no ejecute script en el origen.
+    // Meta descarga el body igual (attachment no le estorba).
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Disposition', 'attachment');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    return res.sendFile(abs, (err) => { if (err && !res.headersSent) res.status(404).json({ error: 'no disponible' }); });
+  } catch (err) {
+    logger.error(`media-publico: ${err.message}`);
+    if (!res.headersSent) return res.status(500).json({ error: 'error interno' });
+    return undefined;
+  }
+}
+
+module.exports = { servir, servirPublico };

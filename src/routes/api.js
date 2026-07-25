@@ -1,6 +1,7 @@
 'use strict';
 const { Router } = require('express');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
 const { requireAuth } = require('../middlewares/auth');
 const { obtenerIpCliente } = require('../utils/ipCliente');
 const authCtrl = require('../controllers/authController');
@@ -9,6 +10,17 @@ const agentesCtrl = require('../controllers/agentesController');
 const contactosCtrl = require('../controllers/contactosController');
 const plantillasCtrl = require('../controllers/plantillasController');
 const mediaCtrl = require('../controllers/mediaController');
+const env = require('../config/env');
+
+const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
+
+function subirUno(req, res, next) {
+  subida.single('archivo')(req, res, (err) => {
+    if (!err) return next();
+    const grande = err.code === 'LIMIT_FILE_SIZE';
+    return res.status(grande ? 413 : 400).json({ error: grande ? 'archivo demasiado grande (máx 16 MB)' : 'archivo inválido' });
+  });
+}
 
 // Máximo 10 intentos de login por IP cada 15 minutos (freno a fuerza bruta).
 const limiteLogin = rateLimit({
@@ -27,6 +39,7 @@ router.get('/auth/me', requireAuth, authCtrl.me);
 router.get('/conversaciones', requireAuth, convCtrl.listarHandler);
 router.get('/conversaciones/:id/mensajes', requireAuth, convCtrl.mensajes);
 router.post('/conversaciones/:id/mensajes', requireAuth, convCtrl.enviar);
+router.post('/conversaciones/:id/media', requireAuth, subirUno, convCtrl.enviarMedia);
 router.post('/conversaciones/:id/plantilla', requireAuth, convCtrl.enviarPlantilla);
 router.post('/conversaciones/:id/leer', requireAuth, convCtrl.leer);
 router.post('/conversaciones/:id/tomar', requireAuth, convCtrl.tomar);
