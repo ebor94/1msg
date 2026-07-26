@@ -133,51 +133,73 @@ function contactoPlano(c) {
 }
 
 /**
- * POST /api/contactos/:id/conversacion — abre (crea) una conversación saliente
- * para un contacto que YA existe pero aún no tiene chat (típico de los importados
- * con dueño asignado). Idempotente: si ya hay conversación, la devuelve.
+ * POST /api/contactos/:id/conversacion — abre una conversación saliente para un
+ * contacto que YA existe pero aún no tiene chat activo (típico de los importados
+ * con dueño asignado).
  *
- * Sin `tomar`: la conversación queda asignada al dueño del contacto
- * (`agente_dueno_id`); si no tiene dueño, al agente que la abre (que además pasa
- * a ser su dueño, por continuidad). Con `tomar: true`: se asigna a quien abre y
- * se lo queda (equivale a "tomar de otro" cuando el dueño es otro agente).
+ * Atómico: bloquea la fila del contacto (FOR UPDATE) y reúsa/reabre dentro de la
+ * transacción, para no crear conversaciones duplicadas si dos agentes (o un
+ * doble-clic) abren el mismo contacto a la vez — misma regla que `tomar()`.
+ *
+ * - Si ya hay una conversación NO cerrada → la devuelve tal cual.
+ * - Si la última está cerrada → la reabre en sitio (mismo hilo/historial).
+ * - Si no hay ninguna → crea una nueva SALIENTE/ABIERTA.
+ *
+ * Sin `tomar`: se asigna al dueño del contacto (`agente_dueno_id`) o, si no tiene,
+ * al agente que abre (que pasa a ser su dueño). Con `tomar: true`: se asigna a
+ * quien abre y se lo queda (equivale a "tomar de otro").
  */
 async function abrir(req, res) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
   const tomar = !!(req.body && req.body.tomar);
   try {
-    const contacto = await Contacto.findByPk(id);
-    if (!contacto) return res.status(404).json({ error: 'contacto no encontrado' });
+    const base = await Contacto.findByPk(id);
+    if (!base) return res.status(404).json({ error: 'contacto no encontrado' });
 
-    // Idempotencia: si ya existe una conversación, se devuelve para abrir.
-    const existente = await Conversacion.findOne({
-      where: { contactoId: contacto.id },
-      order: [['ultimoMensajeEn', 'DESC'], ['id', 'DESC']],
-    });
-    if (existente) {
-      const conversacion = existente.toJSON();
-      conversacion.contacto = contactoPlano(contacto);
-      return res.json({ conversacion, creada: false });
-    }
+    const { conv, creada } = await sequelize.transaction(async (t) => {
+      // Lock del contacto: serializa aperturas concurrentes sobre el mismo lead.
+      const contacto = await Contacto.findByPk(id, { lock: t.LOCK.UPDATE, transaction: t });
+      const existente = await Conversacion.findOne({
+        where: { contactoId: contacto.id },
+        order: [['ultimoMensajeEn', 'DESC'], ['id', 'DESC']],
+        transaction: t,
+      });
+      // Ya hay chat activo: idempotente, se devuelve para abrir.
+      if (existente && existente.estado !== ESTADO_CONVERSACION.CERRADA) {
+        return { conv: existente, creada: false };
+      }
 
-    const agenteId = tomar ? req.agente.id : (contacto.agenteDuenoId || req.agente.id);
-    const conv = await sequelize.transaction(async (t) => {
-      const canalId = await resolverCanalId(t);
-      const nuevaConv = await Conversacion.create(
-        {
-          canalId,
-          contactoId: contacto.id,
-          agenteId,
-          estado: ESTADO_CONVERSACION.ABIERTA,
-          origen: ORIGEN_CONVERSACION.SALIENTE,
-        },
-        { transaction: t },
-      );
+      const agenteAnterior = existente ? existente.agenteId : null;
+      const agenteId = tomar
+        ? req.agente.id
+        : (agenteAnterior != null ? agenteAnterior : (contacto.agenteDuenoId || req.agente.id));
+
+      let conv;
+      if (existente) {
+        // Reabrir en sitio la conversación cerrada: conserva su historial.
+        await existente.update(
+          { estado: ESTADO_CONVERSACION.ABIERTA, agenteId, cerradaEn: null },
+          { transaction: t },
+        );
+        conv = existente;
+      } else {
+        const canalId = await resolverCanalId(t);
+        conv = await Conversacion.create(
+          {
+            canalId,
+            contactoId: contacto.id,
+            agenteId,
+            estado: ESTADO_CONVERSACION.ABIERTA,
+            origen: ORIGEN_CONVERSACION.SALIENTE,
+          },
+          { transaction: t },
+        );
+      }
       await Asignacion.create(
         {
-          conversacionId: nuevaConv.id,
-          deAgenteId: null,
+          conversacionId: conv.id,
+          deAgenteId: agenteAnterior,
           aAgenteId: agenteId,
           tipo: TIPO_ASIGNACION.TOMA_MANUAL,
           ejecutadoPorId: req.agente.id,
@@ -189,12 +211,12 @@ async function abrir(req, res) {
       if (tomar || contacto.agenteDuenoId == null) {
         await contacto.update({ agenteDuenoId: agenteId }, { transaction: t });
       }
-      return nuevaConv;
+      return { conv, creada: !existente };
     });
 
     const conversacion = conv.toJSON();
-    conversacion.contacto = contactoPlano(contacto);
-    return res.status(201).json({ conversacion, creada: true });
+    conversacion.contacto = contactoPlano(base);
+    return res.status(creada ? 201 : 200).json({ conversacion, creada });
   } catch (err) {
     logger.error(`abrir conversación contacto ${id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
