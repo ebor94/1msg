@@ -100,7 +100,8 @@ async function buscar(req, res) {
   try {
     const contactos = await Contacto.findAll({
       where: { [Op.or]: condiciones },
-      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay'],
+      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'agenteDuenoId'],
+      include: [{ model: Agente, as: 'agenteDueno', attributes: ['id', 'nombre'] }],
       limit: 10,
     });
 
@@ -116,6 +117,86 @@ async function buscar(req, res) {
     return res.json({ resultados });
   } catch (err) {
     logger.error(`buscar contactos: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+/** Forma plana del contacto que espera el frontend para pintar la cabecera del chat. */
+function contactoPlano(c) {
+  return {
+    id: c.id,
+    waId: c.waId,
+    telefono: c.telefono,
+    nombreWa: c.nombreWa,
+    nombreDisplay: c.nombreDisplay,
+  };
+}
+
+/**
+ * POST /api/contactos/:id/conversacion — abre (crea) una conversación saliente
+ * para un contacto que YA existe pero aún no tiene chat (típico de los importados
+ * con dueño asignado). Idempotente: si ya hay conversación, la devuelve.
+ *
+ * Sin `tomar`: la conversación queda asignada al dueño del contacto
+ * (`agente_dueno_id`); si no tiene dueño, al agente que la abre (que además pasa
+ * a ser su dueño, por continuidad). Con `tomar: true`: se asigna a quien abre y
+ * se lo queda (equivale a "tomar de otro" cuando el dueño es otro agente).
+ */
+async function abrir(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  const tomar = !!(req.body && req.body.tomar);
+  try {
+    const contacto = await Contacto.findByPk(id);
+    if (!contacto) return res.status(404).json({ error: 'contacto no encontrado' });
+
+    // Idempotencia: si ya existe una conversación, se devuelve para abrir.
+    const existente = await Conversacion.findOne({
+      where: { contactoId: contacto.id },
+      order: [['ultimoMensajeEn', 'DESC'], ['id', 'DESC']],
+    });
+    if (existente) {
+      const conversacion = existente.toJSON();
+      conversacion.contacto = contactoPlano(contacto);
+      return res.json({ conversacion, creada: false });
+    }
+
+    const agenteId = tomar ? req.agente.id : (contacto.agenteDuenoId || req.agente.id);
+    const conv = await sequelize.transaction(async (t) => {
+      const canalId = await resolverCanalId(t);
+      const nuevaConv = await Conversacion.create(
+        {
+          canalId,
+          contactoId: contacto.id,
+          agenteId,
+          estado: ESTADO_CONVERSACION.ABIERTA,
+          origen: ORIGEN_CONVERSACION.SALIENTE,
+        },
+        { transaction: t },
+      );
+      await Asignacion.create(
+        {
+          conversacionId: nuevaConv.id,
+          deAgenteId: null,
+          aAgenteId: agenteId,
+          tipo: TIPO_ASIGNACION.TOMA_MANUAL,
+          ejecutadoPorId: req.agente.id,
+          motivo: tomar ? 'chat abierto y tomado por el agente' : 'chat abierto para contacto existente',
+        },
+        { transaction: t },
+      );
+      // Si se toma, o si el contacto no tenía dueño, el agente queda como dueño (continuidad).
+      if (tomar || contacto.agenteDuenoId == null) {
+        await contacto.update({ agenteDuenoId: agenteId }, { transaction: t });
+      }
+      return nuevaConv;
+    });
+
+    const conversacion = conv.toJSON();
+    conversacion.contacto = contactoPlano(contacto);
+    return res.status(201).json({ conversacion, creada: true });
+  } catch (err) {
+    logger.error(`abrir conversación contacto ${id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
 }
@@ -150,4 +231,4 @@ async function actualizar(req, res) {
   }
 }
 
-module.exports = { crear, buscar, actualizar };
+module.exports = { crear, buscar, abrir, actualizar };
