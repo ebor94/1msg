@@ -34,9 +34,34 @@ test('conversación de otro → ni mío ni general', () => {
   assert.equal(r.agenteActualNombre, 'Otro');
 });
 
-test('contacto sin conversación → conversacionId y conversacion null', () => {
+test('contacto sin conversación ni dueño → conversacionId y conversacion null', () => {
   const r = construirResultado({ ...contacto, nombreDisplay: null, nombreWa: null }, null, 5);
   assert.equal(r.conversacionId, null);
   assert.equal(r.conversacion, null);
+  assert.equal(r.tieneConversacion, false);
+  assert.equal(r.esMio, false);
+  assert.equal(r.esGeneral, false);
+  assert.equal(r.agenteActualNombre, null);
   assert.equal(r.nombre, '57300'); // cae al teléfono
+});
+
+test('contacto sin conversación pero con dueño = yo → esMio por dueño', () => {
+  const c = { ...contacto, agenteDuenoId: 5, agenteDueno: { id: 5, nombre: 'Yo' } };
+  const r = construirResultado(c, null, 5);
+  assert.equal(r.conversacionId, null);
+  assert.equal(r.tieneConversacion, false);
+  assert.equal(r.esMio, true);
+  assert.equal(r.esGeneral, false);
+  assert.equal(r.agenteActualId, 5);
+  assert.equal(r.agenteActualNombre, 'Yo');
+});
+
+test('contacto sin conversación con dueño = otro → muestra al dueño, no esMio', () => {
+  const c = { ...contacto, agenteDuenoId: 7, agenteDueno: { id: 7, nombre: 'Erika' } };
+  const r = construirResultado(c, null, 5);
+  assert.equal(r.conversacionId, null);
+  assert.equal(r.esMio, false);
+  assert.equal(r.esGeneral, false);
+  assert.equal(r.agenteActualId, 7);
+  assert.equal(r.agenteActualNombre, 'Erika');
 });

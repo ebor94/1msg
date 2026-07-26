@@ -34,6 +34,22 @@ function limpiar() {
 }
 
 async function elegir(r) {
+  // Contacto sin chat todavía (importados). Si es mío o no tiene dueño, lo abro
+  // directo (crea la conversación). Si es de otro, pido confirmación para tomarlo.
+  if (!r.conversacionId) {
+    if (r.esMio || r.agenteActualId == null) {
+      try {
+        const conv = await acc.abrirContacto(r.contactoId, false);
+        chat.abrir(conv);
+        limpiar();
+      } catch {
+        errorAccion.value = 'No se pudo abrir el chat.';
+      }
+    } else {
+      porConfirmar.value = r; // de otro → confirmar antes de tomar
+    }
+    return;
+  }
   if (r.esMio || r.esGeneral) {
     chat.abrir(r.conversacion);
     limpiar();
@@ -47,11 +63,18 @@ async function confirmarToma() {
   porConfirmar.value = null;
   errorAccion.value = '';
   try {
-    // asignar → aplicarAsignacion ya recarga Míos; se actualiza el agenteId local
-    // para que puedeVer pase al abrir.
-    await acc.asignar(r.conversacionId, auth.agente.id);
-    r.conversacion.agenteId = auth.agente.id;
-    chat.abrir(r.conversacion);
+    let conv;
+    if (!r.conversacionId) {
+      // Sin chat aún: se crea la conversación y el agente se lo queda.
+      conv = await acc.abrirContacto(r.contactoId, true);
+    } else {
+      // asignar → aplicarAsignacion ya recarga Míos; se actualiza el agenteId local
+      // para que puedeVer pase al abrir.
+      await acc.asignar(r.conversacionId, auth.agente.id);
+      r.conversacion.agenteId = auth.agente.id;
+      conv = r.conversacion;
+    }
+    chat.abrir(conv);
     limpiar();
   } catch {
     errorAccion.value = 'No se pudo tomar el chat.';
@@ -103,8 +126,8 @@ function onScrollLista(e) {
             <div class="text-[12px] text-gray-400">{{ r.telefono }}</div>
           </div>
           <span class="text-[11px] px-2 py-0.5 rounded-full shrink-0"
-            :class="r.esMio ? 'bg-green-100 text-green-700' : r.esGeneral ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700'">
-            {{ r.esMio ? 'Tuyo' : r.esGeneral ? 'General' : ('de ' + (r.agenteActualNombre || 'otro')) }}
+            :class="r.esMio ? 'bg-green-100 text-green-700' : r.esGeneral ? 'bg-gray-100 text-gray-600' : r.agenteActualNombre ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'">
+            {{ r.esMio ? 'Tuyo' : r.esGeneral ? 'General' : r.agenteActualNombre ? ('de ' + r.agenteActualNombre) : 'Nuevo' }}
           </span>
         </div>
         <div v-if="!busqueda.resultados.length && soloDigitos(texto).length >= 10"

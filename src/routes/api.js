@@ -56,6 +56,7 @@ router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
 router.get('/agentes', requireAuth, agentesCtrl.listar);
 router.get('/contactos/buscar', requireAuth, contactosCtrl.buscar);
 router.post('/contactos', requireAuth, contactosCtrl.crear);
+router.post('/contactos/:id/conversacion', requireAuth, contactosCtrl.abrir);
 router.patch('/contactos/:id', requireAuth, contactosCtrl.actualizar);
 router.get('/plantillas', requireAuth, plantillasCtrl.listar);
 router.get('/respuestas', requireAuth, respuestasCtrl.listar);

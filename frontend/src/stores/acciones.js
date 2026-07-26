@@ -69,6 +69,15 @@ export const useAcciones = defineStore('acciones', {
       useChat().abrir(r.conversacion);
       return r.conversacion;
     },
+    // Abre (crea) la conversación de un contacto que ya existe pero no tiene chat
+    // todavía (importados con dueño). `tomar` = quedárselo aunque sea de otro.
+    async abrirContacto(contactoId, tomar = false) {
+      const r = await apiFetch(`/contactos/${contactoId}/conversacion`, {
+        method: 'POST', body: JSON.stringify({ tomar }),
+      });
+      await useConversaciones().cargar('mias');
+      return r.conversacion;
+    },
     async enviarMedia(convId, file, caption, voz) {
       const fd = new FormData();
       fd.append('archivo', file);
