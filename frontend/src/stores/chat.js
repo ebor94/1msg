@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { apiFetch } from '../api/cliente';
 import { useConversaciones } from './conversaciones';
+import { useAuth } from './auth';
 
 export const useChat = defineStore('chat', {
   state: () => ({
@@ -29,6 +30,11 @@ export const useChat = defineStore('chat', {
         // llegue la respuesta HTTP. Solo lo agregamos si no está ya en la lista.
         if (this.conversacion && this.conversacion.id === convId && !this.mensajes.some((m) => m.id === r.mensaje.id)) {
           this.mensajes.push(r.mensaje);
+        }
+        // Enviar con éxito en un chat de general significa que lo acabamos de tomar
+        // (auto-toma): reflejarlo ya, sin esperar el socket, para habilitar Resolver.
+        if (this.conversacion && this.conversacion.id === convId && this.conversacion.agenteId == null) {
+          this.conversacion.agenteId = useAuth().agente?.id ?? null;
         }
         const item = useConversaciones().items.find((c) => c.id === convId);
         if (item) {

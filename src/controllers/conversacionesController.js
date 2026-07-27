@@ -164,13 +164,14 @@ async function tomarParaEnvio(conv, reqAgente) {
     return { ok: false, tomada: false };
   }
   // General: toma atómica (mismo patrón que `tomar`).
-  const gano = await sequelize.transaction(async (t) => {
+  const estadoAnterior = conv.estado;
+  const res = await sequelize.transaction(async (t) => {
     const [n] = await Conversacion.update(
       { agenteId: me, tomadaEn: new Date(), estado: ESTADO_CONVERSACION.ABIERTA },
       { where: { id: conv.id, agenteId: null }, transaction: t },
     );
-    if (n === 0) return false;
-    await Contacto.update(
+    if (n === 0) return null;
+    const [dn] = await Contacto.update(
       { agenteDuenoId: me },
       { where: { id: conv.contactoId, agenteDuenoId: null }, transaction: t },
     );
@@ -178,13 +179,43 @@ async function tomarParaEnvio(conv, reqAgente) {
       { conversacionId: conv.id, deAgenteId: null, aAgenteId: me, tipo: TIPO_ASIGNACION.TOMA_MANUAL, ejecutadoPorId: me, motivo: 'auto-toma al responder' },
       { transaction: t },
     );
-    return true;
+    return { puseDueno: dn === 1 };
   });
-  if (gano) { conv.agenteId = me; return { ok: true, tomada: true }; }
+  if (res) { conv.agenteId = me; return { ok: true, tomada: true, puseDueno: res.puseDueno, estadoAnterior }; }
   // Perdió la carrera: ¿quién quedó de dueño?
   const fresca = await Conversacion.findByPk(conv.id, { attributes: ['id', 'agenteId'] });
   if (fresca && fresca.agenteId === me) { conv.agenteId = me; return { ok: true, tomada: false }; }
   return { ok: false, tomada: false };
+}
+
+/**
+ * Compensación: si el envío a 1msg falla DESPUÉS de una auto-toma, devuelve el
+ * chat a general para que no quede asignado sin respuesta (y no desaparezca de la
+ * bandeja general sin que nadie lo note). Best-effort.
+ */
+async function liberarToma(conv, agenteId, toma) {
+  try {
+    await sequelize.transaction(async (t) => {
+      await Conversacion.update(
+        { agenteId: null, tomadaEn: null, estado: toma.estadoAnterior || ESTADO_CONVERSACION.NUEVA },
+        { where: { id: conv.id, agenteId }, transaction: t },
+      );
+      if (toma.puseDueno) {
+        await Contacto.update(
+          { agenteDuenoId: null },
+          { where: { id: conv.contactoId, agenteDuenoId: agenteId }, transaction: t },
+        );
+      }
+      await Asignacion.create(
+        { conversacionId: conv.id, deAgenteId: agenteId, aAgenteId: null, tipo: TIPO_ASIGNACION.TOMA_MANUAL, ejecutadoPorId: agenteId, motivo: 'devuelta a general: el envío falló' },
+        { transaction: t },
+      );
+    });
+    conv.agenteId = null;
+    emitirARooms('conversacion:asignada', roomsDeAsignacion(agenteId, null), { conversacionId: conv.id, agenteId: null });
+  } catch (e) {
+    logger.error(`liberarToma conv ${conv.id}: ${e.message}`);
+  }
 }
 
 /** Avisa a las salas que un chat de general pasó a ser de un agente. */
@@ -221,6 +252,7 @@ async function enviar(req, res) {
       enviado = await enviarTexto({ chatId: conv.contacto.waId, texto: textoFinal });
     } catch (err) {
       logger.error(`envío 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
       return res.status(502).json({ error: 'no se pudo enviar', codigo: err.codigo || null });
     }
 
@@ -324,6 +356,7 @@ async function enviarMedia(req, res) {
       });
     } catch (err) {
       logger.error(`envío media 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
       return res.status(502).json({ error: 'no se pudo enviar el archivo', codigo: err.codigo || null });
     }
 
@@ -384,6 +417,7 @@ async function enviarPlantilla(req, res) {
       });
     } catch (err) {
       logger.error(`envío plantilla 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
       return res.status(502).json({ error: 'no se pudo enviar la plantilla', codigo: err.codigo || null });
     }
 
