@@ -2,6 +2,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
+import { useConversaciones } from '../stores/conversaciones';
 import { ventanaAbierta } from '../utils/formato';
 import SelectorPlantilla from './SelectorPlantilla.vue';
 import PanelRespuestas from './PanelRespuestas.vue';
@@ -69,8 +70,10 @@ async function enviarAdj() {
     cancelarAdj();
   } catch (e) {
     errorAdj.value = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.'
+      : e.codigo === 'tomada' ? 'Otro agente ya tomó este chat.'
       : e.codigo === 'audio' ? 'No se pudo procesar el audio.'
       : (e.status === 413 ? 'El archivo supera 16 MB.' : 'No se pudo enviar el archivo.');
+    if (e.codigo === 'tomada') useConversaciones().cargar();
   } finally {
     enviandoAdj.value = false;
   }

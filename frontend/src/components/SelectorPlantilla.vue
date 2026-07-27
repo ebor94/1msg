@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAcciones } from '../stores/acciones';
 import { useChat } from '../stores/chat';
+import { useConversaciones } from '../stores/conversaciones';
 
 const emit = defineEmits(['cerrar']);
 const acc = useAcciones();
@@ -38,7 +39,9 @@ async function enviar() {
     });
     emit('cerrar');
   } catch (e) {
-    error.value = e.codigo ? `No se pudo enviar (${e.codigo}).` : 'No se pudo enviar la plantilla.';
+    error.value = e.codigo === 'tomada' ? 'Otro agente ya tomó este chat.'
+      : e.codigo ? `No se pudo enviar (${e.codigo}).` : 'No se pudo enviar la plantilla.';
+    if (e.codigo === 'tomada') useConversaciones().cargar();
   } finally {
     enviando.value = false;
   }

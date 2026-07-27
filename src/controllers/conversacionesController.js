@@ -16,7 +16,7 @@ const { construirParams, construirParamsHeader, renderizarCuerpo } = require('..
 const { obtenerCatalogo } = require('./plantillasController');
 const { tipoDeAsignacion, roomsDeAsignacion } = require('../services/asignacionManual');
 const { emitir, emitirARooms } = require('../sockets/emisor');
-const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
+const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, TIPO_ASIGNACION, ROL_AGENTE } = require('../config/constants');
 const env = require('../config/env');
 const logger = require('../utils/logger');
 
@@ -145,6 +145,84 @@ async function noLeido(req, res) {
   }
 }
 
+/**
+ * "Responder = tomar". Antes de enviar, si el chat está en general lo toma para
+ * el agente de forma ATÓMICA. Así, si dos agentes responden el mismo chat a la
+ * vez, solo uno gana la propiedad y el otro recibe conflicto (su envío se aborta),
+ * evitando la respuesta doble. Si ya es suyo, no hace nada. Un administrador puede
+ * responder un chat de otro sin quitárselo (supervisión).
+ *
+ * Devuelve { ok, tomada } — ok:false => conflicto (otro agente lo tomó primero).
+ * Muta conv.agenteId en memoria cuando lo toma, para que el emisor apunte bien.
+ */
+async function tomarParaEnvio(conv, reqAgente) {
+  const me = reqAgente.id;
+  if (conv.agenteId === me) return { ok: true, tomada: false };
+  if (conv.agenteId != null) {
+    // De otro agente: solo un admin puede responder sin tomarlo.
+    if (reqAgente.rol === ROL_AGENTE.ADMINISTRADOR) return { ok: true, tomada: false };
+    return { ok: false, tomada: false };
+  }
+  // General: toma atómica (mismo patrón que `tomar`).
+  const estadoAnterior = conv.estado;
+  const res = await sequelize.transaction(async (t) => {
+    const [n] = await Conversacion.update(
+      { agenteId: me, tomadaEn: new Date(), estado: ESTADO_CONVERSACION.ABIERTA },
+      { where: { id: conv.id, agenteId: null }, transaction: t },
+    );
+    if (n === 0) return null;
+    const [dn] = await Contacto.update(
+      { agenteDuenoId: me },
+      { where: { id: conv.contactoId, agenteDuenoId: null }, transaction: t },
+    );
+    await Asignacion.create(
+      { conversacionId: conv.id, deAgenteId: null, aAgenteId: me, tipo: TIPO_ASIGNACION.TOMA_MANUAL, ejecutadoPorId: me, motivo: 'auto-toma al responder' },
+      { transaction: t },
+    );
+    return { puseDueno: dn === 1 };
+  });
+  if (res) { conv.agenteId = me; return { ok: true, tomada: true, puseDueno: res.puseDueno, estadoAnterior }; }
+  // Perdió la carrera: ¿quién quedó de dueño?
+  const fresca = await Conversacion.findByPk(conv.id, { attributes: ['id', 'agenteId'] });
+  if (fresca && fresca.agenteId === me) { conv.agenteId = me; return { ok: true, tomada: false }; }
+  return { ok: false, tomada: false };
+}
+
+/**
+ * Compensación: si el envío a 1msg falla DESPUÉS de una auto-toma, devuelve el
+ * chat a general para que no quede asignado sin respuesta (y no desaparezca de la
+ * bandeja general sin que nadie lo note). Best-effort.
+ */
+async function liberarToma(conv, agenteId, toma) {
+  try {
+    await sequelize.transaction(async (t) => {
+      await Conversacion.update(
+        { agenteId: null, tomadaEn: null, estado: toma.estadoAnterior || ESTADO_CONVERSACION.NUEVA },
+        { where: { id: conv.id, agenteId }, transaction: t },
+      );
+      if (toma.puseDueno) {
+        await Contacto.update(
+          { agenteDuenoId: null },
+          { where: { id: conv.contactoId, agenteDuenoId: agenteId }, transaction: t },
+        );
+      }
+      await Asignacion.create(
+        { conversacionId: conv.id, deAgenteId: agenteId, aAgenteId: null, tipo: TIPO_ASIGNACION.TOMA_MANUAL, ejecutadoPorId: agenteId, motivo: 'devuelta a general: el envío falló' },
+        { transaction: t },
+      );
+    });
+    conv.agenteId = null;
+    emitirARooms('conversacion:asignada', roomsDeAsignacion(agenteId, null), { conversacionId: conv.id, agenteId: null });
+  } catch (e) {
+    logger.error(`liberarToma conv ${conv.id}: ${e.message}`);
+  }
+}
+
+/** Avisa a las salas que un chat de general pasó a ser de un agente. */
+function emitirAutoToma(convId, agenteId) {
+  emitirARooms('conversacion:asignada', roomsDeAsignacion(null, agenteId), { conversacionId: convId, agenteId });
+}
+
 async function enviar(req, res) {
   const texto = (req.body && req.body.texto ? String(req.body.texto) : '').trim();
   if (!texto) return res.status(400).json({ error: 'texto vacío' });
@@ -164,12 +242,17 @@ async function enviar(req, res) {
       return res.status(409).json({ error: 'fuera de la ventana de 24h', codigo: 'fuera_de_ventana' });
     }
 
+    // Responder = tomar (atómico). Si otro agente se adelantó, se aborta el envío.
+    const toma = await tomarParaEnvio(conv, req.agente);
+    if (!toma.ok) return res.status(409).json({ error: 'otro agente ya tomó este chat', codigo: 'tomada' });
+
     const textoFinal = conFirma(agente.firma, texto);
     let enviado;
     try {
       enviado = await enviarTexto({ chatId: conv.contacto.waId, texto: textoFinal });
     } catch (err) {
       logger.error(`envío 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
       return res.status(502).json({ error: 'no se pudo enviar', codigo: err.codigo || null });
     }
 
@@ -193,6 +276,7 @@ async function enviar(req, res) {
       ultimoMensajeDir: DIRECCION.OUT,
     });
 
+    if (toma.tomada) emitirAutoToma(conv.id, req.agente.id);
     const salida = { ...mensaje.toJSON(), enviadoPor: { id: agente.id, nombre: agente.nombre } };
     const destino = { agenteId: conv.agenteId, general: !conv.agenteId };
     emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje: salida });
@@ -256,6 +340,10 @@ async function enviarMedia(req, res) {
     const urlPublica = `${env.publicBaseUrl}/media-publico/${tokenPublico}`;
     const captionFinal = caption ? conFirma(agente.firma, caption) : '';
 
+    // Responder = tomar (atómico) antes de enviar; si otro se adelantó, se aborta.
+    const toma = await tomarParaEnvio(conv, req.agente);
+    if (!toma.ok) return res.status(409).json({ error: 'otro agente ya tomó este chat', codigo: 'tomada' });
+
     let enviado;
     try {
       enviado = await enviarArchivo({
@@ -268,6 +356,7 @@ async function enviarMedia(req, res) {
       });
     } catch (err) {
       logger.error(`envío media 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
       return res.status(502).json({ error: 'no se pudo enviar el archivo', codigo: err.codigo || null });
     }
 
@@ -284,6 +373,7 @@ async function enviarMedia(req, res) {
       },
     });
     await conv.update({ ultimoMensajeEn: ahora, ultimoMensajeTexto: String(desnorm).slice(0, 255), ultimoMensajeDir: DIRECCION.OUT });
+    if (toma.tomada) emitirAutoToma(conv.id, req.agente.id);
     const salida = { ...mensaje.toJSON(), enviadoPor: { id: agente.id, nombre: agente.nombre } };
     emitir('mensaje:nuevo', { agenteId: conv.agenteId, general: !conv.agenteId }, { conversacionId: conv.id, mensaje: salida });
     return res.status(201).json({ mensaje: salida });
@@ -311,6 +401,10 @@ async function enviarPlantilla(req, res) {
     const agente = await Agente.findByPk(req.agente.id);
     if (!agente || !agente.activo) return res.status(403).json({ error: 'agente inactivo' });
 
+    // Responder = tomar (atómico) antes de enviar; si otro se adelantó, se aborta.
+    const toma = await tomarParaEnvio(conv, req.agente);
+    if (!toma.ok) return res.status(409).json({ error: 'otro agente ya tomó este chat', codigo: 'tomada' });
+
     let enviado;
     try {
       const params = [...construirParamsHeader(imagenUrl), ...construirParams(vars)];
@@ -323,6 +417,7 @@ async function enviarPlantilla(req, res) {
       });
     } catch (err) {
       logger.error(`envío plantilla 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
+      if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
       return res.status(502).json({ error: 'no se pudo enviar la plantilla', codigo: err.codigo || null });
     }
 
@@ -355,6 +450,7 @@ async function enviarPlantilla(req, res) {
       ultimoMensajeDir: DIRECCION.OUT,
     });
 
+    if (toma.tomada) emitirAutoToma(conv.id, req.agente.id);
     const salida = { ...mensaje.toJSON(), enviadoPor: { id: agente.id, nombre: agente.nombre } };
     const destino = { agenteId: conv.agenteId, general: !conv.agenteId };
     emitir('mensaje:nuevo', destino, { conversacionId: conv.id, mensaje: salida });

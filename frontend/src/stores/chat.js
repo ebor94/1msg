@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { apiFetch } from '../api/cliente';
 import { useConversaciones } from './conversaciones';
+import { useAuth } from './auth';
 
 export const useChat = defineStore('chat', {
   state: () => ({
@@ -30,6 +31,11 @@ export const useChat = defineStore('chat', {
         if (this.conversacion && this.conversacion.id === convId && !this.mensajes.some((m) => m.id === r.mensaje.id)) {
           this.mensajes.push(r.mensaje);
         }
+        // Enviar con éxito en un chat de general significa que lo acabamos de tomar
+        // (auto-toma): reflejarlo ya, sin esperar el socket, para habilitar Resolver.
+        if (this.conversacion && this.conversacion.id === convId && this.conversacion.agenteId == null) {
+          this.conversacion.agenteId = useAuth().agente?.id ?? null;
+        }
         const item = useConversaciones().items.find((c) => c.id === convId);
         if (item) {
           item.ultimoMensajeTexto = r.mensaje.texto;
@@ -37,7 +43,12 @@ export const useChat = defineStore('chat', {
           item.ultimoMensajeDir = 'out';
         }
       } catch (e) {
-        this.errorEnvio = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.' : 'No se pudo enviar.';
+        if (e.codigo === 'tomada') {
+          this.errorEnvio = 'Otro agente ya tomó este chat.';
+          useConversaciones().cargar(); // sale de general en la lista
+        } else {
+          this.errorEnvio = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.' : 'No se pudo enviar.';
+        }
       } finally {
         this.enviando = false;
       }
