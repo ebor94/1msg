@@ -141,17 +141,21 @@ function onScrollLista(e) {
     <!-- Lista normal (cuando no se está buscando) -->
     <template v-else>
       <div class="flex gap-1 px-2.5 pb-1">
-        <button class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'mias' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('mias')">
-          Míos<span v-if="conv.contadores.mias" class="ml-1 px-1.5 rounded-full text-[10px]" :class="conv.bandeja === 'mias' ? 'bg-white/25' : 'bg-gray-200 text-gray-600'">{{ conv.contadores.mias }}</span>
+        <button class="flex-1 flex flex-col items-center py-1.5 rounded-lg leading-tight" :class="conv.bandeja === 'mias' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('mias')">
+          <span class="text-[13px]">Míos</span>
+          <span class="text-[11px] tabular-nums" :class="conv.bandeja === 'mias' ? 'text-white/75' : 'text-gray-400'">{{ conv.contadores.mias }}</span>
         </button>
-        <button class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'resueltos' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('resueltos')">
-          Resueltos<span v-if="conv.contadores.resueltos" class="ml-1 px-1.5 rounded-full text-[10px]" :class="conv.bandeja === 'resueltos' ? 'bg-white/25' : 'bg-gray-200 text-gray-600'">{{ conv.contadores.resueltos }}</span>
+        <button class="flex-1 flex flex-col items-center py-1.5 rounded-lg leading-tight" :class="conv.bandeja === 'resueltos' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('resueltos')">
+          <span class="text-[13px]">Resueltos</span>
+          <span class="text-[11px] tabular-nums" :class="conv.bandeja === 'resueltos' ? 'text-white/75' : 'text-gray-400'">{{ conv.contadores.resueltos }}</span>
         </button>
-        <button class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'general' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('general')">
-          General<span v-if="conv.contadores.general" class="ml-1 px-1.5 rounded-full text-[10px]" :class="conv.bandeja === 'general' ? 'bg-white/25' : 'bg-amber-100 text-amber-700'">{{ conv.contadores.general }}</span>
+        <button class="flex-1 flex flex-col items-center py-1.5 rounded-lg leading-tight" :class="conv.bandeja === 'general' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('general')">
+          <span class="text-[13px]">General</span>
+          <span class="text-[11px] tabular-nums" :class="conv.bandeja === 'general' ? 'text-white/75' : 'text-amber-600 font-medium'">{{ conv.contadores.general }}</span>
         </button>
-        <button v-if="auth.esAdministrador" class="flex-1 text-sm py-2 rounded-lg" :class="conv.bandeja === 'todos' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('todos')">
-          Todos<span v-if="conv.contadores.todos" class="ml-1 px-1.5 rounded-full text-[10px]" :class="conv.bandeja === 'todos' ? 'bg-white/25' : 'bg-gray-200 text-gray-600'">{{ conv.contadores.todos }}</span>
+        <button v-if="auth.esAdministrador" class="flex-1 flex flex-col items-center py-1.5 rounded-lg leading-tight" :class="conv.bandeja === 'todos' ? 'bg-marca text-white font-semibold' : 'text-gray-600'" @click="conv.cambiarBandeja('todos')">
+          <span class="text-[13px]">Todos</span>
+          <span class="text-[11px] tabular-nums" :class="conv.bandeja === 'todos' ? 'text-white/75' : 'text-gray-400'">{{ conv.contadores.todos }}</span>
         </button>
       </div>
       <div v-if="conv.bandeja === 'todos'" class="px-2.5 pb-1">
