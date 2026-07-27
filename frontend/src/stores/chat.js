@@ -71,6 +71,7 @@ export const useChat = defineStore('chat', {
         await apiFetch(`/conversaciones/${id}/leer`, { method: 'POST' });
         if (!sigueActual()) return;
         this.marcarLeidaEnLista(id);
+        useConversaciones().refrescarContadores(); // no leídos ↓ al abrir
         this.recuperarHistorial(id); // en segundo plano
       } catch (e) {
         if (sigueActual()) this.error = 'No se pudo abrir la conversación.';

@@ -35,6 +35,7 @@ export function conectarSocket() {
     // Entrante de una conversación que NO está en la lista actual (p. ej. un chat
     // resuelto que el cliente reabre, o uno nuevo): recargar para que aparezca.
     if (!item && mensaje.direccion === 'in') useConversaciones().cargar();
+    if (mensaje.direccion === 'in') useConversaciones().refrescarContadores(); // no leídos ↑
     if (!abierta && mensaje.direccion === 'in') useSonido().reproducir();
   });
 

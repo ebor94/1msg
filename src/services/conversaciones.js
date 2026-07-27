@@ -69,14 +69,22 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
  * para administradores.
  */
 async function contarBandejas({ agenteSolicitante }) {
-  const cuenta = (bandeja) => Conversacion.count({ where: construirFiltro({ bandeja, agenteSolicitante }) });
-  const [mias, general, resueltos] = await Promise.all([cuenta('mias'), cuenta('general'), cuenta('resueltos')]);
-  const out = { mias, general, resueltos };
-  // "Todos": solo las activas (nueva/abierta/pendiente), no las resueltas.
-  if (agenteSolicitante.rol === ROL_AGENTE.ADMINISTRADOR) {
-    out.todos = await Conversacion.count({ where: { estado: { [Op.in]: ABIERTAS } } });
-  }
-  return out;
+  const esAdmin = agenteSolicitante.rol === ROL_AGENTE.ADMINISTRADOR;
+  const bandejas = ['mias', 'general', 'resueltos', ...(esAdmin ? ['todos'] : [])];
+  // "Todos" cuenta solo activas; el resto usa el filtro normal de la bandeja.
+  const whereDe = (b) => (b === 'todos' ? { estado: { [Op.in]: ABIERTAS } } : construirFiltro({ bandeja: b, agenteSolicitante }));
+  const cuenta = (where) => Conversacion.count({ where });
+
+  const total = {};
+  const noLeidos = {};
+  await Promise.all(bandejas.flatMap((b) => {
+    const where = whereDe(b);
+    return [
+      cuenta(where).then((n) => { total[b] = n; }),
+      cuenta({ ...where, noLeidos: { [Op.gt]: 0 } }).then((n) => { noLeidos[b] = n; }),
+    ];
+  }));
+  return { ...total, noLeidos };
 }
 
 module.exports = { construirFiltro, puedeVer, listar, contarBandejas };

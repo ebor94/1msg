@@ -167,9 +167,12 @@ function onScrollLista(e) {
       </div>
       <div class="px-2.5 pb-1">
         <button @click="conv.alternarNoLeidos()"
-          class="text-[12px] px-2.5 py-1 rounded-full border"
+          class="text-[12px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1"
           :class="conv.soloNoLeidos ? 'bg-marca text-white border-marca' : 'text-gray-500 border-gray-200'">
           ✉ No leídos
+          <span v-if="conv.contadores.noLeidos[conv.bandeja]"
+            class="px-1.5 rounded-full text-[10px] tabular-nums"
+            :class="conv.soloNoLeidos ? 'bg-white/25' : 'bg-marca text-white'">{{ conv.contadores.noLeidos[conv.bandeja] }}</span>
         </button>
       </div>
       <div class="flex-1 overflow-auto" @scroll="onScrollLista">
