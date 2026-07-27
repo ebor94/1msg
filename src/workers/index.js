@@ -13,6 +13,7 @@
  *   ... --limit=N                          → tamaño del lote de dry-run
  */
 
+const { Op } = require('sequelize');
 const env = require('../config/env');
 const logger = require('../utils/logger');
 const { sequelize, verificarConexion } = require('../config/database');
@@ -40,6 +41,12 @@ async function avisarSocket(ev) {
 const LOTE = 50;
 const INTERVALO_MS = 1000;
 const MAX_INTENTOS = 3;
+
+// Purga de la bitácora: los eventos ya procesados con más de 60 días se borran.
+// wa_eventos_webhook es cola + auditoría cruda; sin purga crece sin límite.
+const RETENCION_DIAS = 60;
+const PURGA_LOTE = 5000; // borra en tandas para no tomar un lock largo
+const PURGA_CADA_MS = 24 * 60 * 60 * 1000; // una vez al día
 
 const dryRun = process.argv.includes('--dry-run');
 const unaVez = process.argv.includes('--once'); // procesa un lote real y sale
@@ -117,6 +124,28 @@ async function correrDryRun() {
   console.log(JSON.stringify(agg, null, 2));
 }
 
+/**
+ * Borra eventos ya procesados con más de RETENCION_DIAS días, en tandas para no
+ * tomar un lock largo. Best-effort: un fallo se loguea y no tumba el worker.
+ */
+async function purgarEventosViejos() {
+  const corte = new Date(Date.now() - RETENCION_DIAS * 24 * 60 * 60 * 1000);
+  try {
+    let total = 0;
+    let n;
+    do {
+      n = await EventoWebhook.destroy({
+        where: { procesado: true, recibidoEn: { [Op.lt]: corte } },
+        limit: PURGA_LOTE,
+      });
+      total += n;
+    } while (n === PURGA_LOTE);
+    if (total > 0) logger.info(`Purga: ${total} eventos webhook >${RETENCION_DIAS}d eliminados.`);
+  } catch (e) {
+    logger.error(`Purga de eventos falló (no crítico): ${e.message}`);
+  }
+}
+
 /** Bucle continuo. */
 async function bucle() {
   logger.info('Worker de ingesta arrancado. Drenando cola...');
@@ -148,13 +177,18 @@ async function bootstrap() {
     await sequelize.close();
     return;
   }
+  const timerPurga = setInterval(purgarEventosViejos, PURGA_CADA_MS);
+  timerPurga.unref(); // no mantener vivo el proceso solo por este timer
   const cerrar = (senal) => {
     logger.info(`${senal} recibido, deteniendo worker...`);
     corriendo = false;
+    clearInterval(timerPurga);
   };
   process.on('SIGTERM', () => cerrar('SIGTERM'));
   process.on('SIGINT', () => cerrar('SIGINT'));
+  await purgarEventosViejos(); // una purga al arrancar
   await bucle();
+  clearInterval(timerPurga);
   await sequelize.close();
 }
 
