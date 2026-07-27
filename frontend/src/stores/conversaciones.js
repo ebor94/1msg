@@ -28,7 +28,9 @@ export const useConversaciones = defineStore('conversaciones', {
     },
     async cargarContadores() {
       try {
-        const c = await apiFetch('/conversaciones/contadores');
+        let url = '/conversaciones/contadores';
+        if (this.bandeja === 'todos' && this.agenteFiltro) url += `?agente=${this.agenteFiltro}`;
+        const c = await apiFetch(url);
         const nl = c.noLeidos || {};
         this.contadores = {
           mias: c.mias || 0, general: c.general || 0, resueltos: c.resueltos || 0, todos: c.todos || 0,
