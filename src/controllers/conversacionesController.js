@@ -32,7 +32,10 @@ async function accesible(req, res) {
 /** GET /api/conversaciones/contadores — cantidad de chats por bandeja (badges). */
 async function contadores(req, res) {
   try {
-    const c = await contarBandejas({ agenteSolicitante: req.agente });
+    const c = await contarBandejas({
+      agenteSolicitante: req.agente,
+      agenteFiltro: req.query.agente ? Number(req.query.agente) : null,
+    });
     return res.json(c);
   } catch (err) {
     logger.error(`contadores bandeja: ${err.message}`);

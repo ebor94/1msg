@@ -68,11 +68,17 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
  * mismos filtros que `listar` (COUNT por bandeja, sin traer filas). `todos` solo
  * para administradores.
  */
-async function contarBandejas({ agenteSolicitante }) {
+async function contarBandejas({ agenteSolicitante, agenteFiltro = null }) {
   const esAdmin = agenteSolicitante.rol === ROL_AGENTE.ADMINISTRADOR;
   const bandejas = ['mias', 'general', 'resueltos', ...(esAdmin ? ['todos'] : [])];
-  // "Todos" cuenta solo activas; el resto usa el filtro normal de la bandeja.
-  const whereDe = (b) => (b === 'todos' ? { estado: { [Op.in]: ABIERTAS } } : construirFiltro({ bandeja: b, agenteSolicitante }));
+  // "Todos" cuenta solo activas (y respeta el filtro por asesor si lo hay); el
+  // resto usa el filtro normal de la bandeja (siempre del agente que consulta).
+  const whereDe = (b) => {
+    if (b !== 'todos') return construirFiltro({ bandeja: b, agenteSolicitante });
+    const w = { estado: { [Op.in]: ABIERTAS } };
+    if (agenteFiltro) w.agenteId = agenteFiltro;
+    return w;
+  };
   const cuenta = (where) => Conversacion.count({ where });
 
   const total = {};
