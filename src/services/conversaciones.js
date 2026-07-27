@@ -72,7 +72,10 @@ async function contarBandejas({ agenteSolicitante }) {
   const cuenta = (bandeja) => Conversacion.count({ where: construirFiltro({ bandeja, agenteSolicitante }) });
   const [mias, general, resueltos] = await Promise.all([cuenta('mias'), cuenta('general'), cuenta('resueltos')]);
   const out = { mias, general, resueltos };
-  if (agenteSolicitante.rol === ROL_AGENTE.ADMINISTRADOR) out.todos = await cuenta('todos');
+  // "Todos": solo las activas (nueva/abierta/pendiente), no las resueltas.
+  if (agenteSolicitante.rol === ROL_AGENTE.ADMINISTRADOR) {
+    out.todos = await Conversacion.count({ where: { estado: { [Op.in]: ABIERTAS } } });
+  }
   return out;
 }
 
