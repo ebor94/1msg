@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { apiFetch } from '../api/cliente';
 
+let contadoresTimer = null; // debounce para refrescos por mensajes entrantes
+
 export const useConversaciones = defineStore('conversaciones', {
   state: () => ({
     bandeja: 'mias',
@@ -12,7 +14,7 @@ export const useConversaciones = defineStore('conversaciones', {
     error: '',
     soloNoLeidos: false,
     agenteFiltro: null,
-    contadores: { mias: 0, general: 0, resueltos: 0, todos: 0 },
+    contadores: { mias: 0, general: 0, resueltos: 0, todos: 0, noLeidos: { mias: 0, general: 0, resueltos: 0, todos: 0 } },
   }),
   getters: {
     hayMas: (s) => s.items.length < s.total,
@@ -27,8 +29,17 @@ export const useConversaciones = defineStore('conversaciones', {
     async cargarContadores() {
       try {
         const c = await apiFetch('/conversaciones/contadores');
-        this.contadores = { mias: c.mias || 0, general: c.general || 0, resueltos: c.resueltos || 0, todos: c.todos || 0 };
+        const nl = c.noLeidos || {};
+        this.contadores = {
+          mias: c.mias || 0, general: c.general || 0, resueltos: c.resueltos || 0, todos: c.todos || 0,
+          noLeidos: { mias: nl.mias || 0, general: nl.general || 0, resueltos: nl.resueltos || 0, todos: nl.todos || 0 },
+        };
       } catch { /* no crítico: los badges no son fuente de verdad */ }
+    },
+    // Refresco con debounce, para ráfagas de mensajes entrantes.
+    refrescarContadores() {
+      clearTimeout(contadoresTimer);
+      contadoresTimer = setTimeout(() => this.cargarContadores(), 400);
     },
     async cargar(bandeja = this.bandeja) {
       this.bandeja = bandeja;
