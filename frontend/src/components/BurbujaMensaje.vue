@@ -34,9 +34,17 @@ async function cargar(reintentos = 1) {
   }
 }
 
-onMounted(() => { if (esMedia.value) cargar(); });
+function onKey(e) {
+  if (ampliada.value && e.key === 'Escape') ampliada.value = false;
+}
+
+onMounted(() => {
+  if (esMedia.value) cargar();
+  window.addEventListener('keydown', onKey);
+});
 onUnmounted(() => {
   vivo = false;
+  window.removeEventListener('keydown', onKey);
   if (reintentoId) clearTimeout(reintentoId);
   if (media.value?.url) URL.revokeObjectURL(media.value.url);
 });
@@ -75,8 +83,23 @@ onUnmounted(() => {
       </span>
     </div>
 
-    <div v-if="ampliada" class="fixed inset-0 bg-black/80 grid place-items-center z-50 p-4" @click="ampliada = false">
-      <img :src="media.url" class="max-w-full max-h-full rounded" alt="" />
-    </div>
+    <Teleport to="body">
+      <div v-if="ampliada" class="fixed inset-0 z-[100] bg-black/85 overflow-auto" @click="ampliada = false">
+        <!-- Barra superior fija: descargar / cerrar -->
+        <div class="sticky top-0 flex items-center justify-end gap-4 px-4 py-3">
+          <a :href="media.url" :download="media.filename || 'imagen'" @click.stop
+            class="text-white/90 hover:text-white text-[13px] flex items-center gap-1" title="Descargar">
+            <span class="text-base">⬇</span> Descargar
+          </a>
+          <button @click.stop="ampliada = false" title="Cerrar (Esc)"
+            class="text-white/90 hover:text-white text-2xl leading-none w-9 h-9 grid place-items-center rounded-full hover:bg-white/10">✕</button>
+        </div>
+        <!-- La imagen se ajusta a pantalla; si es más grande, el contenedor hace scroll -->
+        <div class="min-h-[calc(100%-3.5rem)] flex items-center justify-center px-4 pb-6">
+          <img :src="media.url" @click.stop
+            class="max-w-full max-h-[85vh] object-contain rounded shadow-lg" alt="" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
