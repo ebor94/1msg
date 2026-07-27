@@ -39,6 +39,7 @@ router.post('/auth/login', limiteLogin, authCtrl.login);
 router.get('/auth/me', requireAuth, authCtrl.me);
 
 router.get('/conversaciones', requireAuth, convCtrl.listarHandler);
+router.get('/conversaciones/contadores', requireAuth, convCtrl.contadores);
 router.get('/conversaciones/:id/mensajes', requireAuth, convCtrl.mensajes);
 router.post('/conversaciones/:id/mensajes', requireAuth, convCtrl.enviar);
 router.post('/conversaciones/:id/media', requireAuth, subirUno, convCtrl.enviarMedia);

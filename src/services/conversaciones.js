@@ -63,4 +63,17 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
   return { total: count, pagina, conversaciones: rows };
 }
 
-module.exports = { construirFiltro, puedeVer, listar };
+/**
+ * Cuenta los chats de cada bandeja para los badges de las pestañas. Usa los
+ * mismos filtros que `listar` (COUNT por bandeja, sin traer filas). `todos` solo
+ * para administradores.
+ */
+async function contarBandejas({ agenteSolicitante }) {
+  const cuenta = (bandeja) => Conversacion.count({ where: construirFiltro({ bandeja, agenteSolicitante }) });
+  const [mias, general, resueltos] = await Promise.all([cuenta('mias'), cuenta('general'), cuenta('resueltos')]);
+  const out = { mias, general, resueltos };
+  if (agenteSolicitante.rol === ROL_AGENTE.ADMINISTRADOR) out.todos = await cuenta('todos');
+  return out;
+}
+
+module.exports = { construirFiltro, puedeVer, listar, contarBandejas };

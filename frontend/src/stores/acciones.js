@@ -118,6 +118,7 @@ export const useAcciones = defineStore('acciones', {
         const i = conv.items.findIndex((c) => c.id === convId);
         if (i !== -1) conv.items.splice(i, 1);
       }
+      conv.cargarContadores(); // Míos baja, Resueltos sube
     },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {

@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Conversacion, Mensaje, Contacto, Agente, Asignacion, NotaInterna } = require('../models');
-const { listar, puedeVer } = require('../services/conversaciones');
+const { listar, puedeVer, contarBandejas } = require('../services/conversaciones');
 const { recuperarHistorial } = require('../services/backfill');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
@@ -27,6 +27,17 @@ async function accesible(req, res) {
   if (!conv) { res.status(404).json({ error: 'no encontrada' }); return null; }
   if (!puedeVer(req.agente, conv)) { res.status(403).json({ error: 'sin acceso' }); return null; }
   return conv;
+}
+
+/** GET /api/conversaciones/contadores — cantidad de chats por bandeja (badges). */
+async function contadores(req, res) {
+  try {
+    const c = await contarBandejas({ agenteSolicitante: req.agente });
+    return res.json(c);
+  } catch (err) {
+    logger.error(`contadores bandeja: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
 }
 
 async function listarHandler(req, res) {
@@ -603,4 +614,4 @@ async function asignaciones(req, res) {
   }
 }
 
-module.exports = { listarHandler, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };
+module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };
