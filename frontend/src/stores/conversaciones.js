@@ -12,6 +12,7 @@ export const useConversaciones = defineStore('conversaciones', {
     error: '',
     soloNoLeidos: false,
     agenteFiltro: null,
+    contadores: { mias: 0, general: 0, resueltos: 0, todos: 0 },
   }),
   getters: {
     hayMas: (s) => s.items.length < s.total,
@@ -23,12 +24,19 @@ export const useConversaciones = defineStore('conversaciones', {
       if (this.bandeja === 'todos' && this.agenteFiltro) url += `&agente=${this.agenteFiltro}`;
       return url;
     },
+    async cargarContadores() {
+      try {
+        const c = await apiFetch('/conversaciones/contadores');
+        this.contadores = { mias: c.mias || 0, general: c.general || 0, resueltos: c.resueltos || 0, todos: c.todos || 0 };
+      } catch { /* no crítico: los badges no son fuente de verdad */ }
+    },
     async cargar(bandeja = this.bandeja) {
       this.bandeja = bandeja;
       this.cargando = true;
       this.error = '';
       this.pagina = 0;
       this.cargandoMas = false; // una carga fresh reinicia también el estado de "cargar más"
+      this.cargarContadores(); // en paralelo, no bloquea la lista
       try {
         const r = await apiFetch(this._url(0));
         this.items = r.conversaciones;
