@@ -37,7 +37,12 @@ export const useChat = defineStore('chat', {
           item.ultimoMensajeDir = 'out';
         }
       } catch (e) {
-        this.errorEnvio = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.' : 'No se pudo enviar.';
+        if (e.codigo === 'tomada') {
+          this.errorEnvio = 'Otro agente ya tomó este chat.';
+          useConversaciones().cargar(); // sale de general en la lista
+        } else {
+          this.errorEnvio = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.' : 'No se pudo enviar.';
+        }
       } finally {
         this.enviando = false;
       }
