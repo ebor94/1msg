@@ -8,7 +8,7 @@ const { recuperarHistorial } = require('../services/backfill');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
 const { enviarArchivo } = require('../integrations/onemsg/media');
-const { ventanaAbierta, conFirma } = require('../services/envio');
+const { ventanaAbierta } = require('../services/envio');
 const { guardarBufferComoMedia, categoriaMedia } = require('../services/media');
 const { transcodificarAOgg } = require('../services/audio');
 const { registrar } = require('../services/mediaPublica');
@@ -260,7 +260,9 @@ async function enviar(req, res) {
     const toma = await tomarParaEnvio(conv, req.agente);
     if (!toma.ok) return res.status(409).json({ error: 'otro agente ya tomó este chat', codigo: 'tomada' });
 
-    const textoFinal = conFirma(agente.firma, texto);
+    // Sin prefijo de firma: confundía a los clientes (leían "Nombre |" como si
+    // los llamaran así). El autor se sabe internamente por enviado_por_id.
+    const textoFinal = texto;
     let enviado;
     try {
       enviado = await enviarTexto({ chatId: conv.contacto.waId, texto: textoFinal });
@@ -352,7 +354,7 @@ async function enviarMedia(req, res) {
     });
     const tokenPublico = registrar(guardado.mediaRuta, guardado.mediaMime);
     const urlPublica = `${env.publicBaseUrl}/media-publico/${tokenPublico}`;
-    const captionFinal = caption ? conFirma(agente.firma, caption) : '';
+    const captionFinal = caption || ''; // sin prefijo de firma (ver enviar)
 
     // Responder = tomar (atómico) antes de enviar; si otro se adelantó, se aborta.
     const toma = await tomarParaEnvio(conv, req.agente);
