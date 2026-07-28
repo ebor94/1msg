@@ -60,6 +60,10 @@ const env = Object.freeze({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: entero('PORT', 3000),
 
+  // Agente de "recepción": los chats entrantes SIN dueño caen a él (y él reparte).
+  // 0 = deshabilitado (vuelven a la bandeja general, comportamiento anterior).
+  agenteRecepcionId: entero('AGENTE_RECEPCION_ID', 4),
+
   db: Object.freeze({
     host: process.env.DB_HOST,
     port: entero('DB_PORT', 3306),
