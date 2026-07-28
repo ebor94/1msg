@@ -2,7 +2,7 @@
 const { Router } = require('express');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
-const { requireAuth } = require('../middlewares/auth');
+const { requireAuth, requireAdmin } = require('../middlewares/auth');
 const { obtenerIpCliente } = require('../utils/ipCliente');
 const authCtrl = require('../controllers/authController');
 const convCtrl = require('../controllers/conversacionesController');
@@ -54,6 +54,7 @@ router.get('/conversaciones/:id/asignaciones', requireAuth, convCtrl.asignacione
 router.get('/conversaciones/:id/notas', requireAuth, convCtrl.listarNotas);
 router.post('/conversaciones/:id/notas', requireAuth, convCtrl.agregarNota);
 router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
+router.get('/agentes/totales', requireAuth, requireAdmin, agentesCtrl.totales);
 router.get('/agentes', requireAuth, agentesCtrl.listar);
 router.get('/contactos/buscar', requireAuth, contactosCtrl.buscar);
 router.post('/contactos', requireAuth, contactosCtrl.crear);
