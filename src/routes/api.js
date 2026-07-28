@@ -23,13 +23,16 @@ function subirUno(req, res, next) {
   });
 }
 
-// Máximo 10 intentos de login por (IP + usuario) cada 15 minutos: frena la fuerza
-// bruta por cuenta sin bloquear a toda una oficina que comparte una IP pública (NAT).
+// Máximo 20 intentos FALLIDOS de login por (IP + usuario) cada 15 minutos: frena la
+// fuerza bruta por cuenta sin bloquear a una oficina que comparte IP pública (NAT).
+// skipSuccessfulRequests: un login correcto NO gasta cupo — así un usuario que entra
+// varias veces (o forcejea con su clave y al final la acierta) no queda bloqueado.
 const limiteLogin = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   keyGenerator: (req) => `${obtenerIpCliente(req)}:${(req.body && req.body.usuario) || ''}`,
   message: { error: 'demasiados intentos, espera unos minutos' },
 });
