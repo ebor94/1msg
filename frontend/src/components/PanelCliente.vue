@@ -111,9 +111,14 @@ function formatoValor(v) {
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString('es-CO');
   return String(v);
 }
-// Columnas de la tabla (oculta `concepto_desc`: se muestra dentro de la celda de concepto).
+// Campos que no se muestran en la tabla (auxiliares + ocultos por pedido).
+const CAMPOS_OCULTOS = new Set([
+  'concepto_desc', // auxiliar: se muestra dentro de la celda de concepto
+  'anexo_plan', 'procesado_plan', 'fech_ini_plan', 'fech_gestion_plan',
+  'estado_plan', 'tipo_plan', 'acuerdo_pago_plan',
+]);
 const columnas = computed(() => (prev.value.planes && prev.value.planes.length)
-  ? Object.keys(prev.value.planes[0]).filter((k) => k !== 'concepto_desc')
+  ? Object.keys(prev.value.planes[0]).filter((k) => !CAMPOS_OCULTOS.has(k))
   : []);
 // Valor de celda: para concepto_plan muestra la descripción (id → nom_con) si existe.
 function celda(p, k) {
