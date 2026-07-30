@@ -244,7 +244,8 @@ function celda(p, k) {
                 <tr v-for="p in prev.planes" :key="p.num_plan"
                   class="border-b border-gray-100 hover:bg-gray-50"
                   :class="p.num_plan === planSel.num_plan ? 'bg-marca/10' : ''">
-                  <td v-for="k in columnas" :key="k" class="px-2 py-1 whitespace-nowrap text-gray-800">{{ celda(p, k) }}</td>
+                  <td v-for="k in columnas" :key="k" class="px-2 py-1 text-gray-800 align-top"
+                    :class="k === 'novedad_plan' ? 'whitespace-normal min-w-[260px] max-w-[380px]' : 'whitespace-nowrap'">{{ celda(p, k) }}</td>
                 </tr>
               </tbody>
             </table>
