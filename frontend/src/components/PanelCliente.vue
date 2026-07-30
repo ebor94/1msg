@@ -111,6 +111,8 @@ function formatoValor(v) {
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString('es-CO');
   return String(v);
 }
+// Columnas de la tabla (a partir del primer plan; todos tienen los mismos campos).
+const columnas = computed(() => (prev.value.planes && prev.value.planes.length) ? Object.keys(prev.value.planes[0]) : []);
 </script>
 
 <template>
@@ -210,20 +212,26 @@ function formatoValor(v) {
       </div>
     </div>
 
-    <!-- Popup detalle del plan -->
+    <!-- Popup: planes en tabla a lo ancho (con scroll horizontal) -->
     <Teleport to="body">
       <div v-if="planSel" class="fixed inset-0 bg-black/40 grid place-items-center z-[100] p-4" @click.self="planSel = null">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[85vh] flex flex-col">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-[95vw] max-h-[85vh] flex flex-col">
           <div class="flex items-center justify-between px-4 py-3 border-b">
-            <b class="text-gray-800">Plan {{ planSel.num_plan }}</b>
+            <b class="text-gray-800">Previsión — {{ prev.planes?.length }} plan(es)</b>
             <button class="text-gray-400 hover:text-gray-700 text-xl leading-none" @click="planSel = null">✕</button>
           </div>
           <div class="overflow-auto p-3">
-            <table class="w-full text-[12.5px]">
+            <table class="text-[12px] border-collapse min-w-max">
+              <thead>
+                <tr class="text-left text-gray-500 bg-gray-50">
+                  <th v-for="k in columnas" :key="k" class="px-2 py-1.5 border-b border-gray-200 whitespace-nowrap font-medium">{{ etiquetaCampo(k) }}</th>
+                </tr>
+              </thead>
               <tbody>
-                <tr v-for="(v, k) in planSel" :key="k" class="border-b border-gray-50">
-                  <td class="py-1 pr-3 text-gray-400 align-top whitespace-nowrap">{{ etiquetaCampo(k) }}</td>
-                  <td class="py-1 text-gray-800 break-words">{{ formatoValor(v) }}</td>
+                <tr v-for="p in prev.planes" :key="p.num_plan"
+                  class="border-b border-gray-100 hover:bg-gray-50"
+                  :class="p.num_plan === planSel.num_plan ? 'bg-marca/10' : ''">
+                  <td v-for="k in columnas" :key="k" class="px-2 py-1 whitespace-nowrap text-gray-800">{{ formatoValor(p[k]) }}</td>
                 </tr>
               </tbody>
             </table>
