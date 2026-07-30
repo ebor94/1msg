@@ -111,8 +111,15 @@ function formatoValor(v) {
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString('es-CO');
   return String(v);
 }
-// Columnas de la tabla (a partir del primer plan; todos tienen los mismos campos).
-const columnas = computed(() => (prev.value.planes && prev.value.planes.length) ? Object.keys(prev.value.planes[0]) : []);
+// Columnas de la tabla (oculta `concepto_desc`: se muestra dentro de la celda de concepto).
+const columnas = computed(() => (prev.value.planes && prev.value.planes.length)
+  ? Object.keys(prev.value.planes[0]).filter((k) => k !== 'concepto_desc')
+  : []);
+// Valor de celda: para concepto_plan muestra la descripción (id → nom_con) si existe.
+function celda(p, k) {
+  if (k === 'concepto_plan' && p.concepto_desc) return p.concepto_desc;
+  return formatoValor(p[k]);
+}
 </script>
 
 <template>
@@ -231,7 +238,7 @@ const columnas = computed(() => (prev.value.planes && prev.value.planes.length) 
                 <tr v-for="p in prev.planes" :key="p.num_plan"
                   class="border-b border-gray-100 hover:bg-gray-50"
                   :class="p.num_plan === planSel.num_plan ? 'bg-marca/10' : ''">
-                  <td v-for="k in columnas" :key="k" class="px-2 py-1 whitespace-nowrap text-gray-800">{{ formatoValor(p[k]) }}</td>
+                  <td v-for="k in columnas" :key="k" class="px-2 py-1 whitespace-nowrap text-gray-800">{{ celda(p, k) }}</td>
                 </tr>
               </tbody>
             </table>

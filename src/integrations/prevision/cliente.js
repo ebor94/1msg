@@ -43,7 +43,14 @@ async function consultarPlanesPorDocumento(documento) {
   }
   const doc = String(documento || '').replace(/\D/g, '');
   if (!doc) return [];
-  const [rows] = await p.query('SELECT * FROM plan WHERE ced_pagador = ?', [doc]);
+  // JOIN con `concepto` para traer la descripción (concepto_plan es un id → nom_con).
+  const [rows] = await p.query(
+    `SELECT p.*, c.nom_con AS concepto_desc
+       FROM plan p
+       LEFT JOIN concepto c ON c.cod_con = p.concepto_plan
+      WHERE p.ced_pagador = ?`,
+    [doc],
+  );
   return rows;
 }
 
