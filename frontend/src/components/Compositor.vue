@@ -13,6 +13,8 @@ const texto = ref('');
 const mostrarSelector = ref(false);
 const mostrarRespuestas = ref(false);
 const abierta = computed(() => ventanaAbierta(chat.conversacion?.ventanaExpiraEn));
+// Contacto con número oculto por privacidad de WhatsApp (@lid): no se le puede responder.
+const esLid = computed(() => /@lid$/i.test(chat.conversacion?.contacto?.waId || ''));
 
 function insertarRespuesta(t) {
   texto.value = texto.value.trim() ? `${texto.value.trim()} ${t}` : t;
@@ -144,6 +146,12 @@ async function enviar() {
 
 <template>
   <div class="bg-[#f0f2f5] border-t border-gray-200 p-2.5">
+    <!-- Contacto @lid: número oculto por privacidad, no se puede responder -->
+    <div v-if="esLid" class="text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded py-2 px-3 text-center">
+      ⚠️ Este contacto tiene el número <b>oculto por privacidad</b> de WhatsApp (@lid).
+      No se le puede responder desde aquí — los envíos fallan.
+    </div>
+    <template v-else>
     <!-- Preview de adjunto (archivo o nota de voz) -->
     <div v-if="adjunto" class="bg-white rounded-lg p-2 mb-2 shadow-sm">
       <div v-if="esVoz" class="flex items-center gap-2">
@@ -196,5 +204,6 @@ async function enviar() {
     <div v-if="chat.errorEnvio" class="text-center text-[12px] text-red-600 mt-1">{{ chat.errorEnvio }}</div>
     <SelectorPlantilla v-if="mostrarSelector" @cerrar="mostrarSelector = false" />
     <PanelRespuestas v-if="mostrarRespuestas" @elegir="insertarRespuesta" @cerrar="mostrarRespuestas = false" />
+    </template>
   </div>
 </template>
