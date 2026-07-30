@@ -58,6 +58,13 @@ async function elegir(r) {
   }
 }
 
+// Admin: abrir el chat de otro agente SOLO para leer (sin tomarlo).
+function soloVisualizar() {
+  const r = porConfirmar.value;
+  if (r?.conversacion) chat.abrir(r.conversacion);
+  limpiar();
+}
+
 async function confirmarToma() {
   const r = porConfirmar.value;
   porConfirmar.value = null;
@@ -190,8 +197,10 @@ function onScrollLista(e) {
         <p class="text-[13px] text-gray-700 mb-3">
           Este chat lo atiende <b>{{ porConfirmar.agenteActualNombre || 'otro agente' }}</b>. ¿Tomarlo?
         </p>
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-end gap-2 flex-wrap">
           <button class="text-[13px] text-gray-500 px-3 py-1.5" @click="porConfirmar = null">Cancelar</button>
+          <button v-if="auth.esAdministrador && porConfirmar.conversacionId"
+            class="text-[13px] text-marca-oscuro border border-marca rounded-lg px-3 py-1.5 font-semibold" @click="soloVisualizar">Solo visualizar</button>
           <button class="text-[13px] bg-marca text-white rounded-lg px-3 py-1.5 font-semibold" @click="confirmarToma">Tomarlo</button>
         </div>
       </div>
