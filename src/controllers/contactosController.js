@@ -6,6 +6,7 @@ const env = require('../config/env');
 const { ESTADO_CONVERSACION, ORIGEN_CONVERSACION, TIPO_ASIGNACION } = require('../config/constants');
 const logger = require('../utils/logger');
 const { construirResultado } = require('../services/busquedaContactos');
+const { consultarPlanesPorDocumento } = require('../integrations/prevision/cliente');
 
 function soloDigitos(s) {
   return String(s || '').replace(/\D/g, '');
@@ -223,6 +224,38 @@ async function abrir(req, res) {
   }
 }
 
+/**
+ * GET /api/contactos/:id/prevision — consulta los planes de previsión del cliente
+ * en la BD externa `olivosct`, por su documento. Usa el `documento` del contacto;
+ * si no lo tiene, acepta uno por query (`?documento=`) y lo guarda para la próxima.
+ * Si no hay documento por ningún lado → { codigo: 'sin_documento' } (la UI lo pide).
+ */
+async function prevision(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  try {
+    const contacto = await Contacto.findByPk(id);
+    if (!contacto) return res.status(404).json({ error: 'contacto no encontrado' });
+
+    const provisto = req.query.documento ? soloDigitos(req.query.documento) : '';
+    const guardado = contacto.documento ? soloDigitos(contacto.documento) : '';
+    const doc = provisto || guardado;
+    if (!doc) return res.json({ codigo: 'sin_documento' });
+
+    // Si vino un documento por query y el contacto no tenía, lo guardamos.
+    if (provisto && !guardado) {
+      await contacto.update({ documento: provisto.slice(0, 20) });
+    }
+
+    const planes = await consultarPlanesPorDocumento(doc);
+    return res.json({ documento: doc, planes });
+  } catch (err) {
+    logger.error(`prevision contacto ${id}: ${err.message}`);
+    if (err.codigo === 'no_configurado') return res.status(503).json({ error: 'previsión no configurada', codigo: 'no_configurado' });
+    return res.status(502).json({ error: 'no se pudo consultar la previsión' });
+  }
+}
+
 /** Normaliza el nombre editable: trim, máx 120, vacío → null. */
 function normalizarNombre(s) {
   const t = String(s == null ? '' : s).trim().slice(0, 120);
@@ -253,4 +286,4 @@ async function actualizar(req, res) {
   }
 }
 
-module.exports = { crear, buscar, abrir, actualizar };
+module.exports = { crear, buscar, abrir, actualizar, prevision };
