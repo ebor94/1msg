@@ -116,6 +116,7 @@ const CAMPOS_OCULTOS = new Set([
   'concepto_desc', // auxiliar: se muestra dentro de la celda de concepto
   'anexo_plan', 'procesado_plan', 'fech_ini_plan', 'fech_gestion_plan',
   'estado_plan', 'tipo_plan', 'acuerdo_pago_plan',
+  'ced_cobrador', 'meta_plan',
 ]);
 const columnas = computed(() => (prev.value.planes && prev.value.planes.length)
   ? Object.keys(prev.value.planes[0]).filter((k) => !CAMPOS_OCULTOS.has(k))
