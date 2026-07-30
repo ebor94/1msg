@@ -98,6 +98,16 @@ const env = Object.freeze({
     level: process.env.LOG_LEVEL || 'info',
     dir: ruta('LOG_DIR', './logs'),
   }),
+
+  // BD externa de previsión (olivosct, solo lectura). Opcional: si no se
+  // configura, el endpoint responde "no configurado" sin tumbar la app.
+  prevision: Object.freeze({
+    host: process.env.PREVISION_DB_HOST || '',
+    port: entero('PREVISION_DB_PORT', 3306),
+    user: process.env.PREVISION_DB_USER || '',
+    password: process.env.PREVISION_DB_PASSWORD || '',
+    database: process.env.PREVISION_DB_NAME || '',
+  }),
 });
 
 module.exports = env;

@@ -64,6 +64,53 @@ async function guardarNombre() {
     guardandoNombre.value = false;
   }
 }
+
+// --- Previsión (consulta a la BD externa olivosct por documento) ---
+const prev = ref({ cargando: false, error: '', planes: null, pidiendoDoc: false });
+const docInput = ref('');
+const planSel = ref(null); // plan mostrado en el popup
+
+// Reiniciar al cambiar de contacto.
+watch(() => c.value?.id, () => {
+  prev.value = { cargando: false, error: '', planes: null, pidiendoDoc: false };
+  docInput.value = '';
+  planSel.value = null;
+});
+
+async function consultarPrevision(docOpcional) {
+  if (!c.value?.contacto?.id) return;
+  prev.value.cargando = true;
+  prev.value.error = '';
+  try {
+    const r = await acc.consultarPrevision(c.value.contacto.id, docOpcional);
+    if (r.codigo === 'sin_documento') {
+      prev.value.pidiendoDoc = true;
+      prev.value.planes = null;
+    } else {
+      prev.value.pidiendoDoc = false;
+      prev.value.planes = r.planes || [];
+    }
+  } catch (e) {
+    prev.value.error = e.codigo === 'no_configurado'
+      ? 'La consulta de previsión no está configurada.'
+      : 'No se pudo consultar la previsión.';
+  } finally {
+    prev.value.cargando = false;
+  }
+}
+function enviarDocumento() {
+  const d = docInput.value.replace(/\D/g, '');
+  if (d) consultarPrevision(d);
+}
+
+function etiquetaCampo(k) {
+  return String(k).replace(/_/g, ' ').replace(/\bplan\b/gi, '').trim().replace(/^\w/, (m) => m.toUpperCase());
+}
+function formatoValor(v) {
+  if (v == null || v === '') return '—';
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString('es-CO');
+  return String(v);
+}
 </script>
 
 <template>
@@ -99,6 +146,38 @@ async function guardarNombre() {
         <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
       </select>
     </div>
+
+    <!-- Previsión -->
+    <div class="mt-4">
+      <button @click="consultarPrevision()" :disabled="prev.cargando"
+        class="w-full border border-marca text-marca-oscuro rounded-lg py-2 text-sm font-semibold hover:bg-marca/5 disabled:opacity-60">
+        {{ prev.cargando ? 'Consultando…' : '🔎 Consultar previsión' }}
+      </button>
+      <p v-if="prev.error" class="text-[12px] text-red-600 text-center mt-1">{{ prev.error }}</p>
+
+      <!-- Pedir documento si el contacto no lo tiene -->
+      <div v-if="prev.pidiendoDoc" class="mt-2 bg-amber-50 border border-amber-100 rounded p-2">
+        <div class="text-[12px] text-gray-600 mb-1">Este contacto no tiene documento. Ingrésalo:</div>
+        <div class="flex gap-1">
+          <input v-model="docInput" @keydown.enter="enviarDocumento" placeholder="Cédula del pagador"
+            inputmode="numeric" class="flex-1 border rounded px-2 py-1 text-[12px]" />
+          <button @click="enviarDocumento" class="bg-marca text-white rounded px-2.5 text-[12px] font-semibold">Consultar</button>
+        </div>
+      </div>
+
+      <!-- Lista de planes -->
+      <div v-if="prev.planes" class="mt-2">
+        <div v-if="!prev.planes.length" class="text-[12px] text-gray-400">Sin planes para este documento.</div>
+        <template v-else>
+          <div class="text-[11px] text-gray-400 uppercase mb-1">Planes ({{ prev.planes.length }})</div>
+          <button v-for="p in prev.planes" :key="p.num_plan" @click="planSel = p"
+            class="w-full text-left border rounded px-2 py-1.5 text-[12.5px] hover:bg-gray-50 flex justify-between items-center mb-1">
+            <span>Plan <b>{{ p.num_plan }}</b></span>
+            <span class="text-gray-400 text-[11px]">ver ›</span>
+          </button>
+        </template>
+      </div>
+    </div>
     <!-- Notas internas: justo después de la asignación -->
     <div class="mt-4">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Notas internas</div>
@@ -130,5 +209,27 @@ async function guardarNombre() {
         </div>
       </div>
     </div>
+
+    <!-- Popup detalle del plan -->
+    <Teleport to="body">
+      <div v-if="planSel" class="fixed inset-0 bg-black/40 grid place-items-center z-[100] p-4" @click.self="planSel = null">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[85vh] flex flex-col">
+          <div class="flex items-center justify-between px-4 py-3 border-b">
+            <b class="text-gray-800">Plan {{ planSel.num_plan }}</b>
+            <button class="text-gray-400 hover:text-gray-700 text-xl leading-none" @click="planSel = null">✕</button>
+          </div>
+          <div class="overflow-auto p-3">
+            <table class="w-full text-[12.5px]">
+              <tbody>
+                <tr v-for="(v, k) in planSel" :key="k" class="border-b border-gray-50">
+                  <td class="py-1 pr-3 text-gray-400 align-top whitespace-nowrap">{{ etiquetaCampo(k) }}</td>
+                  <td class="py-1 text-gray-800 break-words">{{ formatoValor(v) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

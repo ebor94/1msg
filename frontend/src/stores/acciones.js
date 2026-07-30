@@ -15,6 +15,10 @@ export const useAcciones = defineStore('acciones', {
     async cargarTotalesAgentes() {
       return (await apiFetch('/agentes/totales')).agentes;
     },
+    async consultarPrevision(contactoId, documento) {
+      const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
+      return apiFetch(`/contactos/${contactoId}/prevision${q}`);
+    },
     async cargarPlantillas() {
       try { this.plantillas = (await apiFetch('/plantillas')).plantillas; } catch { this.plantillas = []; }
     },
