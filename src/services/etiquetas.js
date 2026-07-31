@@ -42,8 +42,9 @@ async function etiquetarConversacion(convId, etiquetaId, agenteId) {
       await sequelize.query(
         `DELETE ce FROM wa_conversacion_etiqueta ce
            JOIN wa_etiquetas e ON e.id = ce.etiqueta_id
-          WHERE ce.conversacion_id = :conv AND e.categoria = 'origen'`,
-        { replacements: { conv: convId }, transaction: tx },
+          WHERE ce.conversacion_id = :conv AND e.categoria = 'origen'
+            AND ce.etiqueta_id <> :etiquetaId`,
+        { replacements: { conv: convId, etiquetaId }, transaction: tx },
       );
     }
     await ConversacionEtiqueta.findOrCreate({

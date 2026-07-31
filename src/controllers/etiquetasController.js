@@ -43,6 +43,7 @@ async function crear(req, res) {
     return res.status(201).json({ etiqueta: etq });
   } catch (err) {
     if (err.status === 422) return res.status(422).json({ error: err.message });
+    if (err.name === 'SequelizeUniqueConstraintError') return res.status(409).json({ error: 'ya existe una etiqueta con ese nombre' });
     logger.error(`crear etiqueta: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
