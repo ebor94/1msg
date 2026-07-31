@@ -90,7 +90,8 @@ async function consultarMantenimientos(documento) {
   try {
     const pool = await p;
     const r = await pool.request().input('cedula', sql.VarChar, doc).query(QUERY);
-    return r.recordset || [];
+    // Solo contratos que NO estén VENCIDO (se muestran VIGENTE, en gracia y FUTURO).
+    return (r.recordset || []).filter((x) => x.estado_vigencia !== 'VENCIDO');
   } catch (err) {
     logger.error(`consultar mantenimientos (tercero ${doc}): ${err.message}`);
     throw err;
