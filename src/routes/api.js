@@ -11,6 +11,7 @@ const contactosCtrl = require('../controllers/contactosController');
 const plantillasCtrl = require('../controllers/plantillasController');
 const mediaCtrl = require('../controllers/mediaController');
 const respuestasCtrl = require('../controllers/respuestasController');
+const etiquetasCtrl = require('../controllers/etiquetasController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -74,5 +75,9 @@ router.get('/respuestas', requireAuth, respuestasCtrl.listar);
 router.post('/respuestas', requireAuth, respuestasCtrl.crear);
 router.patch('/respuestas/:id', requireAuth, respuestasCtrl.actualizar);
 router.delete('/respuestas/:id', requireAuth, respuestasCtrl.eliminar);
+router.get('/etiquetas', requireAuth, etiquetasCtrl.listar);
+router.get('/etiquetas/estadisticas', requireAuth, requireAdmin, etiquetasCtrl.estadisticas);
+router.post('/etiquetas', requireAuth, requireAdmin, etiquetasCtrl.crear);
+router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualizar);
 
 module.exports = router;

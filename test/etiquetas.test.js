@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { agruparCatalogo, CATEGORIAS } = require('../src/services/etiquetas');
+const { agruparCatalogo, CATEGORIAS, normalizarRango, validarNuevaEtiqueta } = require('../src/services/etiquetas');
 
 test('CATEGORIAS expone origen e interes', () => {
   assert.equal(CATEGORIAS.ORIGEN, 'origen');
@@ -22,4 +22,35 @@ test('agruparCatalogo separa por categoria y ordena por orden y luego nombre', (
 
 test('agruparCatalogo con lista vacía devuelve grupos vacíos', () => {
   assert.deepEqual(agruparCatalogo([]), { origen: [], interes: [] });
+});
+
+test('normalizarRango: rango válido, hastaExclusivo = hasta + 1 día', () => {
+  const r = normalizarRango('2026-07-01', '2026-07-31');
+  assert.equal(r.desde.toISOString().slice(0, 10), '2026-07-01');
+  assert.equal(r.hastaExclusivo.toISOString().slice(0, 10), '2026-08-01');
+});
+
+test('normalizarRango: desde > hasta lanza 400', () => {
+  assert.throws(() => normalizarRango('2026-08-01', '2026-07-01'), (e) => e.status === 400);
+});
+
+test('normalizarRango: fecha inválida lanza 400', () => {
+  assert.throws(() => normalizarRango('no-fecha', '2026-07-01'), (e) => e.status === 400);
+});
+
+test('validarNuevaEtiqueta: normaliza y aplica color por defecto', () => {
+  const r = validarNuevaEtiqueta({ nombre: '  Web  ', categoria: 'origen' });
+  assert.deepEqual(r, { nombre: 'Web', categoria: 'origen', color: '#888780' });
+});
+
+test('validarNuevaEtiqueta: categoría inválida lanza 422', () => {
+  assert.throws(() => validarNuevaEtiqueta({ nombre: 'X', categoria: 'otra' }), (e) => e.status === 422);
+});
+
+test('validarNuevaEtiqueta: nombre vacío lanza 422', () => {
+  assert.throws(() => validarNuevaEtiqueta({ nombre: '   ', categoria: 'origen' }), (e) => e.status === 422);
+});
+
+test('validarNuevaEtiqueta: color mal formado lanza 422', () => {
+  assert.throws(() => validarNuevaEtiqueta({ nombre: 'X', categoria: 'origen', color: 'rojo' }), (e) => e.status === 422);
 });
