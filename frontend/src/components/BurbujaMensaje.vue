@@ -10,6 +10,16 @@ const TIPOS_MEDIA = ['image', 'sticker', 'audio', 'video', 'document'];
 const esMedia = computed(() => TIPOS_MEDIA.includes(props.mensaje.tipo));
 const caption = computed(() => props.mensaje.texto || '');
 
+// Texto a mostrar en burbujas NO-media. Las tarjetas de contacto (vCard) llegan
+// como tipo 'system' con un base64 gigante sin espacios; en vez de volcarlo
+// (rompe el layout), mostramos una etiqueta.
+const contenidoTexto = computed(() => {
+  const t = caption.value;
+  const esBlob = t && t.length > 200 && !/\s/.test(t); // base64/cadena sin espacios
+  if (props.mensaje.tipo === 'system' && esBlob) return '📇 Tarjeta de contacto';
+  return t || etiquetaTipo(props.mensaje.tipo);
+});
+
 const media = ref(null); // { blob, url, filename, mime }
 const estado = ref('idle'); // idle | cargando | listo | error
 const ampliada = ref(false);
@@ -52,7 +62,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex" :class="saliente ? 'justify-end' : 'justify-start'">
-    <div class="max-w-[75%] px-2.5 py-1.5 rounded-lg text-[13.5px] leading-snug shadow-sm"
+    <div class="max-w-[75%] min-w-0 px-2.5 py-1.5 rounded-lg text-[13.5px] leading-snug shadow-sm"
       :class="saliente ? 'bg-[#d9fdd3] rounded-tr-sm' : 'bg-white rounded-tl-sm'">
 
       <div v-if="saliente && mensaje.enviadoPor" class="text-[10px] text-gray-500 font-medium mb-0.5">{{ mensaje.enviadoPor.nombre }}</div>
@@ -74,8 +84,8 @@ onUnmounted(() => {
         </template>
       </div>
 
-      <span v-if="!esMedia" class="whitespace-pre-wrap break-words">{{ caption || etiquetaTipo(mensaje.tipo) }}</span>
-      <span v-else-if="caption" class="whitespace-pre-wrap break-words block">{{ caption }}</span>
+      <span v-if="!esMedia" class="whitespace-pre-wrap [overflow-wrap:anywhere]">{{ contenidoTexto }}</span>
+      <span v-else-if="caption" class="whitespace-pre-wrap [overflow-wrap:anywhere] block">{{ caption }}</span>
 
       <span class="text-[10px] text-gray-500 float-right ml-2 mt-1.5">
         {{ horaCorta(mensaje.tsProveedor) }}
