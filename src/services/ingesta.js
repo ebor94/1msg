@@ -65,13 +65,14 @@ async function resolverContacto(norm, transaction) {
   const waId = norm.waIdContacto;
   const [contacto, creado] = await Contacto.findOrCreate({
     where: { waId },
-    defaults: { waId, telefono: telefonoDeWaId(waId), nombreWa: norm.nombreWa || null },
+    defaults: { waId, telefono: telefonoDeWaId(waId), nombreWa: norm.nombreWa || null, bsuid: norm.bsuid || null },
     transaction,
   });
-  if (!creado && norm.nombreWa && !contacto.nombreWa) {
-    contacto.nombreWa = norm.nombreWa;
-    await contacto.save({ transaction });
-  }
+  // Rellena datos que llegan en el entrante y aún faltan (nombre, bsuid).
+  let cambio = false;
+  if (norm.nombreWa && !contacto.nombreWa) { contacto.nombreWa = norm.nombreWa; cambio = true; }
+  if (norm.bsuid && contacto.bsuid !== norm.bsuid) { contacto.bsuid = norm.bsuid; cambio = true; }
+  if (!creado && cambio) await contacto.save({ transaction });
   return { contacto, creado };
 }
 

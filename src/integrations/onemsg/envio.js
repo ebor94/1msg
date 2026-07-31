@@ -19,13 +19,15 @@ function codigoDe(data) {
  * Envía un texto por 1msg (POST /sendMessage). Reintenta en 429.
  * @returns {Promise<{id:string, sent:boolean}>}
  */
-async function enviarTexto({ chatId, texto, quotedMsgId }, deps = {}) {
+async function enviarTexto({ chatId, phone, texto, quotedMsgId }, deps = {}) {
   const http = deps.http || axios;
   const baseMs = deps.baseMs || 800;
 
   const params = new URLSearchParams();
   params.append('body', texto);
-  params.append('chatId', chatId);
+  // phone (para BSUID/@lid) o chatId (contacto normal). 1msg acepta cualquiera.
+  if (phone) params.append('phone', phone);
+  else params.append('chatId', chatId);
   if (quotedMsgId) params.append('quotedMsgId', quotedMsgId);
 
   const resp = await retryWithBackoff(

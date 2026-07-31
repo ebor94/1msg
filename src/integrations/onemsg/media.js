@@ -57,7 +57,7 @@ async function descargarMedia(url, { maxBytes, timeoutMs = 30000 } = {}) {
  * pública que Meta descarga (`body`). Reintenta en 429.
  * @returns {Promise<{id:string, sent:boolean}>}
  */
-async function enviarArchivo({ chatId, url, mediaType, caption, filename, voice }, deps = {}) {
+async function enviarArchivo({ chatId, phone, url, mediaType, caption, filename, voice }, deps = {}) {
   const http = deps.http || axios;
   const baseMs = deps.baseMs || 800;
 
@@ -67,7 +67,9 @@ async function enviarArchivo({ chatId, url, mediaType, caption, filename, voice 
   if (caption) params.append('caption', caption);
   if (filename) params.append('filename', filename);
   if (voice) params.append('voice', 'true');
-  params.append('chatId', chatId);
+  // phone (BSUID/@lid) o chatId (contacto normal).
+  if (phone) params.append('phone', phone);
+  else params.append('chatId', chatId);
 
   const resp = await retryWithBackoff(
     async () => {

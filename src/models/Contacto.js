@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) =>
       telefono: { type: DataTypes.STRING(20), allowNull: false },
       nombreWa: { type: DataTypes.STRING(120), allowNull: true },
       nombreDisplay: { type: DataTypes.STRING(120), allowNull: true }, // editable por el agente
+      bsuid: { type: DataTypes.STRING(64), allowNull: true }, // BSUID WhatsApp (envío a @lid: phone=bsuid)
       agenteDuenoId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
       clienteSerfuwebId: { type: DataTypes.STRING(40), allowNull: true }, // cruce con el core
       documento: { type: DataTypes.STRING(20), allowNull: true },
