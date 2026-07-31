@@ -64,6 +64,7 @@ CREATE TABLE wa_contactos (
   telefono                  VARCHAR(20)     NOT NULL,
   nombre_wa                 VARCHAR(120)    NULL,
   nombre_display            VARCHAR(120)    NULL,      -- editable por el agente
+  bsuid                     VARCHAR(64)     NULL,      -- BSUID WhatsApp (@lid: envío por phone=bsuid)
   agente_dueno_id           INT UNSIGNED    NULL,
   cliente_serfuweb_id       VARCHAR(40)     NULL,      -- cruce con el core
   documento                 VARCHAR(20)     NULL,
