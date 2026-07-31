@@ -19,6 +19,10 @@ export const useAcciones = defineStore('acciones', {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/prevision${q}`);
     },
+    async consultarMantenimientos(contactoId, documento) {
+      const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
+      return apiFetch(`/contactos/${contactoId}/mantenimientos${q}`);
+    },
     async cargarPlantillas() {
       try { this.plantillas = (await apiFetch('/plantillas')).plantillas; } catch { this.plantillas = []; }
     },

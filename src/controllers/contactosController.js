@@ -7,6 +7,7 @@ const { ESTADO_CONVERSACION, ORIGEN_CONVERSACION, TIPO_ASIGNACION } = require('.
 const logger = require('../utils/logger');
 const { construirResultado } = require('../services/busquedaContactos');
 const { consultarPlanesPorDocumento } = require('../integrations/prevision/cliente');
+const { consultarMantenimientos } = require('../integrations/mantenimientos/cliente');
 
 function soloDigitos(s) {
   return String(s || '').replace(/\D/g, '');
@@ -256,6 +257,33 @@ async function prevision(req, res) {
   }
 }
 
+/**
+ * GET /api/contactos/:id/mantenimientos — contratos de mantenimiento del cliente
+ * en KARINGSOFT (SQL Server), por su documento (= tercero). Misma lógica que
+ * prevision: usa el documento del contacto o lo pide/guarda.
+ */
+async function mantenimientos(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  try {
+    const contacto = await Contacto.findByPk(id);
+    if (!contacto) return res.status(404).json({ error: 'contacto no encontrado' });
+
+    const provisto = req.query.documento ? soloDigitos(req.query.documento) : '';
+    const guardado = contacto.documento ? soloDigitos(contacto.documento) : '';
+    const doc = provisto || guardado;
+    if (!doc) return res.json({ codigo: 'sin_documento' });
+    if (provisto && !guardado) await contacto.update({ documento: provisto.slice(0, 20) });
+
+    const contratos = await consultarMantenimientos(doc);
+    return res.json({ documento: doc, contratos });
+  } catch (err) {
+    logger.error(`mantenimientos contacto ${id}: ${err.message}`);
+    if (err.codigo === 'no_configurado') return res.status(503).json({ error: 'mantenimientos no configurado', codigo: 'no_configurado' });
+    return res.status(502).json({ error: 'no se pudo consultar mantenimientos' });
+  }
+}
+
 /** Normaliza el nombre editable: trim, máx 120, vacío → null. */
 function normalizarNombre(s) {
   const t = String(s == null ? '' : s).trim().slice(0, 120);
@@ -286,4 +314,4 @@ async function actualizar(req, res) {
   }
 }
 
-module.exports = { crear, buscar, abrir, actualizar, prevision };
+module.exports = { crear, buscar, abrir, actualizar, prevision, mantenimientos };
