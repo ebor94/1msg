@@ -41,6 +41,19 @@ export const useAcciones = defineStore('acciones', {
       this.catalogoEtiquetas = await apiFetch('/etiquetas');
       return this.catalogoEtiquetas;
     },
+    async cargarCatalogoAdmin() {
+      return apiFetch('/etiquetas/todas');
+    },
+    async crearEtiqueta(datos) {
+      const r = await apiFetch('/etiquetas', { method: 'POST', body: JSON.stringify(datos) });
+      this.catalogoEtiquetas = { origen: [], interes: [] }; // invalida cache de agentes
+      return r.etiqueta;
+    },
+    async actualizarEtiqueta(id, cambios) {
+      const r = await apiFetch(`/etiquetas/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) });
+      this.catalogoEtiquetas = { origen: [], interes: [] };
+      return r.etiqueta;
+    },
     async alternarEtiqueta(convId, etiqueta) {
       const chat = useChat();
       const previa = chat.etiquetas || [];

@@ -119,10 +119,16 @@ async function actualizarEtiqueta(id, cambios) {
   return etq;
 }
 
+async function listarCatalogoCompleto() {
+  const filas = await Etiqueta.findAll({ attributes: [...ATTRS, 'activa'] });
+  return agruparCatalogo(filas.map((f) => f.get({ plain: true })));
+}
+
 module.exports = {
   CATEGORIAS,
   agruparCatalogo,
   listarCatalogo,
+  listarCatalogoCompleto,
   etiquetasDeConversacion,
   etiquetarConversacion,
   desetiquetarConversacion,

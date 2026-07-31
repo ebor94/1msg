@@ -77,6 +77,7 @@ router.patch('/respuestas/:id', requireAuth, respuestasCtrl.actualizar);
 router.delete('/respuestas/:id', requireAuth, respuestasCtrl.eliminar);
 router.get('/etiquetas', requireAuth, etiquetasCtrl.listar);
 router.get('/etiquetas/estadisticas', requireAuth, requireAdmin, etiquetasCtrl.estadisticas);
+router.get('/etiquetas/todas', requireAuth, requireAdmin, etiquetasCtrl.listarTodas);
 router.post('/etiquetas', requireAuth, requireAdmin, etiquetasCtrl.crear);
 router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualizar);
 

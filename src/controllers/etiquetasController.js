@@ -60,4 +60,13 @@ async function actualizar(req, res) {
   }
 }
 
-module.exports = { listar, estadisticas, crear, actualizar };
+async function listarTodas(req, res) {
+  try {
+    return res.json(await svc.listarCatalogoCompleto());
+  } catch (err) {
+    logger.error(`listar catálogo completo: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { listar, estadisticas, crear, actualizar, listarTodas };
