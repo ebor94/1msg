@@ -7,6 +7,7 @@ export const useChat = defineStore('chat', {
   state: () => ({
     conversacion: null,
     mensajes: [],
+    etiquetas: [],
     cargando: false,
     error: '',
     enviando: false,
@@ -56,6 +57,7 @@ export const useChat = defineStore('chat', {
     async abrir(conversacion) {
       this.conversacion = conversacion;
       this.mensajes = [];
+      this.etiquetas = [];
       this.cargando = true;
       this.error = '';
       // Guard contra clics rápidos: si el agente cambió de chat mientras esta
@@ -71,6 +73,9 @@ export const useChat = defineStore('chat', {
         await apiFetch(`/conversaciones/${id}/leer`, { method: 'POST' });
         if (!sigueActual()) return;
         this.marcarLeidaEnLista(id);
+        apiFetch(`/conversaciones/${id}/etiquetas`)
+          .then((r) => { if (sigueActual()) this.etiquetas = r.etiquetas; })
+          .catch(() => { /* el etiquetado es best-effort al abrir */ });
         useConversaciones().refrescarContadores(); // no leídos ↓ al abrir
         this.recuperarHistorial(id); // en segundo plano
       } catch (e) {
@@ -124,6 +129,7 @@ export const useChat = defineStore('chat', {
     cerrar() {
       this.conversacion = null;
       this.mensajes = [];
+      this.etiquetas = [];
       this.hayMas = false;
       this.recuperando = false;
     },

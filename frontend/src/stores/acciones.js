@@ -2,11 +2,13 @@ import { defineStore } from 'pinia';
 import { apiFetch, tokenGuardado } from '../api/cliente';
 import { useChat } from './chat';
 import { useConversaciones } from './conversaciones';
+import { siguienteSeleccion } from '../utils/etiquetas';
 
 export const useAcciones = defineStore('acciones', {
   state: () => ({
     agentes: [], notas: [], notasConvId: null, error: '', plantillas: [],
     asignaciones: [], asignacionesConvId: null,
+    catalogoEtiquetas: { origen: [], interes: [] },
   }),
   actions: {
     async cargarAgentes() {
@@ -26,6 +28,30 @@ export const useAcciones = defineStore('acciones', {
     async consultarPrenecesidad(contactoId, documento) {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/prenecesidad${q}`);
+    },
+    async cargarEtiquetas() {
+      if (this.catalogoEtiquetas.origen.length || this.catalogoEtiquetas.interes.length) return this.catalogoEtiquetas;
+      this.catalogoEtiquetas = await apiFetch('/etiquetas');
+      return this.catalogoEtiquetas;
+    },
+    async alternarEtiqueta(convId, etiqueta) {
+      const chat = useChat();
+      const previa = chat.etiquetas || [];
+      const puesta = previa.some((e) => e.id === etiqueta.id);
+      chat.etiquetas = siguienteSeleccion(previa, etiqueta); // optimista (regla 1-origen en UI)
+      try {
+        if (puesta) {
+          await apiFetch(`/conversaciones/${convId}/etiquetas/${etiqueta.id}`, { method: 'DELETE' });
+        } else {
+          const r = await apiFetch(`/conversaciones/${convId}/etiquetas`, {
+            method: 'POST', body: JSON.stringify({ etiquetaId: etiqueta.id }),
+          });
+          chat.etiquetas = r.etiquetas; // autoritativo: confirma la regla 1-origen del backend
+        }
+      } catch (e) {
+        chat.etiquetas = previa; // revertir si el request falla
+        throw e;
+      }
     },
     async cargarPlantillas() {
       try { this.plantillas = (await apiFetch('/plantillas')).plantillas; } catch { this.plantillas = []; }
