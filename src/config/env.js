@@ -108,6 +108,15 @@ const env = Object.freeze({
     password: process.env.PREVISION_DB_PASSWORD || '',
     database: process.env.PREVISION_DB_NAME || '',
   }),
+
+  // BD externa de mantenimientos (KARINGSOFT, SQL Server, solo lectura). Opcional.
+  mantenimientos: Object.freeze({
+    host: process.env.MANTEN_DB_HOST || '',
+    port: entero('MANTEN_DB_PORT', 1433),
+    user: process.env.MANTEN_DB_USER || '',
+    password: process.env.MANTEN_DB_PASSWORD || '',
+    database: process.env.MANTEN_DB_NAME || '',
+  }),
 });
 
 module.exports = env;
