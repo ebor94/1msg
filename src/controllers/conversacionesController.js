@@ -16,6 +16,7 @@ const { construirParams, construirParamsHeader, renderizarCuerpo } = require('..
 const { obtenerCatalogo } = require('./plantillasController');
 const { tipoDeAsignacion, roomsDeAsignacion } = require('../services/asignacionManual');
 const { emitir, emitirARooms } = require('../sockets/emisor');
+const etiquetasSvc = require('../services/etiquetas');
 const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, TIPO_ASIGNACION, ROL_AGENTE } = require('../config/constants');
 const env = require('../config/env');
 const logger = require('../utils/logger');
@@ -620,4 +621,42 @@ async function asignaciones(req, res) {
   }
 }
 
-module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones };
+async function etiquetasDeConv(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    return res.json({ etiquetas: await etiquetasSvc.etiquetasDeConversacion(conv.id) });
+  } catch (err) {
+    logger.error(`etiquetas de conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function etiquetarConv(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    const etiquetaId = Number(req.body && req.body.etiquetaId);
+    if (!Number.isInteger(etiquetaId)) return res.status(400).json({ error: 'etiquetaId inválido' });
+    const etiquetas = await etiquetasSvc.etiquetarConversacion(conv.id, etiquetaId, req.agente.id);
+    return res.json({ etiquetas });
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: 'etiqueta no encontrada' });
+    logger.error(`etiquetar conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function desetiquetarConv(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    await etiquetasSvc.desetiquetarConversacion(conv.id, Number(req.params.etiquetaId));
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`desetiquetar conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv };
