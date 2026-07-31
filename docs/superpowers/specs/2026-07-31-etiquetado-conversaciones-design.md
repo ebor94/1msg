@@ -56,7 +56,10 @@ ALTER TABLE wa_etiquetas
 - Semilla del catálogo inicial (INSERTs idempotentes por `nombre` único) en la misma
   migración.
 
-**Catálogo semilla** (aprobado):
+**Catálogo semilla** (aprobado) — son solo **valores iniciales**. Todo el catálogo es
+**dinámico**: el admin puede crear, renombrar, recolorear, reordenar y desactivar
+etiquetas desde la UI (ver §4). No hay valores "quemados" en código: el `origen` y el
+`interes` viven en `wa_etiquetas`, no en un ENUM de la conversación.
 
 | Origen | Interés |
 |---|---|
@@ -127,6 +130,13 @@ PATCH  /etiquetas/:id                            requireAuth+requireAdmin  renom
   - Filtro de rango de fechas (por defecto el mes actual).
   - Tabla de conteos por etiqueta, separada por Origen / Interés, con el color.
   - CSV/export queda fuera de alcance (se añade después si lo piden).
+- **Gestión del catálogo (admin)** — dentro de la misma vista de admin, una pestaña o
+  sección para administrar el catálogo de forma dinámica: listar todas las etiquetas
+  (activas e inactivas), crear una nueva (nombre, categoría, color), renombrar,
+  cambiar color, reordenar (`orden`) y desactivar/reactivar (`activa`). Se apoya en
+  `POST /etiquetas` y `PATCH /etiquetas/:id`. Desactivar (no borrar) preserva el
+  histórico: las etiquetas ya aplicadas siguen contando en estadísticas aunque la
+  etiqueta deje de ofrecerse para marcar chats nuevos.
 
 ## Flujo de datos
 
