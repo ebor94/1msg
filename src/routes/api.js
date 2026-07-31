@@ -11,6 +11,7 @@ const contactosCtrl = require('../controllers/contactosController');
 const plantillasCtrl = require('../controllers/plantillasController');
 const mediaCtrl = require('../controllers/mediaController');
 const respuestasCtrl = require('../controllers/respuestasController');
+const etiquetasCtrl = require('../controllers/etiquetasController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -56,6 +57,9 @@ router.post('/conversaciones/:id/asignar', requireAuth, convCtrl.asignar);
 router.get('/conversaciones/:id/asignaciones', requireAuth, convCtrl.asignaciones);
 router.get('/conversaciones/:id/notas', requireAuth, convCtrl.listarNotas);
 router.post('/conversaciones/:id/notas', requireAuth, convCtrl.agregarNota);
+router.get('/conversaciones/:id/etiquetas', requireAuth, convCtrl.etiquetasDeConv);
+router.post('/conversaciones/:id/etiquetas', requireAuth, convCtrl.etiquetarConv);
+router.delete('/conversaciones/:id/etiquetas/:etiquetaId', requireAuth, convCtrl.desetiquetarConv);
 router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
 router.get('/agentes/totales', requireAuth, requireAdmin, agentesCtrl.totales);
 router.get('/agentes', requireAuth, agentesCtrl.listar);
@@ -71,5 +75,10 @@ router.get('/respuestas', requireAuth, respuestasCtrl.listar);
 router.post('/respuestas', requireAuth, respuestasCtrl.crear);
 router.patch('/respuestas/:id', requireAuth, respuestasCtrl.actualizar);
 router.delete('/respuestas/:id', requireAuth, respuestasCtrl.eliminar);
+router.get('/etiquetas', requireAuth, etiquetasCtrl.listar);
+router.get('/etiquetas/estadisticas', requireAuth, requireAdmin, etiquetasCtrl.estadisticas);
+router.get('/etiquetas/todas', requireAuth, requireAdmin, etiquetasCtrl.listarTodas);
+router.post('/etiquetas', requireAuth, requireAdmin, etiquetasCtrl.crear);
+router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualizar);
 
 module.exports = router;

@@ -88,6 +88,9 @@ Etiqueta.belongsToMany(Conversacion, {
   as: 'conversaciones',
 });
 
+// Acceso directo a la etiqueta desde la fila puente (para leer categoría/color).
+ConversacionEtiqueta.belongsTo(Etiqueta, { foreignKey: 'etiquetaId', as: 'etiqueta' });
+
 // Difusion 1—N DifusionDestinatario
 Difusion.hasMany(DifusionDestinatario, { foreignKey: 'difusionId', as: 'destinatarios' });
 DifusionDestinatario.belongsTo(Difusion, { foreignKey: 'difusionId', as: 'difusion' });

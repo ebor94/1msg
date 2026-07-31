@@ -19,7 +19,13 @@ const seleccion = ref('');
 watch(() => c.value?.agenteId, (v) => { seleccion.value = v == null ? '' : v; }, { immediate: true });
 
 onMounted(() => acc.cargarAgentes());
+onMounted(() => acc.cargarEtiquetas());
 watch(() => c.value?.id, (id) => { if (id) { acc.cargarNotas(id); acc.cargarAsignaciones(id); } }, { immediate: true });
+
+const catalogo = computed(() => acc.catalogoEtiquetas);
+const etqSel = computed(() => chat.etiquetas || []);
+const estaPuesta = (e) => etqSel.value.some((x) => x.id === e.id);
+async function alternar(e) { try { await acc.alternarEtiqueta(c.value.id, e); } catch { aviso.value = 'No se pudo etiquetar.'; } }
 
 async function tomar() {
   aviso.value = '';
@@ -227,6 +233,25 @@ function celda(p, k) {
         <option value="">— Bandeja general —</option>
         <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
       </select>
+    </div>
+
+    <div class="mt-4 border-t border-gray-100 pt-3">
+      <div class="text-[11px] text-gray-400 uppercase mb-1">Origen</div>
+      <div class="flex flex-wrap gap-1.5 mb-2">
+        <button v-for="e in catalogo.origen" :key="e.id" @click="alternar(e)"
+          class="text-[12px] rounded-full px-2.5 py-1 border transition"
+          :style="estaPuesta(e) ? { backgroundColor: e.color, borderColor: e.color, color: '#fff' } : { borderColor: e.color, color: e.color }">
+          {{ e.nombre }}
+        </button>
+      </div>
+      <div class="text-[11px] text-gray-400 uppercase mb-1">Interés</div>
+      <div class="flex flex-wrap gap-1.5">
+        <button v-for="e in catalogo.interes" :key="e.id" @click="alternar(e)"
+          class="text-[12px] rounded-full px-2.5 py-1 border transition"
+          :style="estaPuesta(e) ? { backgroundColor: e.color, borderColor: e.color, color: '#fff' } : { borderColor: e.color, color: e.color }">
+          {{ e.nombre }}
+        </button>
+      </div>
     </div>
 
     <!-- Previsión -->

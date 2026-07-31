@@ -11,6 +11,7 @@ import ListaConversaciones from '../components/ListaConversaciones.vue';
 import VistaChat from '../components/VistaChat.vue';
 import PanelCliente from '../components/PanelCliente.vue';
 import PanelAgentes from '../components/PanelAgentes.vue';
+import PanelEstadisticas from '../components/PanelEstadisticas.vue';
 
 const auth = useAuth();
 const chat = useChat();
@@ -28,6 +29,7 @@ function salir() {
 }
 
 const mostrarAgentes = ref(false);
+const mostrarEtiquetas = ref(false);
 const mostrarNuevo = ref(false);
 const nuevoTelefono = ref('');
 const nuevoNombre = ref('');
@@ -65,6 +67,7 @@ async function crearContacto() {
       <div class="font-bold">Serfunorte · Bandeja</div>
       <div class="flex items-center gap-2 text-sm">
         <button v-if="auth.esAdministrador" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="mostrarAgentes = true">📊 Agentes</button>
+        <button v-if="auth.esAdministrador" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="mostrarEtiquetas = true">🏷️ Etiquetas</button>
         <button class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="abrirNuevo">＋ Contacto</button>
         <button class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[13px]"
           :title="sonido.activado ? 'Silenciar notificaciones' : 'Activar notificaciones'"
@@ -110,5 +113,6 @@ async function crearContacto() {
     </div>
 
     <PanelAgentes v-if="mostrarAgentes" @cerrar="mostrarAgentes = false" />
+    <PanelEstadisticas v-if="mostrarEtiquetas" @cerrar="mostrarEtiquetas = false" />
   </div>
 </template>
