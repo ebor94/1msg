@@ -95,7 +95,7 @@ async function guardarFila(e) { await acc.actualizarEtiqueta(e.id, { nombre: e.n
             <input type="color" v-model="e.color" class="h-6 w-8 border rounded" />
             <input v-model="e.nombre" maxlength="60" class="border rounded px-2 py-1 flex-1" />
             <input type="number" v-model="e.orden" class="border rounded px-2 py-1 w-14" title="orden" />
-            <button class="text-[12px] text-marca-oscuro" @click="guardarFila(e)">Guardar</button>
+            <button class="text-[12px] text-marca-oscuro" :disabled="!e.nombre.trim()" @click="guardarFila(e)">Guardar</button>
             <button class="text-[12px]" :class="e.activa ? 'text-gray-500' : 'text-green-600'" @click="toggleActiva(e)">{{ e.activa ? 'Desactivar' : 'Activar' }}</button>
           </div>
         </template>

@@ -108,7 +108,11 @@ async function actualizarEtiqueta(id, cambios) {
   const etq = await Etiqueta.findByPk(id);
   if (!etq) { const e = new Error('no encontrada'); e.status = 404; throw e; }
   const permitidos = {};
-  if (cambios.nombre !== undefined) permitidos.nombre = String(cambios.nombre).trim();
+  if (cambios.nombre !== undefined) {
+    const nom = String(cambios.nombre).trim();
+    if (!nom || nom.length > 60) { const e = new Error('nombre inválido'); e.status = 422; throw e; }
+    permitidos.nombre = nom;
+  }
   if (cambios.color !== undefined) {
     if (!RE_COLOR.test(String(cambios.color))) { const e = new Error('color inválido'); e.status = 422; throw e; }
     permitidos.color = String(cambios.color);
