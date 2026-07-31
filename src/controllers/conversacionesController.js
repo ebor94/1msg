@@ -8,7 +8,7 @@ const { recuperarHistorial } = require('../services/backfill');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
 const { enviarArchivo } = require('../integrations/onemsg/media');
-const { ventanaAbierta } = require('../services/envio');
+const { ventanaAbierta, destinatario1msg } = require('../services/envio');
 const { guardarBufferComoMedia, categoriaMedia } = require('../services/media');
 const { transcodificarAOgg } = require('../services/audio');
 const { registrar } = require('../services/mediaPublica');
@@ -94,7 +94,7 @@ async function mensajes(req, res) {
 async function historial(req, res) {
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
@@ -243,7 +243,7 @@ async function enviar(req, res) {
 
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
@@ -265,7 +265,7 @@ async function enviar(req, res) {
     const textoFinal = texto;
     let enviado;
     try {
-      enviado = await enviarTexto({ chatId: conv.contacto.waId, texto: textoFinal });
+      enviado = await enviarTexto({ ...destinatario1msg(conv.contacto), texto: textoFinal });
     } catch (err) {
       logger.error(`envío 1msg falló (conv ${conv.id}): ${err.message} [${err.codigo || ''}]`);
       if (toma.tomada) await liberarToma(conv, req.agente.id, toma);
@@ -311,7 +311,7 @@ async function enviarMedia(req, res) {
 
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
@@ -363,7 +363,7 @@ async function enviarMedia(req, res) {
     let enviado;
     try {
       enviado = await enviarArchivo({
-        chatId: conv.contacto.waId,
+        ...destinatario1msg(conv.contacto),
         url: urlPublica,
         mediaType: categoria,
         caption: captionFinal,
@@ -410,7 +410,7 @@ async function enviarPlantilla(req, res) {
 
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'telefono'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'telefono', 'bsuid'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
@@ -424,8 +424,9 @@ async function enviarPlantilla(req, res) {
     let enviado;
     try {
       const params = [...construirParamsHeader(imagenUrl), ...construirParams(vars)];
+      // @lid → phone = bsuid; contacto normal → su teléfono.
       enviado = await enviarPlantillaOnemsg({
-        phone: conv.contacto.telefono,
+        phone: destinatario1msg(conv.contacto).phone || conv.contacto.telefono,
         template,
         namespace: namespace || null,
         language: { code: language || 'es', policy: 'deterministic' },

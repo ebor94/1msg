@@ -20,6 +20,7 @@ test('mensaje de texto entrante (type chat)', () => {
         time: '1753370400',
         chatId: '573001112233@c.us',
         senderName: 'Cliente',
+        authorBsuid: 'CO.1726691741709890',
         quotedMsgId: null,
       },
     ],
@@ -34,6 +35,7 @@ test('mensaje de texto entrante (type chat)', () => {
   assert.equal(m.mediaUrl, null);
   assert.equal(m.esMedia, false);
   assert.equal(m.waIdContacto, '573001112233@c.us');
+  assert.equal(m.bsuid, 'CO.1726691741709890');
   assert.deepEqual(m.tsProveedor, new Date(1753370400 * 1000));
 });
 

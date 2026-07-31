@@ -83,6 +83,9 @@ function normalizarMensaje(m) {
   return {
     waMessageId: m.id || null,
     waIdContacto: m.chatId || m.author || null,
+    // BSUID de WhatsApp (nuevo identificador de privacidad). Para contactos @lid
+    // es cómo se les envía (phone=bsuid). Formato: 'CO.1726691741709890'.
+    bsuid: m.authorBsuid || null,
     // Solo en ENTRANTES el senderName es el del cliente. En salientes es el
     // número propio de la empresa (echo), así que NO lo usamos como nombre del
     // contacto (si no, la campaña saliente le pone a todos el mismo "nombre").
