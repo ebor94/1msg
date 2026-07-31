@@ -17,6 +17,13 @@ export const useAcciones = defineStore('acciones', {
     async cargarTotalesAgentes() {
       return (await apiFetch('/agentes/totales')).agentes;
     },
+    async cargarEstadisticas(desde, hasta) {
+      const q = new URLSearchParams();
+      if (desde) q.set('desde', desde);
+      if (hasta) q.set('hasta', hasta);
+      const r = await apiFetch(`/etiquetas/estadisticas?${q.toString()}`);
+      return r.estadisticas;
+    },
     async consultarPrevision(contactoId, documento) {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/prevision${q}`);
