@@ -64,6 +64,7 @@ router.post('/contactos', requireAuth, contactosCtrl.crear);
 router.post('/contactos/:id/conversacion', requireAuth, contactosCtrl.abrir);
 router.get('/contactos/:id/prevision', requireAuth, contactosCtrl.prevision);
 router.get('/contactos/:id/mantenimientos', requireAuth, contactosCtrl.mantenimientos);
+router.get('/contactos/:id/prenecesidad', requireAuth, contactosCtrl.prenecesidad);
 router.patch('/contactos/:id', requireAuth, contactosCtrl.actualizar);
 router.get('/plantillas', requireAuth, plantillasCtrl.listar);
 router.get('/respuestas', requireAuth, respuestasCtrl.listar);

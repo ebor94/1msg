@@ -9,32 +9,8 @@
  * codigo 'no_configurado' (el endpoint lo traduce a 503, sin tumbar la app).
  */
 
-const sql = require('mssql');
-const env = require('../../config/env');
+const { obtenerPool, sql } = require('../karingsoft/pool');
 const logger = require('../../utils/logger');
-
-let poolPromise = null;
-
-function obtenerPool() {
-  const cfg = env.mantenimientos;
-  if (!cfg.host || !cfg.database || !cfg.user) return null;
-  if (!poolPromise) {
-    poolPromise = new sql.ConnectionPool({
-      server: cfg.host,
-      port: cfg.port,
-      user: cfg.user,
-      password: cfg.password,
-      database: cfg.database,
-      options: { encrypt: false, trustServerCertificate: true },
-      pool: { max: 3, min: 0, idleTimeoutMillis: 30000 },
-      connectionTimeout: 10000,
-      requestTimeout: 25000,
-    })
-      .connect()
-      .catch((e) => { poolPromise = null; throw e; }); // permite reintentar tras un fallo
-  }
-  return poolPromise;
-}
 
 // Contratos de mantenimiento + estado de vigencia + saldo real (pagos por vigencia).
 // `tercero` = cédula/NIT del cliente. Margen de gracia de 100 días para vencidos sin pagar.

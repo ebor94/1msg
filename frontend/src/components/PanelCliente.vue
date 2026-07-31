@@ -110,6 +110,40 @@ const columnasMant = computed(() => (mant.value.contratos && mant.value.contrato
   ? Object.keys(mant.value.contratos[0]).filter((k) => !CAMPOS_OCULTOS_MANT.has(k))
   : []);
 
+// --- Prenecesidad (KARINGSOFT, 2 consultas: contrato + saldos) ---
+const pren = ref({ cargando: false, error: '', contratos: null, pidiendoDoc: false });
+const docPren = ref('');
+const prenSel = ref(null);
+watch(() => c.value?.id, () => {
+  pren.value = { cargando: false, error: '', contratos: null, pidiendoDoc: false };
+  docPren.value = '';
+  prenSel.value = null;
+});
+async function consultarPrenecesidad(docOpcional) {
+  if (!c.value?.contacto?.id) return;
+  pren.value.cargando = true;
+  pren.value.error = '';
+  try {
+    const r = await acc.consultarPrenecesidad(c.value.contacto.id, docOpcional);
+    if (r.codigo === 'sin_documento') { pren.value.pidiendoDoc = true; pren.value.contratos = null; }
+    else { pren.value.pidiendoDoc = false; pren.value.contratos = r.contratos || []; }
+  } catch (e) {
+    pren.value.error = e.codigo === 'no_configurado'
+      ? 'La consulta de prenecesidad no está configurada.'
+      : 'No se pudo consultar prenecesidad.';
+  } finally {
+    pren.value.cargando = false;
+  }
+}
+function enviarDocumentoPren() {
+  const d = docPren.value.replace(/\D/g, '');
+  if (d) consultarPrenecesidad(d);
+}
+const CAMPOS_OCULTOS_PREN = new Set(['tercero']);
+const columnasPren = computed(() => (pren.value.contratos && pren.value.contratos.length)
+  ? Object.keys(pren.value.contratos[0]).filter((k) => !CAMPOS_OCULTOS_PREN.has(k))
+  : []);
+
 async function consultarPrevision(docOpcional) {
   if (!c.value?.contacto?.id) return;
   prev.value.cargando = true;
@@ -261,6 +295,36 @@ function celda(p, k) {
         </template>
       </div>
     </div>
+
+    <!-- Prenecesidad -->
+    <div class="mt-3">
+      <button @click="consultarPrenecesidad()" :disabled="pren.cargando"
+        class="w-full border border-marca text-marca-oscuro rounded-lg py-2 text-sm font-semibold hover:bg-marca/5 disabled:opacity-60">
+        {{ pren.cargando ? 'Consultando…' : '⚰️ Consultar prenecesidad' }}
+      </button>
+      <p v-if="pren.error" class="text-[12px] text-red-600 text-center mt-1">{{ pren.error }}</p>
+
+      <div v-if="pren.pidiendoDoc" class="mt-2 bg-amber-50 border border-amber-100 rounded p-2">
+        <div class="text-[12px] text-gray-600 mb-1">Este contacto no tiene documento. Ingrésalo:</div>
+        <div class="flex gap-1">
+          <input v-model="docPren" @keydown.enter="enviarDocumentoPren" placeholder="Cédula del cliente"
+            inputmode="numeric" class="flex-1 border rounded px-2 py-1 text-[12px]" />
+          <button @click="enviarDocumentoPren" class="bg-marca text-white rounded px-2.5 text-[12px] font-semibold">Consultar</button>
+        </div>
+      </div>
+
+      <div v-if="pren.contratos" class="mt-2">
+        <div v-if="!pren.contratos.length" class="text-[12px] text-gray-400">Sin prenecesidad para este documento.</div>
+        <template v-else>
+          <div class="text-[11px] text-gray-400 uppercase mb-1">Contratos ({{ pren.contratos.length }})</div>
+          <button v-for="(p, i) in pren.contratos" :key="i" @click="prenSel = p"
+            class="w-full text-left border rounded px-2 py-1.5 text-[12.5px] hover:bg-gray-50 mb-1 flex justify-between items-center">
+            <span class="truncate"><b>{{ p.contrato }}</b><span v-if="p.nombre" class="text-gray-400"> · {{ p.nombre }}</span></span>
+            <span class="text-gray-400 text-[11px] shrink-0">ver ›</span>
+          </button>
+        </template>
+      </div>
+    </div>
     <!-- Notas internas: justo después de la asignación -->
     <div class="mt-4">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Notas internas</div>
@@ -341,6 +405,34 @@ function celda(p, k) {
                 <tr v-for="(m, i) in mant.contratos" :key="i" class="border-b border-gray-100 hover:bg-gray-50"
                   :class="m === mantSel ? 'bg-marca/10' : ''">
                   <td v-for="k in columnasMant" :key="k" class="px-2 py-1 text-gray-800 align-top whitespace-nowrap">{{ formatoValor(m[k]) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Popup: prenecesidad en tabla a lo ancho -->
+    <Teleport to="body">
+      <div v-if="prenSel" class="fixed inset-0 bg-black/40 grid place-items-center z-[100] p-4" @click.self="prenSel = null">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-[95vw] max-h-[85vh] flex flex-col">
+          <div class="flex items-center justify-between px-4 py-3 border-b">
+            <b class="text-gray-800">Prenecesidad — {{ pren.contratos?.length }} contrato(s)</b>
+            <button class="text-gray-400 hover:text-gray-700 text-xl leading-none" @click="prenSel = null">✕</button>
+          </div>
+          <div class="overflow-auto p-3">
+            <table class="text-[12px] border-collapse min-w-max">
+              <thead>
+                <tr class="text-left text-gray-500 bg-gray-50">
+                  <th v-for="k in columnasPren" :key="k" class="px-2 py-1.5 border-b border-gray-200 whitespace-nowrap font-medium">{{ etiquetaCampo(k) }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(p, i) in pren.contratos" :key="i" class="border-b border-gray-100 hover:bg-gray-50"
+                  :class="p === prenSel ? 'bg-marca/10' : ''">
+                  <td v-for="k in columnasPren" :key="k" class="px-2 py-1 text-gray-800 align-top"
+                    :class="k === 'observacion' ? 'whitespace-normal min-w-[260px] max-w-[380px]' : 'whitespace-nowrap'">{{ formatoValor(p[k]) }}</td>
                 </tr>
               </tbody>
             </table>

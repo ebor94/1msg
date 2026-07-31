@@ -8,6 +8,7 @@ const logger = require('../utils/logger');
 const { construirResultado } = require('../services/busquedaContactos');
 const { consultarPlanesPorDocumento } = require('../integrations/prevision/cliente');
 const { consultarMantenimientos } = require('../integrations/mantenimientos/cliente');
+const { consultarPrenecesidad } = require('../integrations/prenecesidad/cliente');
 
 function soloDigitos(s) {
   return String(s || '').replace(/\D/g, '');
@@ -284,6 +285,29 @@ async function mantenimientos(req, res) {
   }
 }
 
+/** GET /api/contactos/:id/prenecesidad — contratos de prenecesidad (KARINGSOFT) por documento. */
+async function prenecesidad(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
+  try {
+    const contacto = await Contacto.findByPk(id);
+    if (!contacto) return res.status(404).json({ error: 'contacto no encontrado' });
+
+    const provisto = req.query.documento ? soloDigitos(req.query.documento) : '';
+    const guardado = contacto.documento ? soloDigitos(contacto.documento) : '';
+    const doc = provisto || guardado;
+    if (!doc) return res.json({ codigo: 'sin_documento' });
+    if (provisto && !guardado) await contacto.update({ documento: provisto.slice(0, 20) });
+
+    const contratos = await consultarPrenecesidad(doc);
+    return res.json({ documento: doc, contratos });
+  } catch (err) {
+    logger.error(`prenecesidad contacto ${id}: ${err.message}`);
+    if (err.codigo === 'no_configurado') return res.status(503).json({ error: 'prenecesidad no configurado', codigo: 'no_configurado' });
+    return res.status(502).json({ error: 'no se pudo consultar prenecesidad' });
+  }
+}
+
 /** Normaliza el nombre editable: trim, máx 120, vacío → null. */
 function normalizarNombre(s) {
   const t = String(s == null ? '' : s).trim().slice(0, 120);
@@ -314,4 +338,4 @@ async function actualizar(req, res) {
   }
 }
 
-module.exports = { crear, buscar, abrir, actualizar, prevision, mantenimientos };
+module.exports = { crear, buscar, abrir, actualizar, prevision, mantenimientos, prenecesidad };
