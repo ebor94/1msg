@@ -46,12 +46,14 @@ async function contadores(req, res) {
 
 async function listarHandler(req, res) {
   try {
+    const ocultos = req.query.ocultos === '1' || req.query.ocultos === 'true';
     const r = await listar({
       bandeja: req.query.bandeja,
       agenteSolicitante: req.agente,
       agenteFiltro: req.query.agente ? Number(req.query.agente) : null,
       q: req.query.q || null,
       soloNoLeidos: req.query.noLeidos === '1',
+      ocultos,
       pagina: Number(req.query.pagina) || 0,
     });
     return res.json(r);
