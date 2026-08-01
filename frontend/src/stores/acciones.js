@@ -192,11 +192,12 @@ export const useAcciones = defineStore('acciones', {
     },
     async desactivarContacto(contactoId, convId, desactivar = true) {
       await apiFetch(`/contactos/${contactoId}/${desactivar ? 'desactivar' : 'reactivar'}`, { method: 'POST' });
-      const conv = useConversaciones();
-      if (convId) { const i = conv.items.findIndex((c) => c.id === convId); if (i !== -1) conv.items.splice(i, 1); }
       const chat = useChat();
       if (chat.conversacion?.id === convId) chat.cerrar();
-      conv.cargarContadores();
+      // Recarga autoritativa: desactivar oculta TODAS las conversaciones del contacto,
+      // no solo `convId` (y en "Ver ocultos" un contacto reactivado debe desaparecer de ahí).
+      // cargar() ya refresca los contadores en paralelo.
+      await useConversaciones().cargar();
     },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {
