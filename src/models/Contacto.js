@@ -22,6 +22,8 @@ module.exports = (sequelize, DataTypes) =>
       waExperimento: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       marketingBloqueadoHasta: { type: DataTypes.DATE, allowNull: true },
       bloqueado: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      desactivadoEn: { type: DataTypes.DATE, allowNull: true },
+      desactivadoPor: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     },
     {
       tableName: 'wa_contactos',
