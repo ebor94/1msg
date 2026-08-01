@@ -41,7 +41,7 @@
 **Interfaces:**
 - Consumes: `sequelize` de `../config/database`, `bcryptjs`, `requireAuth`, `limiteLogin`-style `rateLimit`, `obtenerIpCliente` (ya importados en `api.js`).
 - Produces:
-  - `cambiarClave(usuarioId, claveActual, claveNueva, deps = {}) -> Promise<{ok:true}>`. Deps inyectables: `buscarPorId(id)`, `comparar(plano, hash)`, `hashear(plano)`, `actualizar(id, hash)`. Lanza `{status:404}` (usuario inexistente/inactivo), `{status:401, codigo:'clave_actual_incorrecta'}` (clave actual mala), `{status:422}` (nueva < 8 o igual a la actual).
+  - `cambiarClave(usuarioId, claveActual, claveNueva, deps = {}) -> Promise<{ok:true}>`. Deps inyectables: `buscarPorId(id)`, `comparar(plano, hash)`, `hashear(plano)`, `actualizar(id, hash)`. Lanza `{status:404}` (usuario inexistente/inactivo), `{status:403, codigo:'clave_actual_incorrecta'}` (clave actual mala), `{status:422}` (nueva < 8 o igual a la actual).
   - Ruta `POST /api/auth/cambiar-clave` → `{ ok: true }`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -69,11 +69,11 @@ function deps(over = {}) {
   return { ...base, ...over };
 }
 
-test('clave actual incorrecta → 401 y NO actualiza', async () => {
+test('clave actual incorrecta → 403 y NO actualiza', async () => {
   const d = deps();
   await assert.rejects(
     () => cambiarClave(9, 'malaClave', 'nuevaClave1', d),
-    (e) => e.status === 401 && e.codigo === 'clave_actual_incorrecta',
+    (e) => e.status === 403 && e.codigo === 'clave_actual_incorrecta',
   );
   assert.equal(d._llamadas.actualizar.length, 0);
 });
@@ -145,7 +145,7 @@ async function cambiarClave(usuarioId, claveActual, claveNueva, deps = {}) {
   if (!u || !u.activo) { const e = new Error('usuario no encontrado'); e.status = 404; throw e; }
 
   const ok = await comparar(String(claveActual || ''), u.password || '');
-  if (!ok) { const e = new Error('clave actual incorrecta'); e.status = 401; e.codigo = 'clave_actual_incorrecta'; throw e; }
+  if (!ok) { const e = new Error('clave actual incorrecta'); e.status = 403; e.codigo = 'clave_actual_incorrecta'; throw e; }
 
   const nueva = String(claveNueva || '');
   if (nueva.length < 8) { const e = new Error('clave nueva muy corta'); e.status = 422; throw e; }
@@ -188,7 +188,7 @@ async function cambiarClave(req, res) {
     await cambiarClaveSvc(req.agente.usuarioId, claveActual, claveNueva);
     return res.json({ ok: true });
   } catch (err) {
-    if (err.status === 401) return res.status(401).json({ error: 'la contraseña actual no es correcta', codigo: 'clave_actual_incorrecta' });
+    if (err.status === 403) return res.status(403).json({ error: 'la contraseña actual no es correcta', codigo: 'clave_actual_incorrecta' });
     if (err.status === 422) return res.status(422).json({ error: 'la nueva contraseña no es válida (mínimo 8 caracteres y distinta de la actual)' });
     if (err.status === 404) return res.status(404).json({ error: 'usuario no encontrado' });
     logger.error(`cambiar clave usuario ${req.agente && req.agente.usuarioId}: ${err.message}`);

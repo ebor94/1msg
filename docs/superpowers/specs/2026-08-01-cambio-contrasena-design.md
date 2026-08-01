@@ -39,7 +39,10 @@ clave de otro.
   para poder testear sin BD:
   - `buscarPorId(usuarioId)` → `{ id, password, activo }` de `serfuweb.usuarios`.
   - Si no existe o `!activo` → error `{status:404}`.
-  - `comparar(claveActual, u.password)`; si falla → error `{status:401, codigo:'clave_actual_incorrecta'}`.
+  - `comparar(claveActual, u.password)`; si falla → error `{status:403, codigo:'clave_actual_incorrecta'}`.
+    (Se usa **403**, no 401: el `apiFetch` del frontend interpreta cualquier 401 como
+    sesión expirada y **borra el token**; una clave actual mal tecleada no debe cerrar
+    la sesión. El 401 queda reservado para JWT inválido/expirado.)
   - Validación de `claveNueva`: `String(claveNueva)` con longitud ≥ 8; y distinta de
     `claveActual`; si no → error `{status:422}`.
   - `hashear(claveNueva)` = `bcrypt.hash(claveNueva, 10)`.
@@ -47,7 +50,7 @@ clave de otro.
   - Devuelve `{ ok: true }`. Nunca loguea las claves.
 - **Controlador** `authController.cambiarClave`: lee `claveActual`/`claveNueva` del body
   (400 si faltan), llama al servicio con `req.agente.usuarioId`, mapea
-  `err.status` 401 → `{error, codigo:'clave_actual_incorrecta'}`, 422 →
+  `err.status` 403 → `{error, codigo:'clave_actual_incorrecta'}`, 422 →
   `{error:'la nueva contraseña no es válida'}`, 404 → 404, resto → 500.
 - **Ruta** `POST /api/auth/cambiar-clave`, con `requireAuth` y un rate-limit ligero
   (reusa el patrón de `limiteLogin`: ventana 15 min, tope modesto, keyed por
@@ -68,14 +71,14 @@ clave de otro.
 ## Manejo de errores
 
 - Faltan campos → 400.
-- `claveActual` incorrecta → 401 `clave_actual_incorrecta` (mensaje claro en UI).
+- `claveActual` incorrecta → 403 `clave_actual_incorrecta` (mensaje claro en UI).
 - `claveNueva` < 8 o igual a la actual → 422.
 - Usuario inexistente/inactivo → 404 (no debería ocurrir con sesión válida).
 - El cambio no afecta la sesión actual: el JWT ya emitido sigue válido.
 
 ## Pruebas (backend, `test/auth-cambiar-clave.test.js`, deps inyectadas)
 
-- `claveActual` incorrecta → lanza 401 y **no** llama a `actualizar`.
+- `claveActual` incorrecta → lanza 403 y **no** llama a `actualizar`.
 - `claveNueva` de 7 chars → lanza 422 y no actualiza.
 - `claveNueva` igual a la actual → lanza 422 y no actualiza.
 - Camino feliz → llama a `actualizar(usuarioId, hash)` con un hash que empieza por
