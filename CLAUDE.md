@@ -190,5 +190,26 @@ reescribe esa carpeta y nada más.
 
 ## Fase actual
 
-**Fase 1 — Ingesta.** Ver `docs/fase-1.md`. No empieces API de bandeja ni frontend
-hasta que la fase 1 esté validada corriendo en paralelo con la bandeja de 1msg.
+**En producción y operando** en `wa.losolivoscucuta.com` con ~11 agentes. Las tres
+fases originales están entregadas:
+
+- **Fase 1 — Ingesta** (`docs/fase-1.md`): webhook → `wa_eventos_webhook` → worker
+  (`wa-worker`) que normaliza, persiste (idempotente por `wa_message_id`) y emite por
+  socket. Corre en paralelo con la bandeja nativa de 1msg.
+- **Fase 2 — Bandeja operativa** (`docs/superpowers/specs/2026-07-24-fase2-bandeja-design.md`):
+  API + reglas de negocio (asignación en cascada, toma atómica, reapertura, general
+  FIFO, firma, permisos admin/asesor).
+- **Fase 3 — Frontend** (Vue 3 + Pinia + Tailwind, en `frontend/`): login JWT contra
+  `serfuweb.usuarios`, bandeja de 3 columnas, tiempo real por Socket.io.
+
+Funcionalidad ya desplegada por encima del core: media entrante y saliente + notas de
+voz, plantillas dentro/fuera de la ventana 24h, backfill de historial bajo demanda,
+buscador de contactos, respuestas rápidas, auditoría de asignaciones, notificación de
+sonido, consultas a BD externas (previsión, mantenimientos, prenecesidad), soporte
+BSUID/@lid, y **etiquetado de conversaciones + estadísticas por origen/interés**
+(`docs/superpowers/specs/2026-07-31-etiquetado-conversaciones-design.md`).
+
+Las migraciones propias van en `docs/migraciones/` (001–004 aplicadas). El trabajo
+actual es pulido/hardening y features acotadas, no construcción de core. El estado
+detallado de qué hay en producción se mantiene en la memoria del proyecto
+(`fase2-estado`).
