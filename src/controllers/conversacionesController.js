@@ -147,6 +147,30 @@ async function resolver(req, res) {
   }
 }
 
+async function archivar(req, res) {
+  try {
+    const n = await Conversacion.update(
+      { archivadaEn: new Date(), archivadaPor: req.agente.id },
+      { where: { id: req.params.id } },
+    );
+    if (!n[0]) return res.status(404).json({ error: 'no encontrada' });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`archivar conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function desarchivar(req, res) {
+  try {
+    await Conversacion.update({ archivadaEn: null, archivadaPor: null }, { where: { id: req.params.id } });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`desarchivar conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
 async function noLeido(req, res) {
   try {
     const conv = await accesible(req, res);
@@ -671,4 +695,4 @@ async function desetiquetarConv(req, res) {
   }
 }
 
-module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv };
+module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, archivar, desarchivar, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv };
