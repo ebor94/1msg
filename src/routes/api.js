@@ -38,9 +38,19 @@ const limiteLogin = rateLimit({
   message: { error: 'demasiados intentos, espera unos minutos' },
 });
 
+const limiteCambioClave = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `${obtenerIpCliente(req)}:${(req.agente && req.agente.usuarioId) || ''}`,
+  message: { error: 'demasiados intentos, espera unos minutos' },
+});
+
 const router = Router();
 router.post('/auth/login', limiteLogin, authCtrl.login);
 router.get('/auth/me', requireAuth, authCtrl.me);
+router.post('/auth/cambiar-clave', requireAuth, limiteCambioClave, authCtrl.cambiarClave);
 
 router.get('/conversaciones', requireAuth, convCtrl.listarHandler);
 router.get('/conversaciones/contadores', requireAuth, convCtrl.contadores);
