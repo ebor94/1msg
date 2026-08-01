@@ -18,11 +18,11 @@ function deps(over = {}) {
   return { ...base, ...over };
 }
 
-test('clave actual incorrecta → 401 y NO actualiza', async () => {
+test('clave actual incorrecta → 403 y NO actualiza', async () => {
   const d = deps();
   await assert.rejects(
     () => cambiarClave(9, 'malaClave', 'nuevaClave1', d),
-    (e) => e.status === 401 && e.codigo === 'clave_actual_incorrecta',
+    (e) => e.status === 403 && e.codigo === 'clave_actual_incorrecta',
   );
   assert.equal(d._llamadas.actualizar.length, 0);
 });

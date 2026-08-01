@@ -53,7 +53,7 @@ async function cambiarClave(usuarioId, claveActual, claveNueva, deps = {}) {
   if (!u || !u.activo) { const e = new Error('usuario no encontrado'); e.status = 404; throw e; }
 
   const ok = await comparar(String(claveActual || ''), u.password || '');
-  if (!ok) { const e = new Error('clave actual incorrecta'); e.status = 401; e.codigo = 'clave_actual_incorrecta'; throw e; }
+  if (!ok) { const e = new Error('clave actual incorrecta'); e.status = 403; e.codigo = 'clave_actual_incorrecta'; throw e; }
 
   const nueva = String(claveNueva || '');
   if (nueva.length < 8) { const e = new Error('clave nueva muy corta'); e.status = 422; throw e; }

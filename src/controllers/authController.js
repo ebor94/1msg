@@ -37,7 +37,7 @@ async function cambiarClave(req, res) {
     await cambiarClaveSvc(req.agente.usuarioId, claveActual, claveNueva);
     return res.json({ ok: true });
   } catch (err) {
-    if (err.status === 401) return res.status(401).json({ error: 'la contraseña actual no es correcta', codigo: 'clave_actual_incorrecta' });
+    if (err.status === 403) return res.status(403).json({ error: 'la contraseña actual no es correcta', codigo: 'clave_actual_incorrecta' });
     if (err.status === 422) return res.status(422).json({ error: 'la nueva contraseña no es válida (mínimo 8 caracteres y distinta de la actual)' });
     if (err.status === 404) return res.status(404).json({ error: 'usuario no encontrado' });
     logger.error(`cambiar clave usuario ${req.agente && req.agente.usuarioId}: ${err.message}`);
