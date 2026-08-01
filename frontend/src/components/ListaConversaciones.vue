@@ -25,7 +25,6 @@ watch(texto, (v) => {
   debounce = setTimeout(() => busqueda.buscar(v), 300);
 });
 
-const soloDigitos = (s) => s.replace(/\D/g, '');
 const porConfirmar = ref(null); // resultado de otro agente pendiente de confirmar
 const errorAccion = ref('');
 
