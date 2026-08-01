@@ -28,4 +28,9 @@ function destinatario1msg(contacto) {
   return { chatId: waId };
 }
 
-module.exports = { ventanaAbierta, conFirma, destinatario1msg };
+/** Un contacto desactivado no puede recibir mensajes salientes. */
+function contactoActivo(contacto) {
+  return !(contacto && contacto.desactivadoEn);
+}
+
+module.exports = { ventanaAbierta, conFirma, destinatario1msg, contactoActivo };

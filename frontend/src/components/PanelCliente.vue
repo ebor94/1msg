@@ -50,6 +50,18 @@ async function guardarNota() {
   await acc.agregarNota(c.value.id, t);
 }
 
+const esAdmin = computed(() => auth.esAdministrador);
+async function archivar() {
+  if (confirm('¿Archivar este chat? Saldrá de la bandeja y volverá si el cliente escribe.')) {
+    try { await acc.archivarConversacion(c.value.id, !c.value.archivadaEn); } catch { aviso.value = 'No se pudo archivar.'; }
+  }
+}
+async function desactivar() {
+  if (confirm('¿Desactivar este contacto? Se ocultarán sus chats y no podrás escribirle.')) {
+    try { await acc.desactivarContacto(c.value.contacto.id, c.value.id, !c.value.contacto?.desactivadoEn); } catch { aviso.value = 'No se pudo desactivar.'; }
+  }
+}
+
 const editando = ref(false);
 const nombreEdit = ref('');
 const guardandoNombre = ref(false);
@@ -380,6 +392,16 @@ function celda(p, k) {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Acciones de administrador -->
+    <div v-if="esAdmin" class="mt-4 border-t border-gray-100 pt-3 flex flex-col gap-2">
+      <button @click="archivar" class="w-full border border-gray-300 text-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50">
+        {{ c.archivadaEn ? 'Desarchivar chat' : '🗄️ Archivar chat' }}
+      </button>
+      <button @click="desactivar" class="w-full border border-red-200 text-red-600 rounded-lg py-2 text-sm hover:bg-red-50">
+        {{ c.contacto?.desactivadoEn ? 'Reactivar contacto' : '🚫 Desactivar contacto' }}
+      </button>
     </div>
 
     <!-- Popup: planes en tabla a lo ancho (con scroll horizontal) -->

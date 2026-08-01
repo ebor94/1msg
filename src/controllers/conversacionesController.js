@@ -8,7 +8,7 @@ const { recuperarHistorial } = require('../services/backfill');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
 const { enviarArchivo } = require('../integrations/onemsg/media');
-const { ventanaAbierta, destinatario1msg } = require('../services/envio');
+const { ventanaAbierta, destinatario1msg, contactoActivo } = require('../services/envio');
 const { guardarBufferComoMedia, categoriaMedia } = require('../services/media');
 const { transcodificarAOgg } = require('../services/audio');
 const { registrar } = require('../services/mediaPublica');
@@ -46,12 +46,14 @@ async function contadores(req, res) {
 
 async function listarHandler(req, res) {
   try {
+    const ocultos = req.query.ocultos === '1' || req.query.ocultos === 'true';
     const r = await listar({
       bandeja: req.query.bandeja,
       agenteSolicitante: req.agente,
       agenteFiltro: req.query.agente ? Number(req.query.agente) : null,
       q: req.query.q || null,
       soloNoLeidos: req.query.noLeidos === '1',
+      ocultos,
       pagina: Number(req.query.pagina) || 0,
     });
     return res.json(r);
@@ -141,6 +143,30 @@ async function resolver(req, res) {
     return res.json({ ok: true });
   } catch (err) {
     logger.error(`resolver conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function archivar(req, res) {
+  try {
+    const n = await Conversacion.update(
+      { archivadaEn: new Date(), archivadaPor: req.agente.id },
+      { where: { id: req.params.id } },
+    );
+    if (!n[0]) return res.status(404).json({ error: 'no encontrada' });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`archivar conversación ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function desarchivar(req, res) {
+  try {
+    await Conversacion.update({ archivadaEn: null, archivadaPor: null }, { where: { id: req.params.id } });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`desarchivar conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
 }
@@ -244,10 +270,14 @@ async function enviar(req, res) {
 
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid', 'desactivadoEn'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+
+    if (!contactoActivo(conv.contacto)) {
+      return res.status(409).json({ error: 'el contacto está desactivado', codigo: 'contacto_desactivado' });
+    }
 
     // Re-validar el agente (primer endpoint de escritura) y obtener su firma.
     const agente = await Agente.findByPk(req.agente.id);
@@ -312,10 +342,13 @@ async function enviarMedia(req, res) {
 
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid', 'desactivadoEn'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    if (!contactoActivo(conv.contacto)) {
+      return res.status(409).json({ error: 'el contacto está desactivado', codigo: 'contacto_desactivado' });
+    }
     const agente = await Agente.findByPk(req.agente.id);
     if (!agente || !agente.activo) return res.status(403).json({ error: 'agente inactivo' });
     if (!ventanaAbierta(conv.ventanaExpiraEn)) {
@@ -411,10 +444,13 @@ async function enviarPlantilla(req, res) {
 
   try {
     const conv = await Conversacion.findByPk(req.params.id, {
-      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'telefono', 'bsuid'] }],
+      include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'telefono', 'bsuid', 'desactivadoEn'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
     if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    if (!contactoActivo(conv.contacto)) {
+      return res.status(409).json({ error: 'el contacto está desactivado', codigo: 'contacto_desactivado' });
+    }
     const agente = await Agente.findByPk(req.agente.id);
     if (!agente || !agente.activo) return res.status(403).json({ error: 'agente inactivo' });
 
@@ -659,4 +695,4 @@ async function desetiquetarConv(req, res) {
   }
 }
 
-module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv };
+module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, archivar, desarchivar, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv };

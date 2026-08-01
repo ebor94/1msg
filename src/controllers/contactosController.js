@@ -102,7 +102,7 @@ async function buscar(req, res) {
   if (!condiciones.length) return res.json({ resultados: [] });
   try {
     const contactos = await Contacto.findAll({
-      where: { [Op.or]: condiciones },
+      where: { [Op.or]: condiciones, desactivadoEn: null },
       attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'agenteDuenoId'],
       include: [{ model: Agente, as: 'agenteDueno', attributes: ['id', 'nombre'] }],
       limit: 10,
@@ -338,4 +338,28 @@ async function actualizar(req, res) {
   }
 }
 
-module.exports = { crear, buscar, abrir, actualizar, prevision, mantenimientos, prenecesidad };
+async function desactivar(req, res) {
+  try {
+    const n = await Contacto.update(
+      { desactivadoEn: new Date(), desactivadoPor: req.agente.id },
+      { where: { id: req.params.id } },
+    );
+    if (!n[0]) return res.status(404).json({ error: 'no encontrado' });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`desactivar contacto ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+async function reactivar(req, res) {
+  try {
+    await Contacto.update({ desactivadoEn: null, desactivadoPor: null }, { where: { id: req.params.id } });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`reactivar contacto ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { crear, buscar, abrir, actualizar, desactivar, reactivar, prevision, mantenimientos, prenecesidad };

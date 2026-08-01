@@ -181,6 +181,24 @@ export const useAcciones = defineStore('acciones', {
       }
       conv.cargarContadores(); // Míos baja, Resueltos sube
     },
+    async archivarConversacion(convId, archivar = true) {
+      await apiFetch(`/conversaciones/${convId}/${archivar ? 'archivar' : 'desarchivar'}`, { method: 'POST' });
+      const conv = useConversaciones();
+      const i = conv.items.findIndex((c) => c.id === convId);
+      if (i !== -1) conv.items.splice(i, 1);
+      const chat = useChat();
+      if (chat.conversacion?.id === convId) chat.cerrar();
+      conv.cargarContadores();
+    },
+    async desactivarContacto(contactoId, convId, desactivar = true) {
+      await apiFetch(`/contactos/${contactoId}/${desactivar ? 'desactivar' : 'reactivar'}`, { method: 'POST' });
+      const chat = useChat();
+      if (chat.conversacion?.id === convId) chat.cerrar();
+      // Recarga autoritativa: desactivar oculta TODAS las conversaciones del contacto,
+      // no solo `convId` (y en "Ver ocultos" un contacto reactivado debe desaparecer de ahí).
+      // cargar() ya refresca los contadores en paralelo.
+      await useConversaciones().cargar();
+    },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {
         method: 'PATCH',

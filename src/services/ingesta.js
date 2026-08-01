@@ -72,6 +72,12 @@ async function resolverContacto(norm, transaction) {
   let cambio = false;
   if (norm.nombreWa && !contacto.nombreWa) { contacto.nombreWa = norm.nombreWa; cambio = true; }
   if (norm.bsuid && contacto.bsuid !== norm.bsuid) { contacto.bsuid = norm.bsuid; cambio = true; }
+  // Un mensaje ENTRANTE reactiva un contacto desactivado (reaparece en la bandeja).
+  if (norm.direccion === DIRECCION.IN && contacto.desactivadoEn) {
+    contacto.desactivadoEn = null;
+    contacto.desactivadoPor = null;
+    cambio = true;
+  }
   if (!creado && cambio) await contacto.save({ transaction });
   return { contacto, creado };
 }
@@ -199,6 +205,7 @@ async function actualizarDesnormalizados(conv, norm, transaction) {
   if (norm.direccion === DIRECCION.IN) {
     cambios.noLeidos = (conv.noLeidos || 0) + 1;
     cambios.ventanaExpiraEn = new Date(ts.getTime() + VENTANA_24H_MS);
+    if (conv.archivadaEn) { cambios.archivadaEn = null; cambios.archivadaPor = null; } // reaparece
   }
   if (Object.keys(cambios).length) await conv.update(cambios, { transaction });
 }

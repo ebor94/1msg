@@ -5,7 +5,12 @@ const { ESTADO_CONVERSACION, ROL_AGENTE } = require('../config/constants');
 
 const ABIERTAS = [ESTADO_CONVERSACION.NUEVA, ESTADO_CONVERSACION.ABIERTA, ESTADO_CONVERSACION.PENDIENTE];
 
-function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null }) {
+/** El modo "ver ocultos" solo aplica a la bandeja Todos (admin). */
+function esModoOcultos(bandeja, ocultos) {
+  return !!ocultos && bandeja === 'todos';
+}
+
+function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, ocultos = false }) {
   const where = {};
   if (bandeja === 'general') {
     where.agenteId = null;
@@ -24,6 +29,15 @@ function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = n
     where.agenteId = agenteSolicitante.id;
     where.estado = { [Op.in]: ABIERTAS };
   }
+  // Visibilidad: normal excluye archivadas; modo "ocultos" (solo Todos, admin) invierte.
+  if (esModoOcultos(bandeja, ocultos)) {
+    where[Op.or] = [
+      { archivadaEn: { [Op.ne]: null } },
+      { '$contacto.desactivado_en$': { [Op.ne]: null } },
+    ];
+  } else {
+    where.archivadaEn = null;
+  }
   return where;
 }
 
@@ -32,8 +46,9 @@ function puedeVer(agente, conv) {
   return conv.agenteId === agente.id || conv.agenteId === null;
 }
 
-async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, q = null, soloNoLeidos = false, pagina = 0, tam = 25 }) {
-  const where = construirFiltro({ bandeja, agenteSolicitante, agenteFiltro });
+async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, q = null, soloNoLeidos = false, ocultos = false, pagina = 0, tam = 25 }) {
+  const where = construirFiltro({ bandeja, agenteSolicitante, agenteFiltro, ocultos });
+  const ocultosEfectivo = esModoOcultos(bandeja, ocultos);
   if (soloNoLeidos) where.noLeidos = { [Op.gt]: 0 };
   const orden = bandeja === 'general'
     ? [['ultimoMensajeEn', 'ASC']]
@@ -42,10 +57,15 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
     model: Contacto,
     as: 'contacto',
     required: true,
-    attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay'],
+    attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'desactivadoEn'],
   };
+  // En modo normal se excluyen los contactos desactivados; en "ocultos" se incluyen
+  // (la condición de desactivado ya va en el Op.or del where). Usa la MISMA condición
+  // que construirFiltro (esModoOcultos) para no depender del `ocultos` crudo del query.
+  if (!ocultosEfectivo) contacto.where = { desactivadoEn: null };
   if (q) {
     contacto.where = {
+      ...(contacto.where || {}),
       [Op.or]: [
         { nombreDisplay: { [Op.like]: `%${q}%` } },
         { nombreWa: { [Op.like]: `%${q}%` } },
@@ -75,11 +95,12 @@ async function contarBandejas({ agenteSolicitante, agenteFiltro = null }) {
   // resto usa el filtro normal de la bandeja (siempre del agente que consulta).
   const whereDe = (b) => {
     if (b !== 'todos') return construirFiltro({ bandeja: b, agenteSolicitante });
-    const w = { estado: { [Op.in]: ABIERTAS } };
+    const w = { estado: { [Op.in]: ABIERTAS }, archivadaEn: null };
     if (agenteFiltro) w.agenteId = agenteFiltro;
     return w;
   };
-  const cuenta = (where) => Conversacion.count({ where });
+  const contactoActivo = { model: Contacto, as: 'contacto', required: true, where: { desactivadoEn: null }, attributes: [] };
+  const cuenta = (where) => Conversacion.count({ where, include: [contactoActivo] });
 
   const total = {};
   const noLeidos = {};
@@ -93,4 +114,4 @@ async function contarBandejas({ agenteSolicitante, agenteFiltro = null }) {
   return { ...total, noLeidos };
 }
 
-module.exports = { construirFiltro, puedeVer, listar, contarBandejas };
+module.exports = { construirFiltro, puedeVer, listar, contarBandejas, esModoOcultos };

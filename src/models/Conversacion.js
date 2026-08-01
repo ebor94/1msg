@@ -20,6 +20,8 @@ module.exports = (sequelize, DataTypes) =>
         allowNull: false,
         defaultValue: ESTADO_CONVERSACION.NUEVA,
       },
+      archivadaEn: { type: DataTypes.DATE, allowNull: true },
+      archivadaPor: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
       origen: {
         type: DataTypes.ENUM(...Object.values(ORIGEN_CONVERSACION)),
         allowNull: false,

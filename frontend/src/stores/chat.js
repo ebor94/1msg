@@ -47,6 +47,8 @@ export const useChat = defineStore('chat', {
         if (e.codigo === 'tomada') {
           this.errorEnvio = 'Otro agente ya tomó este chat.';
           useConversaciones().cargar(); // sale de general en la lista
+        } else if (e.codigo === 'contacto_desactivado') {
+          this.errorEnvio = 'El contacto está desactivado; reactívalo para escribirle.';
         } else {
           this.errorEnvio = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.' : 'No se pudo enviar.';
         }
