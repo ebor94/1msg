@@ -5,6 +5,11 @@ const { ESTADO_CONVERSACION, ROL_AGENTE } = require('../config/constants');
 
 const ABIERTAS = [ESTADO_CONVERSACION.NUEVA, ESTADO_CONVERSACION.ABIERTA, ESTADO_CONVERSACION.PENDIENTE];
 
+/** El modo "ver ocultos" solo aplica a la bandeja Todos (admin). */
+function esModoOcultos(bandeja, ocultos) {
+  return !!ocultos && bandeja === 'todos';
+}
+
 function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, ocultos = false }) {
   const where = {};
   if (bandeja === 'general') {
@@ -25,7 +30,7 @@ function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = n
     where.estado = { [Op.in]: ABIERTAS };
   }
   // Visibilidad: normal excluye archivadas; modo "ocultos" (solo Todos, admin) invierte.
-  if (ocultos && bandeja === 'todos') {
+  if (esModoOcultos(bandeja, ocultos)) {
     where[Op.or] = [
       { archivadaEn: { [Op.ne]: null } },
       { '$contacto.desactivado_en$': { [Op.ne]: null } },
@@ -43,6 +48,7 @@ function puedeVer(agente, conv) {
 
 async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, q = null, soloNoLeidos = false, ocultos = false, pagina = 0, tam = 25 }) {
   const where = construirFiltro({ bandeja, agenteSolicitante, agenteFiltro, ocultos });
+  const ocultosEfectivo = esModoOcultos(bandeja, ocultos);
   if (soloNoLeidos) where.noLeidos = { [Op.gt]: 0 };
   const orden = bandeja === 'general'
     ? [['ultimoMensajeEn', 'ASC']]
@@ -54,8 +60,9 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
     attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'desactivadoEn'],
   };
   // En modo normal se excluyen los contactos desactivados; en "ocultos" se incluyen
-  // (la condición de desactivado ya va en el Op.or del where).
-  if (!ocultos) contacto.where = { desactivadoEn: null };
+  // (la condición de desactivado ya va en el Op.or del where). Usa la MISMA condición
+  // que construirFiltro (esModoOcultos) para no depender del `ocultos` crudo del query.
+  if (!ocultosEfectivo) contacto.where = { desactivadoEn: null };
   if (q) {
     contacto.where = {
       ...(contacto.where || {}),
@@ -107,4 +114,4 @@ async function contarBandejas({ agenteSolicitante, agenteFiltro = null }) {
   return { ...total, noLeidos };
 }
 
-module.exports = { construirFiltro, puedeVer, listar, contarBandejas };
+module.exports = { construirFiltro, puedeVer, listar, contarBandejas, esModoOcultos };

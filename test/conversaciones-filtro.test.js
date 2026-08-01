@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { Op } = require('sequelize');
-const { construirFiltro, puedeVer } = require('../src/services/conversaciones');
+const { construirFiltro, puedeVer, esModoOcultos } = require('../src/services/conversaciones');
 
 const admin = { id: 1, rol: 'administrador' };
 const asesor = { id: 2, rol: 'asesor' };
@@ -43,4 +43,12 @@ test('ocultos ignorado fuera de todos → sigue excluyendo archivadas', () => {
 });
 test('todos con ocultos como asesor → 403', () => {
   assert.throws(() => construirFiltro({ bandeja: 'todos', agenteSolicitante: asesor, ocultos: true }), (e) => e.status === 403);
+});
+
+test('esModoOcultos: true solo con todos + ocultos', () => {
+  assert.equal(esModoOcultos('todos', true), true);
+  assert.equal(esModoOcultos('todos', false), false);
+  assert.equal(esModoOcultos('mias', true), false);
+  assert.equal(esModoOcultos('general', true), false);
+  assert.equal(esModoOcultos('resueltos', true), false);
 });
