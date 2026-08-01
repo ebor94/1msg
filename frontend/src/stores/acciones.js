@@ -181,6 +181,23 @@ export const useAcciones = defineStore('acciones', {
       }
       conv.cargarContadores(); // Míos baja, Resueltos sube
     },
+    async archivarConversacion(convId, archivar = true) {
+      await apiFetch(`/conversaciones/${convId}/${archivar ? 'archivar' : 'desarchivar'}`, { method: 'POST' });
+      const conv = useConversaciones();
+      const i = conv.items.findIndex((c) => c.id === convId);
+      if (i !== -1) conv.items.splice(i, 1);
+      const chat = useChat();
+      if (chat.conversacion?.id === convId) chat.cerrar();
+      conv.cargarContadores();
+    },
+    async desactivarContacto(contactoId, convId, desactivar = true) {
+      await apiFetch(`/contactos/${contactoId}/${desactivar ? 'desactivar' : 'reactivar'}`, { method: 'POST' });
+      const conv = useConversaciones();
+      if (convId) { const i = conv.items.findIndex((c) => c.id === convId); if (i !== -1) conv.items.splice(i, 1); }
+      const chat = useChat();
+      if (chat.conversacion?.id === convId) chat.cerrar();
+      conv.cargarContadores();
+    },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {
         method: 'PATCH',

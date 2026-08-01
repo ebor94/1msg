@@ -72,6 +72,7 @@ async function enviarAdj() {
     errorAdj.value = e.codigo === 'fuera_de_ventana' ? 'La ventana de 24h está cerrada.'
       : e.codigo === 'tomada' ? 'Otro agente ya tomó este chat.'
       : e.codigo === 'audio' ? 'No se pudo procesar el audio.'
+      : e.codigo === 'contacto_desactivado' ? 'El contacto está desactivado; reactívalo para escribirle.'
       : (e.status === 413 ? 'El archivo supera 16 MB.' : 'No se pudo enviar el archivo.');
     if (e.codigo === 'tomada') useConversaciones().cargar();
   } finally {

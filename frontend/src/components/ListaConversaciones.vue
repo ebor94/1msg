@@ -172,6 +172,9 @@ function onScrollLista(e) {
           <option v-for="a in acc.agentes" :key="a.id" :value="a.id">{{ a.nombre }}</option>
         </select>
       </div>
+      <label v-if="auth.esAdministrador && conv.bandeja === 'todos'" class="flex items-center gap-1 text-[11px] text-gray-500 px-2 pb-1">
+        <input type="checkbox" :checked="conv.ocultos" @change="conv.ocultos = $event.target.checked; conv.cargar('todos')" /> Ver ocultos
+      </label>
       <div class="px-2.5 pb-1">
         <button @click="conv.alternarNoLeidos()"
           class="text-[12px] px-2.5 py-1 rounded-full border inline-flex items-center gap-1"

@@ -14,6 +14,7 @@ export const useConversaciones = defineStore('conversaciones', {
     error: '',
     soloNoLeidos: false,
     agenteFiltro: null,
+    ocultos: false,
     contadores: { mias: 0, general: 0, resueltos: 0, todos: 0, noLeidos: { mias: 0, general: 0, resueltos: 0, todos: 0 } },
   }),
   getters: {
@@ -24,6 +25,7 @@ export const useConversaciones = defineStore('conversaciones', {
       let url = `/conversaciones?bandeja=${this.bandeja}&pagina=${pagina}`;
       if (this.soloNoLeidos) url += '&noLeidos=1';
       if (this.bandeja === 'todos' && this.agenteFiltro) url += `&agente=${this.agenteFiltro}`;
+      if (this.bandeja === 'todos' && this.ocultos) url += '&ocultos=1';
       return url;
     },
     async cargarContadores() {
