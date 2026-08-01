@@ -1,5 +1,5 @@
 'use strict';
-const { autenticar } = require('../services/auth');
+const { autenticar, cambiarClave: cambiarClaveSvc } = require('../services/auth');
 const { firmar } = require('../utils/jwt');
 const logger = require('../utils/logger');
 const { obtenerIpCliente } = require('../utils/ipCliente');
@@ -30,4 +30,19 @@ function me(req, res) {
   return res.json({ agente: req.agente });
 }
 
-module.exports = { login, me };
+async function cambiarClave(req, res) {
+  const { claveActual, claveNueva } = req.body || {};
+  if (!claveActual || !claveNueva) return res.status(400).json({ error: 'clave actual y nueva requeridas' });
+  try {
+    await cambiarClaveSvc(req.agente.usuarioId, claveActual, claveNueva);
+    return res.json({ ok: true });
+  } catch (err) {
+    if (err.status === 403) return res.status(403).json({ error: 'la contraseña actual no es correcta', codigo: 'clave_actual_incorrecta' });
+    if (err.status === 422) return res.status(422).json({ error: 'la nueva contraseña no es válida (mínimo 8 caracteres y distinta de la actual)' });
+    if (err.status === 404) return res.status(404).json({ error: 'usuario no encontrado' });
+    logger.error(`cambiar clave usuario ${req.agente && req.agente.usuarioId}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { login, me, cambiarClave };

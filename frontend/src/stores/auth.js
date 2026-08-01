@@ -35,5 +35,11 @@ export const useAuth = defineStore('auth', {
       this.agente = null;
       localStorage.removeItem(CLAVE_TOKEN);
     },
+    async cambiarClave(claveActual, claveNueva) {
+      return apiFetch('/auth/cambiar-clave', {
+        method: 'POST',
+        body: JSON.stringify({ claveActual, claveNueva }),
+      });
+    },
   },
 });
