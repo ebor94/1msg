@@ -12,6 +12,7 @@ import VistaChat from '../components/VistaChat.vue';
 import PanelCliente from '../components/PanelCliente.vue';
 import PanelAgentes from '../components/PanelAgentes.vue';
 import PanelEstadisticas from '../components/PanelEstadisticas.vue';
+import PanelCambiarClave from '../components/PanelCambiarClave.vue';
 
 const auth = useAuth();
 const chat = useChat();
@@ -30,6 +31,7 @@ function salir() {
 
 const mostrarAgentes = ref(false);
 const mostrarEtiquetas = ref(false);
+const mostrarCambioClave = ref(false);
 const mostrarNuevo = ref(false);
 const nuevoTelefono = ref('');
 const nuevoNombre = ref('');
@@ -75,6 +77,7 @@ async function crearContacto() {
         <span class="bg-white/20 px-2 py-0.5 rounded-full text-[11px] capitalize">{{ auth.agente?.rol }}</span>
         <span>{{ auth.agente?.nombre }}</span>
         <div class="w-7 h-7 rounded-full bg-marca grid place-items-center text-xs font-bold">{{ iniciales(auth.agente?.nombre) }}</div>
+        <button class="ml-2 text-white/80 hover:text-white text-xs" title="Cambiar contraseña" @click="mostrarCambioClave = true">🔑</button>
         <button class="ml-2 text-white/80 hover:text-white text-xs underline" @click="salir">Salir</button>
       </div>
     </header>
@@ -114,5 +117,6 @@ async function crearContacto() {
 
     <PanelAgentes v-if="mostrarAgentes" @cerrar="mostrarAgentes = false" />
     <PanelEstadisticas v-if="mostrarEtiquetas" @cerrar="mostrarEtiquetas = false" />
+    <PanelCambiarClave v-if="mostrarCambioClave" @cerrar="mostrarCambioClave = false" />
   </div>
 </template>
