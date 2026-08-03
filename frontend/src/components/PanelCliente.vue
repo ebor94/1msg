@@ -14,6 +14,16 @@ const nuevaNota = ref('');
 const aviso = ref('');
 const mostrarHistorial = ref(false);
 
+// Estado de compra del contacto (¿compró?): '' = Seleccione, si/no/pendiente.
+async function cambiarCompro(e) {
+  const valor = e.target.value; // '' | 'si' | 'no' | 'pendiente'
+  try {
+    await acc.marcarCompro(c.value.contacto.id, valor);
+  } catch {
+    aviso.value = 'No se pudo guardar el estado de compra.';
+  }
+}
+
 // El select refleja el agente actual (se sincroniza también con cambios en vivo).
 const seleccion = ref('');
 watch(() => c.value?.agenteId, (v) => { seleccion.value = v == null ? '' : v; }, { immediate: true });
@@ -236,6 +246,23 @@ function celda(p, k) {
     <div class="text-center text-gray-500 text-[12.5px] mb-4">{{ c.contacto?.telefono }}</div>
     <div class="text-[12.5px] text-gray-700 py-2 border-t border-gray-100 flex justify-between"><span class="text-gray-400">Estado</span><span class="capitalize">{{ c.estado }}</span></div>
     <div class="text-[12.5px] text-gray-700 py-2 border-t border-gray-100 flex justify-between"><span class="text-gray-400">Origen</span><span class="capitalize">{{ c.origen }}</span></div>
+
+    <div class="py-2 border-t border-gray-100">
+      <div class="text-[11px] text-gray-400 uppercase mb-1">¿Compró?</div>
+      <select :value="c.contacto?.compro || ''" @change="cambiarCompro"
+        class="w-full border rounded-lg px-2 py-1.5 text-[13px] font-semibold"
+        :class="{
+          'text-green-700 border-green-300 bg-green-50': c.contacto?.compro === 'si',
+          'text-red-700 border-red-300 bg-red-50': c.contacto?.compro === 'no',
+          'text-amber-700 border-amber-300 bg-amber-50': c.contacto?.compro === 'pendiente',
+          'text-gray-500': !c.contacto?.compro,
+        }">
+        <option value="">Seleccione…</option>
+        <option value="si">Sí</option>
+        <option value="no">No</option>
+        <option value="pendiente">Pendiente</option>
+      </select>
+    </div>
 
     <button v-if="!c.agenteId" @click="tomar" class="w-full mt-2 bg-marca text-white rounded-lg py-2 text-sm font-semibold">Tomar chat</button>
     <p v-if="aviso" class="text-[12px] text-red-600 text-center mt-1">{{ aviso }}</p>

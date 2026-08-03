@@ -199,6 +199,18 @@ export const useAcciones = defineStore('acciones', {
       // cargar() ya refresca los contadores en paralelo.
       await useConversaciones().cargar();
     },
+    async marcarCompro(contactoId, compro) {
+      const r = await apiFetch(`/contactos/${contactoId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ compro }),
+      });
+      const nuevo = r.contacto.compro;
+      const chat = useChat();
+      if (chat.conversacion?.contacto?.id === contactoId) chat.conversacion.contacto.compro = nuevo;
+      const item = useConversaciones().items.find((c) => c.contacto?.id === contactoId);
+      if (item?.contacto) item.contacto.compro = nuevo;
+      return nuevo;
+    },
     async editarNombre(contactoId, nombre) {
       const r = await apiFetch(`/contactos/${contactoId}`, {
         method: 'PATCH',

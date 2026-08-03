@@ -103,7 +103,7 @@ async function buscar(req, res) {
   try {
     const contactos = await Contacto.findAll({
       where: { [Op.or]: condiciones, desactivadoEn: null },
-      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'agenteDuenoId'],
+      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'agenteDuenoId', 'compro'],
       include: [{ model: Agente, as: 'agenteDueno', attributes: ['id', 'nombre'] }],
       limit: 10,
     });
@@ -132,6 +132,7 @@ function contactoPlano(c) {
     telefono: c.telefono,
     nombreWa: c.nombreWa,
     nombreDisplay: c.nombreDisplay,
+    compro: c.compro,
   };
 }
 
@@ -315,14 +316,28 @@ function normalizarNombre(s) {
 }
 
 /** PATCH /api/contactos/:id — edita el nombre visible (nombre_display). */
+const COMPRO_VALIDOS = ['si', 'no', 'pendiente'];
+
 async function actualizar(req, res) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'id inválido' });
-  const nombreDisplay = normalizarNombre(req.body && req.body.nombreDisplay);
+  const body = req.body || {};
+  // Solo se actualizan los campos presentes en el body (PATCH parcial): así marcar
+  // "compró" no pisa el nombre, y editar el nombre no toca "compró".
+  const cambios = {};
+  if (body.nombreDisplay !== undefined) cambios.nombreDisplay = normalizarNombre(body.nombreDisplay);
+  if (body.compro !== undefined) {
+    const raw = body.compro;
+    let v;
+    if (raw === '' || raw === null) v = null;
+    else if (typeof raw === 'string' && COMPRO_VALIDOS.includes(raw)) v = raw;
+    else return res.status(422).json({ error: 'estado de compra inválido' });
+    cambios.compro = v;
+  }
   try {
     const contacto = await Contacto.findByPk(id);
     if (!contacto) return res.status(404).json({ error: 'no encontrado' });
-    await contacto.update({ nombreDisplay });
+    if (Object.keys(cambios).length) await contacto.update(cambios);
     return res.json({
       contacto: {
         id: contacto.id,
@@ -330,6 +345,7 @@ async function actualizar(req, res) {
         telefono: contacto.telefono,
         nombreWa: contacto.nombreWa,
         nombreDisplay: contacto.nombreDisplay,
+        compro: contacto.compro,
       },
     });
   } catch (err) {
