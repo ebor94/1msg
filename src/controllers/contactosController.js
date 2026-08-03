@@ -327,10 +327,11 @@ async function actualizar(req, res) {
   const cambios = {};
   if (body.nombreDisplay !== undefined) cambios.nombreDisplay = normalizarNombre(body.nombreDisplay);
   if (body.compro !== undefined) {
-    const v = body.compro === '' || body.compro === null ? null : String(body.compro);
-    if (v !== null && !COMPRO_VALIDOS.includes(v)) {
-      return res.status(422).json({ error: 'estado de compra inválido' });
-    }
+    const raw = body.compro;
+    let v;
+    if (raw === '' || raw === null) v = null;
+    else if (typeof raw === 'string' && COMPRO_VALIDOS.includes(raw)) v = raw;
+    else return res.status(422).json({ error: 'estado de compra inválido' });
     cambios.compro = v;
   }
   try {
