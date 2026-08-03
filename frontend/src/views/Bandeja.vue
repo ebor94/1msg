@@ -34,6 +34,7 @@ const mostrarAgentes = ref(false);
 const mostrarEtiquetas = ref(false);
 const mostrarCambioClave = ref(false);
 const mostrarNuevo = ref(false);
+const menuAbierto = ref(false); // menú desplegable de la cabecera (agrupa las acciones)
 const nuevoTelefono = ref('');
 const nuevoNombre = ref('');
 const nuevoError = ref('');
@@ -72,18 +73,39 @@ async function crearContacto() {
   <div class="h-full flex flex-col">
     <header class="bg-marca-oscuro text-white flex items-center justify-between px-4 py-2.5">
       <div class="font-bold">Serfunorte · Bandeja</div>
-      <div class="flex items-center gap-2 text-sm">
-        <button v-if="auth.esAdministrador" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="mostrarAgentes = true">📊 Agentes</button>
-        <button v-if="auth.esAdministrador" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="mostrarEtiquetas = true">🏷️ Etiquetas</button>
-        <button class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[11px]" @click="abrirNuevo">＋ Contacto</button>
-        <button class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-[13px]"
-          :title="sonido.activado ? 'Silenciar notificaciones' : 'Activar notificaciones'"
-          @click="sonido.alternar()">{{ sonido.activado ? '🔔' : '🔕' }}</button>
-        <span class="bg-white/20 px-2 py-0.5 rounded-full text-[11px] capitalize">{{ auth.agente?.rol }}</span>
-        <span>{{ auth.agente?.nombre }}</span>
-        <div class="w-7 h-7 rounded-full bg-marca grid place-items-center text-xs font-bold">{{ iniciales(auth.agente?.nombre) }}</div>
-        <button class="ml-2 text-white/80 hover:text-white text-xs" title="Cambiar contraseña" @click="mostrarCambioClave = true">🔑</button>
-        <button class="ml-2 text-white/80 hover:text-white text-xs underline" @click="salir">Salir</button>
+      <!-- Menú unificado: agrupa todas las acciones (se despliega desde el avatar). -->
+      <div class="relative">
+        <button class="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-full pl-3 pr-2 py-1"
+          @click="menuAbierto = !menuAbierto">
+          <span class="hidden sm:inline text-sm max-w-[160px] truncate">{{ auth.agente?.nombre }}</span>
+          <div class="w-7 h-7 rounded-full bg-marca grid place-items-center text-xs font-bold shrink-0">{{ iniciales(auth.agente?.nombre) }}</div>
+          <span class="text-white/70 text-[10px]">▼</span>
+        </button>
+
+        <!-- Fondo para cerrar al tocar afuera -->
+        <div v-if="menuAbierto" class="fixed inset-0 z-40" @click="menuAbierto = false"></div>
+
+        <!-- Desplegable -->
+        <div v-if="menuAbierto"
+          class="absolute right-0 mt-2 w-60 bg-white text-gray-700 rounded-lg shadow-lg z-50 py-1 text-[13px] overflow-hidden">
+          <div class="px-3 py-2 border-b border-gray-100">
+            <div class="font-semibold text-gray-800 truncate">{{ auth.agente?.nombre }}</div>
+            <div class="text-[11px] text-gray-400 capitalize">{{ auth.agente?.rol }}</div>
+          </div>
+          <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; mostrarAgentes = true">📊 Agentes</button>
+          <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; mostrarEtiquetas = true">🏷️ Etiquetas</button>
+          <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; abrirNuevo()">＋ Nuevo contacto</button>
+          <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="sonido.alternar()">{{ sonido.activado ? '🔔 Silenciar sonido' : '🔕 Activar sonido' }}</button>
+          <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; mostrarCambioClave = true">🔑 Cambiar contraseña</button>
+          <div class="border-t border-gray-100 my-1"></div>
+          <button class="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600"
+            @click="menuAbierto = false; salir()">↩ Salir</button>
+        </div>
       </div>
     </header>
     <div class="flex-1 min-h-0 md:grid" style="grid-template-columns: 340px 1fr 300px;">
