@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../stores/auth';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import { useSonido } from '../stores/sonido';
 import { iniciales } from '../utils/formato';
+import { PAISES, componerTelefono } from '../utils/paises';
 import { conectarSocket, desconectarSocket } from '../socket/cliente';
 import ListaConversaciones from '../components/ListaConversaciones.vue';
 import VistaChat from '../components/VistaChat.vue';
@@ -37,12 +38,16 @@ const nuevoTelefono = ref('');
 const nuevoNombre = ref('');
 const nuevoError = ref('');
 const nuevoOk = ref('');
+const paisCodigo = ref(PAISES[0].codigo); // Colombia +57 por defecto
+// Número internacional compuesto (indicativo + número local que teclea el agente).
+const nuevoTelCompuesto = computed(() => componerTelefono(paisCodigo.value, nuevoTelefono.value));
 
 function abrirNuevo() {
   nuevoTelefono.value = '';
   nuevoNombre.value = '';
   nuevoError.value = '';
   nuevoOk.value = '';
+  paisCodigo.value = PAISES[0].codigo;
   mostrarNuevo.value = true;
 }
 
@@ -54,7 +59,7 @@ async function crearContacto() {
   nuevoError.value = '';
   nuevoOk.value = '';
   try {
-    await acc.crearContacto(nuevoTelefono.value.trim(), nuevoNombre.value.trim());
+    await acc.crearContacto(nuevoTelCompuesto.value, nuevoNombre.value.trim());
     // El contacto quedó en Míos y su chat se abrió: cerramos el modal.
     mostrarNuevo.value = false;
   } catch (e) {
@@ -102,8 +107,13 @@ async function crearContacto() {
     <div v-if="mostrarNuevo" class="fixed inset-0 bg-black/40 grid place-items-center z-50" @click.self="cerrarNuevo">
       <div class="bg-white rounded-lg p-4 w-80 shadow-lg">
         <h3 class="text-sm font-semibold text-gray-800 mb-3">Nuevo contacto</h3>
+        <label class="block text-[11px] text-gray-400 uppercase mb-1">País</label>
+        <select v-model="paisCodigo" class="w-full border rounded px-2 py-1.5 text-[13px] mb-2">
+          <option v-for="p in PAISES" :key="p.codigo + p.nombre" :value="p.codigo">{{ p.bandera }} {{ p.nombre }} +{{ p.codigo }}</option>
+        </select>
         <label class="block text-[11px] text-gray-400 uppercase mb-1">Teléfono</label>
-        <input v-model="nuevoTelefono" placeholder="573001234567" class="w-full border rounded px-2 py-1.5 text-[13px] mb-2" />
+        <input v-model="nuevoTelefono" inputmode="numeric" placeholder="Número (sin indicativo)" class="w-full border rounded px-2 py-1.5 text-[13px] mb-1" />
+        <p v-if="nuevoTelefono" class="text-[11px] text-gray-400 mb-2">Se creará: +{{ nuevoTelCompuesto }}</p>
         <label class="block text-[11px] text-gray-400 uppercase mb-1">Nombre</label>
         <input v-model="nuevoNombre" placeholder="Nombre (opcional)" class="w-full border rounded px-2 py-1.5 text-[13px] mb-2" />
         <div v-if="nuevoError" class="text-[12px] text-red-500 mb-2">{{ nuevoError }}</div>

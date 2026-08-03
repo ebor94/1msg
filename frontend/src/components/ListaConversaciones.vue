@@ -1,12 +1,11 @@
 <script setup>
-import { onMounted, ref, watch, computed } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useConversaciones } from '../stores/conversaciones';
 import { useAuth } from '../stores/auth';
 import { useBusqueda } from '../stores/busqueda';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import ItemConversacion from './ItemConversacion.vue';
-import { PAISES, componerTelefono } from '../utils/paises';
 
 const conv = useConversaciones();
 const auth = useAuth();
@@ -17,8 +16,7 @@ const acc = useAcciones();
 onMounted(() => { conv.cargar('mias'); acc.cargarAgentes(); });
 
 const texto = ref('');
-const paisCodigo = ref(PAISES[0].codigo); // Colombia +57 por defecto
-const telCompuesto = computed(() => componerTelefono(paisCodigo.value, texto.value));
+const soloDigitos = (s) => s.replace(/\D/g, '');
 let debounce = null;
 watch(texto, (v) => {
   clearTimeout(debounce);
@@ -91,7 +89,7 @@ async function confirmarToma() {
 }
 
 async function iniciar() {
-  const tel = telCompuesto.value;
+  const tel = soloDigitos(texto.value);
   errorAccion.value = '';
   try {
     await acc.crearContacto(tel, '');
@@ -121,12 +119,6 @@ function onScrollLista(e) {
           class="w-full bg-gray-100 rounded-full px-4 py-2 text-[13px] outline-none" />
         <button v-if="texto" class="absolute right-3 top-2 text-gray-400 text-sm" @click="limpiar">✕</button>
       </div>
-      <div class="mt-1.5 flex items-center gap-1 text-[11px] text-gray-500">
-        <span>País:</span>
-        <select v-model="paisCodigo" class="bg-gray-100 rounded px-2 py-1 text-[12px] outline-none">
-          <option v-for="p in PAISES" :key="p.codigo + p.nombre" :value="p.codigo">{{ p.bandera }} {{ p.nombre }} +{{ p.codigo }}</option>
-        </select>
-      </div>
     </div>
 
     <!-- Resultados de búsqueda -->
@@ -145,9 +137,9 @@ function onScrollLista(e) {
             {{ r.esMio ? 'Tuyo' : r.esGeneral ? 'General' : r.agenteActualNombre ? ('de ' + r.agenteActualNombre) : 'Nuevo' }}
           </span>
         </div>
-        <div v-if="!busqueda.resultados.length && telCompuesto.length >= 10"
+        <div v-if="!busqueda.resultados.length && soloDigitos(texto).length >= 10"
           @click="iniciar" class="px-3 py-3 cursor-pointer hover:bg-gray-50 text-marca-oscuro text-[13px] font-semibold">
-          ＋ Iniciar chat con +{{ telCompuesto }}
+          ＋ Iniciar chat con {{ soloDigitos(texto) }}
         </div>
         <div v-else-if="!busqueda.resultados.length" class="p-4 text-center text-gray-400 text-sm">Sin resultados.</div>
       </template>
