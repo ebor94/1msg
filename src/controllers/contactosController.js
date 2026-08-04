@@ -9,6 +9,7 @@ const { construirResultado } = require('../services/busquedaContactos');
 const { consultarPlanesPorDocumento } = require('../integrations/prevision/cliente');
 const { consultarMantenimientos } = require('../integrations/mantenimientos/cliente');
 const { consultarPrenecesidad } = require('../integrations/prenecesidad/cliente');
+const informeSvc = require('../services/informeContactos');
 
 function soloDigitos(s) {
   return String(s || '').replace(/\D/g, '');
@@ -378,4 +379,21 @@ async function reactivar(req, res) {
   }
 }
 
-module.exports = { crear, buscar, abrir, actualizar, desactivar, reactivar, prevision, mantenimientos, prenecesidad };
+/** GET /api/contactos/informe — reporte tabular de contactos con filtros. */
+async function informe(req, res) {
+  let filtros;
+  try {
+    filtros = informeSvc.parsearFiltros(req.query || {});
+  } catch (err) {
+    if (err.status === 422) return res.status(422).json({ error: err.message });
+    throw err;
+  }
+  try {
+    return res.json(await informeSvc.consultar(filtros));
+  } catch (err) {
+    logger.error(`informe contactos: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = { crear, buscar, abrir, actualizar, desactivar, reactivar, prevision, mantenimientos, prenecesidad, informe };
