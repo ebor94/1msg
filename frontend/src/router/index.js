@@ -5,6 +5,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'bandeja', component: () => import('../views/Bandeja.vue'), meta: { requiereAuth: true } },
+    { path: '/informe', name: 'informe', component: () => import('../views/Informe.vue'), meta: { requiereAuth: true } },
     { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
   ],
 });
