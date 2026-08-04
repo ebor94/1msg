@@ -76,6 +76,7 @@ router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
 router.get('/agentes/totales', requireAuth, requireAdmin, agentesCtrl.totales);
 router.get('/agentes', requireAuth, agentesCtrl.listar);
 router.get('/contactos/buscar', requireAuth, contactosCtrl.buscar);
+router.get('/contactos/informe', requireAuth, contactosCtrl.informe);
 router.post('/contactos', requireAuth, contactosCtrl.crear);
 router.post('/contactos/:id/conversacion', requireAuth, contactosCtrl.abrir);
 router.get('/contactos/:id/prevision', requireAuth, contactosCtrl.prevision);

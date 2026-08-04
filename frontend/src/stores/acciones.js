@@ -36,6 +36,13 @@ export const useAcciones = defineStore('acciones', {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/prenecesidad${q}`);
     },
+    async cargarInforme(filtros = {}) {
+      const q = new URLSearchParams();
+      for (const [k, v] of Object.entries(filtros)) {
+        if (v !== '' && v != null) q.set(k, v);
+      }
+      return apiFetch(`/contactos/informe?${q.toString()}`);
+    },
     async cargarEtiquetas() {
       if (this.catalogoEtiquetas.origen.length || this.catalogoEtiquetas.interes.length) return this.catalogoEtiquetas;
       this.catalogoEtiquetas = await apiFetch('/etiquetas');

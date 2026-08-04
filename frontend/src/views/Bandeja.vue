@@ -99,6 +99,8 @@ async function crearContacto() {
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; abrirNuevo()">＋ Nuevo contacto</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; router.push('/informe')">📋 Informe de contactos</button>
+          <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="sonido.alternar()">{{ sonido.activado ? '🔔 Silenciar sonido' : '🔕 Activar sonido' }}</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; mostrarCambioClave = true">🔑 Cambiar contraseña</button>
