@@ -506,7 +506,7 @@ function celda(p, k) {
                 <tr v-for="(p, i) in pren.contratos" :key="i" class="border-b border-gray-100 hover:bg-gray-50"
                   :class="p === prenSel ? 'bg-marca/10' : ''">
                   <td v-for="k in columnasPren" :key="k" class="px-2 py-1 text-gray-800 align-top"
-                    :class="k === 'observacion' ? 'whitespace-normal min-w-[260px] max-w-[380px]' : 'whitespace-nowrap'">{{ formatoValor(p[k]) }}</td>
+                    :class="k === 'Observaciones' ? 'whitespace-normal min-w-[260px] max-w-[380px]' : 'whitespace-nowrap'">{{ formatoValor(p[k]) }}</td>
                 </tr>
               </tbody>
             </table>
