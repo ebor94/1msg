@@ -381,16 +381,11 @@ async function reactivar(req, res) {
 
 /** GET /api/contactos/informe — reporte tabular de contactos con filtros. */
 async function informe(req, res) {
-  let filtros;
   try {
-    filtros = informeSvc.parsearFiltros(req.query || {});
-  } catch (err) {
-    if (err.status === 422) return res.status(422).json({ error: err.message });
-    throw err;
-  }
-  try {
+    const filtros = informeSvc.parsearFiltros(req.query || {});
     return res.json(await informeSvc.consultar(filtros));
   } catch (err) {
+    if (err.status === 422) return res.status(422).json({ error: err.message });
     logger.error(`informe contactos: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }

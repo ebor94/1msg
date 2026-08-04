@@ -1,5 +1,8 @@
 'use strict';
 
+const { QueryTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
 const COMPRO = ['si', 'no', 'pendiente'];
 const ESTADOS = ['nueva', 'abierta', 'pendiente', 'cerrada'];
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -46,9 +49,6 @@ function parsearFiltros(query = {}) {
 
   return f;
 }
-
-const { QueryTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
 
 // Construye las cláusulas WHERE + replacements según los filtros presentes.
 function construirWhere(f) {
