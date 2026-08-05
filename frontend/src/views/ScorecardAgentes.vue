@@ -108,5 +108,36 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
         </table>
       </div>
     </section>
+
+    <!-- Definiciones de los indicadores -->
+    <section class="px-4 pb-8">
+      <details class="bg-white border rounded-lg text-[12px] text-gray-600">
+        <summary class="cursor-pointer select-none px-4 py-2.5 font-semibold text-gray-700">
+          ¿Qué significa cada indicador?
+        </summary>
+        <div class="px-4 pb-3 space-y-3 border-t">
+          <div class="pt-3">
+            <div class="font-semibold text-gray-700 mb-1">En vivo (foto de ahora mismo, se refresca cada 45 s)</div>
+            <ul class="space-y-1">
+              <li><b>Sin responder:</b> chats abiertos del agente (o de la General, sin dueño) donde el último mensaje es del cliente — está esperando respuesta.</li>
+              <li><b>Espera más vieja:</b> de esos chats, cuánto lleva esperando el más antiguo. <span class="text-amber-600">&gt;30 min ámbar</span>, <span class="text-red-600">&gt;60 min rojo</span>.</li>
+            </ul>
+          </div>
+          <div>
+            <div class="font-semibold text-gray-700 mb-1">Del día (según la fecha elegida)</div>
+            <ul class="space-y-1">
+              <li><b>Mensajes:</b> mensajes que el agente envió ese día (volumen bruto; no cuenta el historial traído por backfill).</li>
+              <li><b>Chats:</b> conversaciones distintas en las que el agente escribió al menos un mensaje ese día.</li>
+              <li><b>Tomados:</b> chats que el agente tomó de la bandeja general ese día (quedó como dueño).</li>
+              <li><b>Cerrados:</b> chats del agente que se cerraron ese día (atribuido al dueño al momento del cierre).</li>
+              <li><b>TPR prom:</b> tiempo promedio de respuesta a un cliente que esperaba, contando <b>solo horario laboral</b> (Lun–Vie 8:00–18:00, Sáb 8:00–11:00); noches, domingos y fuera de horario no cuentan. <span class="text-amber-600">&gt;10 min ámbar</span>, <span class="text-red-600">&gt;30 min rojo</span>.</li>
+              <li><b>TPR P90:</b> el 90 % de las respuestas fue igual o más rápido que este valor. Muestra los casos lentos que el promedio esconde.</li>
+              <li><b>… turnos</b> (en Total): cuántas respuestas se usaron para el TPR ese día; si son pocas, el TPR es menos representativo.</li>
+            </ul>
+          </div>
+          <p class="text-gray-400">El día va de 00:00 a 24:00 en hora de Colombia. El TPR mide cada respuesta a un cliente que esperaba (no solo la primera del chat) e incluye turnos que cruzan de un día a otro.</p>
+        </div>
+      </details>
+    </section>
   </div>
 </template>
