@@ -54,4 +54,88 @@ async function consultarPlanesPorDocumento(documento) {
   return rows;
 }
 
-module.exports = { consultarPlanesPorDocumento };
+/** Masivo = hay posfecha Y el concepto está en conceptos_permitidos. */
+function decidirMasivo(posfecha, enPermitidos) {
+  return !!posfecha && !!enPermitidos;
+}
+
+/** El concepto 5 (Camb PFecha) NO deja traza en `gestion`. */
+function debeRegistrarGestion(concepto) {
+  return String(concepto) !== '5';
+}
+
+/** Conceptos habilitados para gestión (los 39 curados). */
+async function listarConceptosPermitidos() {
+  const p = obtenerPool();
+  if (!p) { const e = new Error('previsión no configurada'); e.codigo = 'no_configurado'; throw e; }
+  const [rows] = await p.query(
+    'SELECT codigo_concepto AS codigo, descripcion FROM conceptos_permitidos ORDER BY descripcion',
+  );
+  return rows;
+}
+
+/**
+ * Registra la gestión de un plan: UPDATE plan (+ INSERT gestion salvo concepto 5),
+ * en una transacción y parametrizado. Masivo (posfecha + concepto permitido) actualiza
+ * todos los planes del ced_pagador; si no, solo el num_plan.
+ */
+async function registrarGestion({ numPlan, concepto, novedad, posfecha, tramito }) {
+  const p = obtenerPool();
+  if (!p) { const e = new Error('previsión no configurada'); e.codigo = 'no_configurado'; throw e; }
+  const conc = String(concepto);
+  const nov = String(novedad || '');
+  const post = posfecha ? String(posfecha) : null;
+  const conn = await p.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [pl] = await conn.query('SELECT ced_pagador FROM plan WHERE num_plan = ?', [numPlan]);
+    if (!pl.length) { const e = new Error('plan no encontrado'); e.codigo = 'plan_no_encontrado'; throw e; }
+    const cedPagador = pl[0].ced_pagador;
+
+    let enPermitidos = false;
+    if (post) {
+      const [cp] = await conn.query('SELECT 1 FROM conceptos_permitidos WHERE codigo_concepto = ? LIMIT 1', [conc]);
+      enPermitidos = cp.length > 0;
+    }
+    const masivo = decidirMasivo(post, enPermitidos);
+
+    let afectados;
+    if (masivo) {
+      const [r] = await conn.query(
+        'UPDATE plan SET novedad_plan=?, concepto_plan=?, fech_gestion_plan=CURDATE(), fech_pago_posfecha=? WHERE ced_pagador=?',
+        [nov, conc, post, cedPagador],
+      );
+      afectados = r.affectedRows;
+    } else if (post) {
+      const [r] = await conn.query(
+        'UPDATE plan SET novedad_plan=?, concepto_plan=?, fech_gestion_plan=CURDATE(), fech_pago_posfecha=? WHERE num_plan=?',
+        [nov, conc, post, numPlan],
+      );
+      afectados = r.affectedRows;
+    } else {
+      const [r] = await conn.query(
+        'UPDATE plan SET novedad_plan=?, concepto_plan=?, fech_gestion_plan=CURDATE() WHERE num_plan=?',
+        [nov, conc, numPlan],
+      );
+      afectados = r.affectedRows;
+    }
+
+    if (debeRegistrarGestion(conc)) {
+      await conn.query(
+        'INSERT INTO gestion (num_plan, novedad, fecha, hora, concepto, tramito) VALUES (?, ?, CURDATE(), CURTIME(), ?, ?)',
+        [numPlan, nov, conc, tramito],
+      );
+    }
+
+    await conn.commit();
+    return { masivo, afectados };
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+module.exports = { consultarPlanesPorDocumento, decidirMasivo, debeRegistrarGestion, listarConceptosPermitidos, registrarGestion };
