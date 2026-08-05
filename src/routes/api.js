@@ -13,6 +13,7 @@ const mediaCtrl = require('../controllers/mediaController');
 const respuestasCtrl = require('../controllers/respuestasController');
 const etiquetasCtrl = require('../controllers/etiquetasController');
 const productosCtrl = require('../controllers/productosController');
+const previsionCtrl = require('../controllers/previsionController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -84,6 +85,8 @@ router.post('/contactos/:id/conversacion', requireAuth, contactosCtrl.abrir);
 router.get('/contactos/:id/prevision', requireAuth, contactosCtrl.prevision);
 router.get('/contactos/:id/mantenimientos', requireAuth, contactosCtrl.mantenimientos);
 router.get('/contactos/:id/prenecesidad', requireAuth, contactosCtrl.prenecesidad);
+router.get('/prevision/conceptos', requireAuth, previsionCtrl.conceptos);
+router.post('/prevision/gestion', requireAuth, previsionCtrl.gestion);
 router.patch('/contactos/:id', requireAuth, contactosCtrl.actualizar);
 router.post('/contactos/:id/desactivar', requireAuth, requireAdmin, contactosCtrl.desactivar);
 router.post('/contactos/:id/reactivar', requireAuth, requireAdmin, contactosCtrl.reactivar);
