@@ -36,6 +36,9 @@ export const useAcciones = defineStore('acciones', {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/prenecesidad${q}`);
     },
+    async consultarProductos(documento) {
+      return apiFetch(`/productos?documento=${encodeURIComponent(documento)}`);
+    },
     async cargarInforme(filtros = {}) {
       const q = new URLSearchParams();
       for (const [k, v] of Object.entries(filtros)) {
