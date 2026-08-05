@@ -52,6 +52,13 @@ export const useAcciones = defineStore('acciones', {
       }
       return apiFetch(`/contactos/informe?${q.toString()}`);
     },
+    async cargarBacklogVivo() {
+      return apiFetch('/reportes/agentes/vivo');
+    },
+    async cargarScorecard(fecha) {
+      const q = fecha ? `?fecha=${encodeURIComponent(fecha)}` : '';
+      return apiFetch(`/reportes/agentes${q}`);
+    },
     async cargarEtiquetas() {
       if (this.catalogoEtiquetas.origen.length || this.catalogoEtiquetas.interes.length) return this.catalogoEtiquetas;
       this.catalogoEtiquetas = await apiFetch('/etiquetas');
