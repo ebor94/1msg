@@ -14,6 +14,7 @@ import PanelCliente from '../components/PanelCliente.vue';
 import PanelAgentes from '../components/PanelAgentes.vue';
 import PanelEstadisticas from '../components/PanelEstadisticas.vue';
 import PanelCambiarClave from '../components/PanelCambiarClave.vue';
+import PanelProductos from '../components/PanelProductos.vue';
 
 const auth = useAuth();
 const chat = useChat();
@@ -33,6 +34,7 @@ function salir() {
 const mostrarAgentes = ref(false);
 const mostrarEtiquetas = ref(false);
 const mostrarCambioClave = ref(false);
+const mostrarProductos = ref(false);
 const mostrarNuevo = ref(false);
 const menuAbierto = ref(false); // menú desplegable de la cabecera (agrupa las acciones)
 const nuevoTelefono = ref('');
@@ -101,6 +103,8 @@ async function crearContacto() {
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; router.push('/informe')">📋 Informe de contactos</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; mostrarProductos = true">🔎 Consultar productos</button>
+          <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="sonido.alternar()">{{ sonido.activado ? '🔔 Silenciar sonido' : '🔕 Activar sonido' }}</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; mostrarCambioClave = true">🔑 Cambiar contraseña</button>
@@ -152,5 +156,6 @@ async function crearContacto() {
     <PanelAgentes v-if="mostrarAgentes" @cerrar="mostrarAgentes = false" />
     <PanelEstadisticas v-if="mostrarEtiquetas" @cerrar="mostrarEtiquetas = false" />
     <PanelCambiarClave v-if="mostrarCambioClave" @cerrar="mostrarCambioClave = false" />
+    <PanelProductos v-if="mostrarProductos" @cerrar="mostrarProductos = false" />
   </div>
 </template>
