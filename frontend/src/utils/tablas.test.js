@@ -11,8 +11,13 @@ describe('formatoValor', () => {
   it('vacío → guion, fecha ISO → fecha local, resto string', () => {
     expect(formatoValor(null)).toBe('—');
     expect(formatoValor('')).toBe('—');
-    expect(formatoValor('2025-10-28T00:00:00.000Z')).toMatch(/2025/);
     expect(formatoValor(5)).toBe('5');
+  });
+  it('muestra la fecha del string SIN corrimiento de zona (medianoche UTC = mismo día)', () => {
+    // El mssql devuelve la fecha como medianoche UTC; NO debe restarse un día.
+    expect(formatoValor('2025-11-30T00:00:00.000Z')).toBe('30/11/2025');
+    expect(formatoValor('2026-08-05T00:00:00.000Z')).toBe('05/08/2026');
+    expect(formatoValor('2025-11-30 00:00:00.000')).toBe('30/11/2025'); // por si llega como string SQL
   });
 });
 
@@ -41,6 +46,6 @@ describe('formatoCelda', () => {
   });
   it('fecha y vacío se comportan como formatoValor', () => {
     expect(formatoCelda('Fecha Vencimiento', null)).toBe('—');
-    expect(formatoCelda('Expedicion', '2025-10-28T00:00:00.000Z')).toMatch(/2025/);
+    expect(formatoCelda('Expedicion', '2025-11-30T00:00:00.000Z')).toBe('30/11/2025');
   });
 });

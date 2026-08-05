@@ -6,7 +6,13 @@ export function etiquetaCampo(k) {
 
 export function formatoValor(v) {
   if (v == null || v === '') return '—';
-  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString('es-CO');
+  // Fechas de calendario (expedición, vencimiento…): se muestra la parte Y-M-D del
+  // string TAL CUAL, sin `new Date()`, para no restar un día por zona horaria (el
+  // mssql las devuelve como medianoche UTC; toLocaleDateString las correría a -05:00).
+  if (typeof v === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})[T ]/.exec(v);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  }
   return String(v);
 }
 
