@@ -316,6 +316,18 @@ function celda(p, k) {
       </div>
     </div>
 
+    <!-- Notas internas: justo debajo de Origen/Interés -->
+    <div class="mt-4">
+      <div class="text-[11px] text-gray-400 uppercase mb-1">Notas internas</div>
+      <div v-for="n in acc.notas" :key="n.id" class="bg-amber-50 border border-amber-100 rounded p-2 text-[12px] text-gray-700 mb-1">
+        {{ n.nota }} <span class="text-gray-400">— {{ n.agente }}</span>
+      </div>
+      <div class="flex gap-1 mt-1">
+        <input v-model="nuevaNota" @keydown.enter="guardarNota" placeholder="Agregar nota…" class="flex-1 border rounded px-2 py-1 text-[12px]" />
+        <button @click="guardarNota" class="bg-gray-200 rounded px-2 text-[12px]">+</button>
+      </div>
+    </div>
+
     <!-- Previsión -->
     <div class="mt-4">
       <button @click="consultarPrevision()" :disabled="prev.cargando"
@@ -412,18 +424,6 @@ function celda(p, k) {
         </template>
       </div>
     </div>
-    <!-- Notas internas: justo después de la asignación -->
-    <div class="mt-4">
-      <div class="text-[11px] text-gray-400 uppercase mb-1">Notas internas</div>
-      <div v-for="n in acc.notas" :key="n.id" class="bg-amber-50 border border-amber-100 rounded p-2 text-[12px] text-gray-700 mb-1">
-        {{ n.nota }} <span class="text-gray-400">— {{ n.agente }}</span>
-      </div>
-      <div class="flex gap-1 mt-1">
-        <input v-model="nuevaNota" @keydown.enter="guardarNota" placeholder="Agregar nota…" class="flex-1 border rounded px-2 py-1 text-[12px]" />
-        <button @click="guardarNota" class="bg-gray-200 rounded px-2 text-[12px]">+</button>
-      </div>
-    </div>
-
     <!-- Historial de asignaciones: al fondo, colapsable (cerrado por defecto) -->
     <div v-if="acc.asignaciones.length" class="mt-4 border-t border-gray-100 pt-2">
       <button class="w-full flex items-center justify-between text-[11px] text-gray-400 uppercase hover:text-gray-600"
