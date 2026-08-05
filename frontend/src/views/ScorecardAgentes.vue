@@ -78,7 +78,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
               <th class="px-3 py-2 text-left font-medium">Agente</th>
               <th class="px-3 py-2 text-right font-medium">Mensajes</th>
               <th class="px-3 py-2 text-right font-medium">Chats</th>
-              <th class="px-3 py-2 text-right font-medium">Tomados</th>
+              <th class="px-3 py-2 text-right font-medium">Recibidos</th>
               <th class="px-3 py-2 text-right font-medium">Cerrados</th>
               <th class="px-3 py-2 text-right font-medium">TPR prom</th>
               <th class="px-3 py-2 text-right font-medium">TPR P90</th>
@@ -89,7 +89,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
               <td class="px-3 py-1.5 text-gray-800">{{ a.nombre }}</td>
               <td class="px-3 py-1.5 text-right">{{ a.mensajes }}</td>
               <td class="px-3 py-1.5 text-right">{{ a.chatsAtendidos }}</td>
-              <td class="px-3 py-1.5 text-right">{{ a.tomados }}</td>
+              <td class="px-3 py-1.5 text-right">{{ a.recibidos }}</td>
               <td class="px-3 py-1.5 text-right">{{ a.cerrados }}</td>
               <td class="px-3 py-1.5 text-right" :class="CLASE[colorTpr(a.tprPromMin)]">{{ minAHhMm(a.tprPromMin) }}</td>
               <td class="px-3 py-1.5 text-right" :class="CLASE[colorTpr(a.tprP90Min)]">{{ minAHhMm(a.tprP90Min) }}</td>
@@ -100,7 +100,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
               <td class="px-3 py-2">Total</td>
               <td class="px-3 py-2 text-right">{{ dia.totales.mensajes || 0 }}</td>
               <td class="px-3 py-2 text-right">{{ dia.totales.chatsAtendidos || 0 }}</td>
-              <td class="px-3 py-2 text-right">{{ dia.totales.tomados || 0 }}</td>
+              <td class="px-3 py-2 text-right">{{ dia.totales.recibidos || 0 }}</td>
               <td class="px-3 py-2 text-right">{{ dia.totales.cerrados || 0 }}</td>
               <td class="px-3 py-2 text-right" colspan="2">{{ dia.totales.turnos || 0 }} turnos</td>
             </tr>
@@ -128,7 +128,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
             <ul class="space-y-1">
               <li><b>Mensajes:</b> mensajes que el agente envió ese día (volumen bruto; no cuenta el historial traído por backfill).</li>
               <li><b>Chats:</b> conversaciones distintas en las que el agente escribió al menos un mensaje ese día.</li>
-              <li><b>Tomados:</b> chats que el agente tomó de la bandeja general ese día (quedó como dueño).</li>
+              <li><b>Recibidos:</b> chats nuevos que el agente empezó a atender ese día — ya sea que él los tomó de la general o que un admin se los asignó.</li>
               <li><b>Cerrados:</b> chats del agente que se cerraron ese día (atribuido al dueño al momento del cierre).</li>
               <li><b>TPR prom:</b> tiempo promedio de respuesta a un cliente que esperaba, contando <b>solo horario laboral</b> (Lun–Vie 8:00–18:00, Sáb 8:00–11:00); noches, domingos y fuera de horario no cuentan. <span class="text-amber-600">&gt;10 min ámbar</span>, <span class="text-red-600">&gt;30 min rojo</span>.</li>
               <li><b>TPR P90:</b> el 90 % de las respuestas fue igual o más rápido que este valor. Muestra los casos lentos que el promedio esconde.</li>

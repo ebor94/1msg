@@ -77,12 +77,17 @@ async function metricasDelDia(fechaStr) {
     { ...SEL, replacements: repl },
   );
 
-  const tomas = await sequelize.query(
-    `SELECT ejecutado_por_id AS agenteId, COUNT(*) AS tomados
+  // "Recibidos": chats que el agente empezó a atender ese día, por el agente que
+  // RECIBE (a_agente_id), no por quién ejecutó. Cubre tanto que el agente lo tome
+  // de general (toma_manual) como que un admin se lo asigne (reasignacion) o que
+  // asigne uno de general (que también se marca toma_manual). Así el crédito va a
+  // quien atiende, no a quien reparte.
+  const recibidos = await sequelize.query(
+    `SELECT a_agente_id AS agenteId, COUNT(*) AS recibidos
        FROM wa_asignaciones
-      WHERE tipo = 'toma_manual' AND ejecutado_por_id IS NOT NULL
+      WHERE tipo IN ('toma_manual', 'reasignacion') AND a_agente_id IS NOT NULL
         AND creado_en >= :ini AND creado_en < :fin
-      GROUP BY ejecutado_por_id`,
+      GROUP BY a_agente_id`,
     { ...SEL, replacements: repl },
   );
 
@@ -121,7 +126,7 @@ async function metricasDelDia(fechaStr) {
   );
 
   const porMsg = new Map(msgs.map((r) => [r.agenteId, r]));
-  const porToma = new Map(tomas.map((r) => [r.agenteId, r.tomados]));
+  const porRecibidos = new Map(recibidos.map((r) => [r.agenteId, r.recibidos]));
   const porCierre = new Map(cierres.map((r) => [r.agenteId, r.cerrados]));
   const porTpr = agregarTpr(turnos);
 
@@ -133,7 +138,7 @@ async function metricasDelDia(fechaStr) {
       nombre: a.nombre,
       mensajes: Number(mm.mensajes || 0),
       chatsAtendidos: Number(mm.chatsAtendidos || 0),
-      tomados: Number(porToma.get(a.agenteId) || 0),
+      recibidos: Number(porRecibidos.get(a.agenteId) || 0),
       cerrados: Number(porCierre.get(a.agenteId) || 0),
       tprPromMin: tp.tprPromMin ?? null,
       tprP90Min: tp.tprP90Min ?? null,
@@ -144,10 +149,10 @@ async function metricasDelDia(fechaStr) {
   const totales = filas.reduce(
     (t, f) => {
       t.mensajes += f.mensajes; t.chatsAtendidos += f.chatsAtendidos;
-      t.tomados += f.tomados; t.cerrados += f.cerrados; t.turnos += f.turnos;
+      t.recibidos += f.recibidos; t.cerrados += f.cerrados; t.turnos += f.turnos;
       return t;
     },
-    { mensajes: 0, chatsAtendidos: 0, tomados: 0, cerrados: 0, turnos: 0 },
+    { mensajes: 0, chatsAtendidos: 0, recibidos: 0, cerrados: 0, turnos: 0 },
   );
 
   return { fecha, agentes: filas, totales };
