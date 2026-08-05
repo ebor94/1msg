@@ -4,6 +4,7 @@ import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import { useAuth } from '../stores/auth';
 import { iniciales, horaCorta, etiquetaAsignacion } from '../utils/formato';
+import { etiquetaCampo, formatoValor } from '../utils/tablas';
 
 const chat = useChat();
 const acc = useAcciones();
@@ -198,14 +199,6 @@ function enviarDocumento() {
   if (d) consultarPrevision(d);
 }
 
-function etiquetaCampo(k) {
-  return String(k).replace(/_/g, ' ').replace(/\bplan\b/gi, '').trim().replace(/^\w/, (m) => m.toUpperCase());
-}
-function formatoValor(v) {
-  if (v == null || v === '') return '—';
-  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString('es-CO');
-  return String(v);
-}
 // Campos que no se muestran en la tabla (auxiliares + ocultos por pedido).
 const CAMPOS_OCULTOS = new Set([
   'concepto_desc', // auxiliar: se muestra dentro de la celda de concepto
