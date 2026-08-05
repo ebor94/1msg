@@ -24,6 +24,7 @@ async function gestion(req, res) {
   } catch (err) {
     if (err.codigo === 'no_configurado') return res.status(503).json({ error: 'previsión no configurada', codigo: 'no_configurado' });
     if (err.codigo === 'plan_no_encontrado') return res.status(404).json({ error: 'no se encontró el plan' });
+    if (err.codigo === 'concepto_invalido') return res.status(400).json({ error: 'concepto no válido' });
     logger.error(`registrar gestión previsión (plan ${numPlan}): ${err.message}`);
     return res.status(502).json({ error: 'no se pudo registrar la gestión' });
   }

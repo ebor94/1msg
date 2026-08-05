@@ -87,7 +87,7 @@ async function registrarGestion({ numPlan, concepto, novedad, posfecha, tramito 
   const p = obtenerPool();
   if (!p) { const e = new Error('previsión no configurada'); e.codigo = 'no_configurado'; throw e; }
   const conc = String(concepto);
-  const nov = String(novedad || '');
+  const nov = String(novedad || '').slice(0, 255);
   const post = posfecha ? String(posfecha) : null;
   const conn = await p.getConnection();
   try {
@@ -97,11 +97,9 @@ async function registrarGestion({ numPlan, concepto, novedad, posfecha, tramito 
     if (!pl.length) { const e = new Error('plan no encontrado'); e.codigo = 'plan_no_encontrado'; throw e; }
     const cedPagador = pl[0].ced_pagador;
 
-    let enPermitidos = false;
-    if (post) {
-      const [cp] = await conn.query('SELECT 1 FROM conceptos_permitidos WHERE codigo_concepto = ? LIMIT 1', [conc]);
-      enPermitidos = cp.length > 0;
-    }
+    const [cp] = await conn.query('SELECT 1 FROM conceptos_permitidos WHERE codigo_concepto = ? LIMIT 1', [conc]);
+    const enPermitidos = cp.length > 0;
+    if (!enPermitidos) { const e = new Error('concepto no permitido'); e.codigo = 'concepto_invalido'; throw e; }
     const masivo = decidirMasivo(post, enPermitidos);
 
     let afectados;
