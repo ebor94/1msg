@@ -6,6 +6,7 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'bandeja', component: () => import('../views/Bandeja.vue'), meta: { requiereAuth: true } },
     { path: '/informe', name: 'informe', component: () => import('../views/Informe.vue'), meta: { requiereAuth: true } },
+    { path: '/seguimiento', name: 'seguimiento', component: () => import('../views/ScorecardAgentes.vue'), meta: { requiereAuth: true } },
     { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
   ],
 });
