@@ -2,9 +2,11 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAcciones } from '../stores/acciones';
+import { useChat } from '../stores/chat';
 
 const router = useRouter();
 const acc = useAcciones();
+const chat = useChat();
 
 const filtros = ref({ compro: '', origenId: '', interesId: '', estado: '', desde: '', hasta: '', pagina: 0, tam: 25 });
 const datos = ref({ total: 0, pagina: 0, tam: 25, contactos: [] });
@@ -35,7 +37,7 @@ const textoCompro = (v) => v === 'si' ? 'Sí' : v === 'no' ? 'No' : v === 'pendi
 function fecha(v) { return v ? new Date(v).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '—'; }
 
 async function abrir(row) {
-  try { await acc.abrirContacto(row.contactoId, false); router.push('/'); }
+  try { const conv = await acc.abrirContacto(row.contactoId, false); chat.abrir(conv); router.push('/'); }
   catch { error.value = 'No se pudo abrir el chat.'; }
 }
 </script>
