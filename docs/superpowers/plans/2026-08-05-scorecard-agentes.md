@@ -859,6 +859,6 @@ git commit -m "feat(reportes): pantalla Seguimiento de agentes (backlog vivo + t
 
 ## Limitaciones conocidas de v1 (documentadas, ajustables luego)
 
-- Un turno de TPR solo cuenta si el mensaje del cliente y la respuesta del agente caen en el **mismo día calendario** (el `LAG` opera dentro del rango del día). Respuestas que cruzan la medianoche se excluyen de ese día; es raro dado el horario 8–18 y se puede refinar después.
+- El TPR sí cuenta turnos que cruzan de día (el `LAG` opera sobre una ventana ampliada ±3 días y el turno se atribuye al día del mensaje del cliente). El único borde que queda fuera: una respuesta demorada **más de 3 días** respecto al fin del día consultado; es un outlier aceptado (a esa demora ya no es un "tiempo de respuesta" útil).
 - "Cerrados" se atribuye al `agente_id` dueño al cierre (no se registra quién hizo clic).
 - Sin persistencia de snapshots: cada consulta recomputa el día (aceptable para un día; tendencias semanales serían fase 2).
