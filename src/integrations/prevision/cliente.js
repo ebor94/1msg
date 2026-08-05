@@ -1,10 +1,14 @@
 'use strict';
 
 /**
- * Acceso de SOLO LECTURA a la BD externa de previsión (`olivosct`, un MySQL 5.0
- * muy antiguo en el AppServ 192.9.17.11). Aislado del resto: nadie más habla con
- * esa base. El cliente de consola MySQL 8 no puede autenticarse contra ese
- * servidor viejo, pero el driver mysql2 (Node) sí.
+ * Acceso a la BD externa de previsión (`olivosct`, un MySQL 5.0 muy antiguo en el
+ * AppServ 192.9.17.11). Aislado del resto: nadie más habla con esa base. El cliente
+ * de consola MySQL 8 no puede autenticarse contra ese servidor viejo, pero el driver
+ * mysql2 (Node) sí.
+ *
+ * Mayormente LECTURA (consulta de planes/conceptos). ÚNICA escritura: `registrarGestion`
+ * (UPDATE plan + INSERT gestion, transaccional y parametrizado), habilitada por un GRANT
+ * de columnas mínimas para `wa_lector`. Ninguna otra función escribe.
  *
  * Config en env.prevision. Si no está configurada, las funciones lanzan un error
  * con codigo 'no_configurado' (el endpoint lo traduce a 503, sin tumbar la app).
