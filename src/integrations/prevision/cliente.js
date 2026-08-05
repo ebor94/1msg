@@ -78,6 +78,14 @@ async function listarConceptosPermitidos() {
   return rows;
 }
 
+/** Catálogo de estados de plan (cod_ep → nom_ep), para traducir estado_plan a texto. */
+async function listarEstadosPlan() {
+  const p = obtenerPool();
+  if (!p) { const e = new Error('previsión no configurada'); e.codigo = 'no_configurado'; throw e; }
+  const [rows] = await p.query('SELECT cod_ep, nom_ep FROM estadoplan');
+  return rows;
+}
+
 /**
  * Registra la gestión de un plan: UPDATE plan (+ INSERT gestion salvo concepto 5),
  * en una transacción y parametrizado. Masivo (posfecha + concepto permitido) actualiza
@@ -140,4 +148,4 @@ async function registrarGestion({ numPlan, concepto, novedad, posfecha, tramito 
   }
 }
 
-module.exports = { consultarPlanesPorDocumento, decidirMasivo, debeRegistrarGestion, listarConceptosPermitidos, registrarGestion };
+module.exports = { consultarPlanesPorDocumento, decidirMasivo, debeRegistrarGestion, listarConceptosPermitidos, listarEstadosPlan, registrarGestion };
