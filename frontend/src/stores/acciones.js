@@ -28,6 +28,12 @@ export const useAcciones = defineStore('acciones', {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/prevision${q}`);
     },
+    async cargarConceptosPrevision() {
+      return (await apiFetch('/prevision/conceptos')).conceptos;
+    },
+    async registrarGestionPrevision(payload) {
+      return apiFetch('/prevision/gestion', { method: 'POST', body: JSON.stringify(payload) });
+    },
     async consultarMantenimientos(contactoId, documento) {
       const q = documento ? `?documento=${encodeURIComponent(documento)}` : '';
       return apiFetch(`/contactos/${contactoId}/mantenimientos${q}`);

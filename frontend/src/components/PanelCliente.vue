@@ -98,6 +98,9 @@ async function guardarNombre() {
 const prev = ref({ cargando: false, error: '', planes: null, pidiendoDoc: false });
 const docInput = ref('');
 const planSel = ref(null); // plan mostrado en el popup
+const conceptosPrev = ref([]);
+const gest = ref({ concepto: '', novedad: '', posfecha: '', guardando: false, ok: '', error: '' });
+onMounted(async () => { try { conceptosPrev.value = await acc.cargarConceptosPrevision(); } catch { /* queda vacío */ } });
 
 // --- Mantenimientos (KARINGSOFT, SQL Server, por documento) ---
 const mant = ref({ cargando: false, error: '', contratos: null, pidiendoDoc: false });
@@ -109,6 +112,7 @@ watch(() => c.value?.id, () => {
   prev.value = { cargando: false, error: '', planes: null, pidiendoDoc: false };
   docInput.value = '';
   planSel.value = null;
+  gest.value = { concepto: '', novedad: '', posfecha: '', guardando: false, ok: '', error: '' };
   mant.value = { cargando: false, error: '', contratos: null, pidiendoDoc: false };
   docMant.value = '';
   mantSel.value = null;
@@ -197,6 +201,32 @@ async function consultarPrevision(docOpcional) {
 function enviarDocumento() {
   const d = docInput.value.replace(/\D/g, '');
   if (d) consultarPrevision(d);
+}
+
+// Reinicia el formulario de gestión al cambiar de plan seleccionado.
+watch(planSel, () => {
+  gest.value = { concepto: '', novedad: '', posfecha: '', guardando: false, ok: '', error: '' };
+});
+// Masivo (aviso): todos los conceptos del desplegable son "permitidos", así que masivo = hay posfecha.
+const gestMasivo = computed(() => !!gest.value.posfecha && (prev.value.planes?.length || 0) > 1);
+async function registrarGestion() {
+  if (!planSel.value || !gest.value.concepto || gest.value.guardando) return;
+  gest.value.guardando = true; gest.value.ok = ''; gest.value.error = '';
+  try {
+    const r = await acc.registrarGestionPrevision({
+      numPlan: planSel.value.num_plan,
+      concepto: gest.value.concepto,
+      novedad: gest.value.novedad,
+      posfecha: gest.value.posfecha || null,
+    });
+    gest.value.ok = r.masivo ? `Gestión registrada en ${r.afectados} planes.` : 'Gestión registrada.';
+    gest.value = { ...gest.value, novedad: '', posfecha: '' };
+    if (c.value?.contacto?.id) consultarPrevision(); // refresca los planes con la nueva gestión
+  } catch (e) {
+    gest.value.error = e.message || 'No se pudo registrar la gestión.';
+  } finally {
+    gest.value.guardando = false;
+  }
 }
 
 // Campos que no se muestran en la tabla (auxiliares + ocultos por pedido).
@@ -448,6 +478,30 @@ function celda(p, k) {
                 </tr>
               </tbody>
             </table>
+
+            <div v-if="planSel" class="mt-3 border-t pt-3">
+              <div class="text-[12px] font-semibold text-marca-oscuro mb-1">Registrar gestión · plan {{ planSel.num_plan }}</div>
+              <div class="flex flex-wrap items-end gap-2 text-[12px]">
+                <label class="flex flex-col">Concepto
+                  <select v-model="gest.concepto" class="border rounded px-2 py-1 min-w-[160px]">
+                    <option value="">Seleccione…</option>
+                    <option v-for="k in conceptosPrev" :key="k.codigo" :value="k.codigo">{{ k.descripcion }}</option>
+                  </select>
+                </label>
+                <label class="flex flex-col flex-1 min-w-[180px]">Novedad
+                  <input v-model="gest.novedad" maxlength="255" class="border rounded px-2 py-1" />
+                </label>
+                <label class="flex flex-col">Posfecha
+                  <input type="date" v-model="gest.posfecha" class="border rounded px-2 py-1" />
+                </label>
+                <button :disabled="!gest.concepto || gest.guardando"
+                  class="bg-marca text-white rounded-lg px-3 py-1.5 font-semibold disabled:opacity-60"
+                  @click="registrarGestion">{{ gest.guardando ? 'Guardando…' : 'Registrar' }}</button>
+              </div>
+              <p v-if="gestMasivo" class="text-[11px] text-amber-600 mt-1">⚠️ Con posfecha, esto actualizará los {{ prev.planes.length }} planes de esta cédula.</p>
+              <p v-if="gest.ok" class="text-[12px] text-green-600 mt-1">{{ gest.ok }}</p>
+              <p v-if="gest.error" class="text-[12px] text-red-600 mt-1">{{ gest.error }}</p>
+            </div>
           </div>
         </div>
       </div>
