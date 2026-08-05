@@ -28,7 +28,7 @@ async function entrar() {
   <div class="min-h-full grid place-items-center bg-gray-100 p-4">
     <form class="w-full max-w-sm bg-white rounded-xl shadow p-6 space-y-4" @submit.prevent="entrar">
       <div class="text-center">
-        <div class="text-xl font-bold text-marca-oscuro">Serfunorte</div>
+        <div class="text-xl font-bold text-marca-oscuro">WhatsApp Olivos Cúcuta</div>
         <div class="text-sm text-gray-500">Bandeja de WhatsApp</div>
       </div>
       <input v-model="usuario" type="text" placeholder="Usuario" autocomplete="username"

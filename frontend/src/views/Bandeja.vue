@@ -74,7 +74,7 @@ async function crearContacto() {
 <template>
   <div class="h-full flex flex-col">
     <header class="bg-marca-oscuro text-white flex items-center justify-between px-4 py-2.5">
-      <div class="font-bold">Serfunorte · Bandeja</div>
+      <div class="font-bold">WhatsApp Olivos Cúcuta</div>
       <!-- Menú unificado: agrupa todas las acciones (se despliega desde el avatar). -->
       <div class="relative">
         <button class="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-full pl-3 pr-2 py-1"
