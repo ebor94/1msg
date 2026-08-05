@@ -25,7 +25,9 @@ SELECT
     ISNULL(venc.cuotas_vencidas, 0)                               AS [# Cuotas Vencidas],
     c.plazo                                                       AS Plazo,
     ISNULL(ab.total_abonado, 0)                                   AS [Vr. Abonado],
-    ((c.valor - c.valor_descuento) - ISNULL(ab.total_abonado,0))  AS [Saldo Pendiente],
+    -- Saldo como en el ERP: Σ(valor de las primas) − Σ(abonado). (No usar
+    -- valor - valor_descuento de la cabecera: no cuadra con las cuotas programadas.)
+    (ISNULL(ab.total_valor, 0) - ISNULL(ab.total_abonado,0))      AS [Saldo Pendiente],
     ase.nombre                                                    AS Asesor,
     c.observacion                                                 AS Observaciones,
     -- Dirección real del cliente (tabla base terceros por cédula), no la forma de
@@ -36,7 +38,7 @@ FROM prenecesidad_contratos c
 JOIN prenecesidad_contratos_view v     ON v.contrato = c.contrato
 LEFT JOIN terceros_view ase            ON ase.tercero = c.vendedor
 OUTER APPLY (
-    SELECT SUM(ABS(cu.abonado)) AS total_abonado
+    SELECT SUM(ABS(cu.abonado)) AS total_abonado, SUM(cu.valor) AS total_valor
     FROM prenecesidad_contratos_primas_view cu
     WHERE cu.contrato = c.contrato
 ) ab
