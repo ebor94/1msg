@@ -20,6 +20,13 @@ function parsearFecha(fechaStr) {
   return { fecha, ini: `${fecha} 00:00:00`, fin: `${fin} 00:00:00` };
 }
 
+/** Corre una fecha-hora 'YYYY-MM-DD 00:00:00' n días (aritmética TZ-free). */
+function correrDias(fechaHora, dias) {
+  const d = fechaHora.slice(0, 10);
+  const ms = Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) + dias * 86400000;
+  return `${new Date(ms).toISOString().slice(0, 10)} 00:00:00`;
+}
+
 function percentil(ordenados, p) {
   if (!ordenados.length) return null;
   const idx = Math.ceil((p / 100) * ordenados.length) - 1;
@@ -84,6 +91,11 @@ async function metricasDelDia(fechaStr) {
   );
 
   // Turnos de respuesta (cliente escribió -> agente contestó) del día, vía LAG.
+  // Ventana ampliada ±3 días: el LAG debe ver el mensaje del cliente aunque la
+  // respuesta caiga en otro día. El turno se atribuye al día del mensaje del
+  // cliente (filtro final sobre ts_prev), no al de la respuesta.
+  const iniBuf = correrDias(ini, -3);
+  const finBuf = correrDias(fin, 3);
   const turnos = await sequelize.query(
     `WITH ordenado AS (
         SELECT m.direccion, m.enviado_por_id,
@@ -92,15 +104,16 @@ async function metricasDelDia(fechaStr) {
                DATE_FORMAT(LAG(COALESCE(m.ts_proveedor, m.creado_en)) OVER w, '%Y-%m-%d %H:%i:%s') AS ts_prev
           FROM wa_mensajes m
          WHERE m.historico = 0
-           AND COALESCE(m.ts_proveedor, m.creado_en) >= :ini
-           AND COALESCE(m.ts_proveedor, m.creado_en) < :fin
+           AND COALESCE(m.ts_proveedor, m.creado_en) >= :iniBuf
+           AND COALESCE(m.ts_proveedor, m.creado_en) < :finBuf
         WINDOW w AS (PARTITION BY m.conversacion_id
                      ORDER BY COALESCE(m.ts_proveedor, m.creado_en), m.id)
       )
       SELECT enviado_por_id AS agenteId, ts_prev AS clienteTs, ts AS agenteTs
         FROM ordenado
-       WHERE direccion = 'out' AND dir_prev = 'in' AND enviado_por_id IS NOT NULL`,
-    { ...SEL, replacements: repl },
+       WHERE direccion = 'out' AND dir_prev = 'in' AND enviado_por_id IS NOT NULL
+         AND ts_prev >= :ini AND ts_prev < :fin`,
+    { ...SEL, replacements: { ini, fin, iniBuf, finBuf } },
   );
 
   const porMsg = new Map(msgs.map((r) => [r.agenteId, r]));
