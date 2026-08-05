@@ -15,8 +15,12 @@ function hoyBogota() {
 function parsearFecha(fechaStr) {
   const fecha = fechaStr && fechaStr !== '' ? String(fechaStr) : hoyBogota();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) throw err400('fecha inválida (usar YYYY-MM-DD)');
-  const finMs = Date.UTC(+fecha.slice(0, 4), +fecha.slice(5, 7) - 1, +fecha.slice(8, 10)) + 86400000;
-  const fin = new Date(finMs).toISOString().slice(0, 10);
+  const y = +fecha.slice(0, 4), mo = +fecha.slice(5, 7), d = +fecha.slice(8, 10);
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) {
+    throw err400('fecha inválida (día inexistente)');
+  }
+  const fin = new Date(dt.getTime() + 86400000).toISOString().slice(0, 10);
   return { fecha, ini: `${fecha} 00:00:00`, fin: `${fin} 00:00:00` };
 }
 

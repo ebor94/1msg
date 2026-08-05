@@ -17,6 +17,10 @@ test('parsearFecha sin argumento no lanza y da un día válido', () => {
 test('parsearFecha inválida lanza 400', () => {
   assert.throws(() => parsearFecha('03/08/2026'), (e) => e.status === 400);
 });
+test('parsearFecha con día inexistente lanza 400', () => {
+  assert.throws(() => parsearFecha('2026-02-30'), (e) => e.status === 400);
+  assert.throws(() => parsearFecha('2026-13-01'), (e) => e.status === 400);
+});
 test('percentil P90 de una lista', () => {
   const ord = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   assert.equal(percentil(ord, 90), 9);
