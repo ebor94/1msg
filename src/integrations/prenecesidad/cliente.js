@@ -28,7 +28,9 @@ SELECT
     ((c.valor - c.valor_descuento) - ISNULL(ab.total_abonado,0))  AS [Saldo Pendiente],
     ase.nombre                                                    AS Asesor,
     c.observacion                                                 AS Observaciones,
-    c.direccion_cobro                                             AS Direccion,
+    -- Dirección real del cliente (tabla base terceros por cédula), no la forma de
+    -- cobro (c.direccion_cobro, que trae valores como 'CONSIGNACION').
+    (SELECT TOP 1 t.direccion FROM terceros t WHERE t.tercero = @cedula) AS Direccion,
     c.telefonos_cobro                                             AS Telefono
 FROM prenecesidad_contratos c
 JOIN prenecesidad_contratos_view v     ON v.contrato = c.contrato
