@@ -284,5 +284,11 @@ export const useAcciones = defineStore('acciones', {
       q.set('pagina', String(pagina));
       return apiFetch(`/difusiones/${id}/destinatarios?${q.toString()}`);
     },
+    async cargarRecordatorio(contactoId) {
+      return (await apiFetch(`/contactos/${contactoId}/recordatorio`)).recordatorio;
+    },
+    async guardarRecordatorio(contactoId, payload) {
+      return (await apiFetch(`/contactos/${contactoId}/recordatorio`, { method: 'PUT', body: JSON.stringify(payload) })).recordatorio;
+    },
   },
 });

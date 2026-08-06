@@ -14,6 +14,7 @@ const nombre = computed(() => c.value?.contacto?.nombreDisplay || c.value?.conta
 const nuevaNota = ref('');
 const aviso = ref('');
 const mostrarHistorial = ref(false);
+const recordatorio = ref({ activo: false, diaMes: 5 });
 
 // Estado de compra del contacto (¿compró?): '' = Seleccione, si/no/pendiente.
 async function cambiarCompro(e) {
@@ -31,7 +32,17 @@ watch(() => c.value?.agenteId, (v) => { seleccion.value = v == null ? '' : v; },
 
 onMounted(() => acc.cargarAgentes());
 onMounted(() => acc.cargarEtiquetas());
-watch(() => c.value?.id, (id) => { if (id) { acc.cargarNotas(id); acc.cargarAsignaciones(id); } }, { immediate: true });
+watch(() => c.value?.id, (id) => {
+  if (id) {
+    acc.cargarNotas(id);
+    acc.cargarAsignaciones(id);
+    acc.cargarRecordatorio(c.value.contacto.id).then((r) => { recordatorio.value = r || { activo: false, diaMes: 5 }; }).catch(() => {});
+  }
+}, { immediate: true });
+async function guardarRecordatorio() {
+  try { recordatorio.value = await acc.guardarRecordatorio(c.value.contacto.id, { activo: recordatorio.value.activo, diaMes: recordatorio.value.diaMes }); }
+  catch { /* no bloquear el panel */ }
+}
 
 const catalogo = computed(() => acc.catalogoEtiquetas);
 const etqSel = computed(() => chat.etiquetas || []);
@@ -280,6 +291,21 @@ function celda(p, k) {
         <input v-model="nuevaNota" @keydown.enter="guardarNota" placeholder="Agregar nota…" class="flex-1 border rounded px-2 py-1 text-[12px]" />
         <button @click="guardarNota" class="bg-gray-200 rounded px-2 text-[12px]">+</button>
       </div>
+    </div>
+
+    <div class="py-2 border-t border-gray-100">
+      <div class="text-[11px] text-gray-400 uppercase mb-1">Recordatorio mensual</div>
+      <label class="flex items-center gap-2 text-[12.5px] text-gray-700">
+        <input type="checkbox" v-model="recordatorio.activo" @change="guardarRecordatorio" />
+        Activar recordatorio automático
+      </label>
+      <div v-if="recordatorio.activo" class="flex items-center gap-2 mt-1 text-[12.5px]">
+        <span class="text-gray-500">Día del mes</span>
+        <select v-model.number="recordatorio.diaMes" @change="guardarRecordatorio" class="border rounded px-2 py-1">
+          <option v-for="d in 30" :key="d" :value="d">{{ d }}</option>
+        </select>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-1">Se enviará una plantilla automáticamente ese día de cada mes.</p>
     </div>
 
     <div class="py-2 border-t border-gray-100">
