@@ -15,6 +15,7 @@ const etiquetasCtrl = require('../controllers/etiquetasController');
 const productosCtrl = require('../controllers/productosController');
 const previsionCtrl = require('../controllers/previsionController');
 const reportesCtrl = require('../controllers/reportesController');
+const difusionesCtrl = require('../controllers/difusionesController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -103,5 +104,14 @@ router.get('/etiquetas/estadisticas', requireAuth, requireAdmin, etiquetasCtrl.e
 router.get('/etiquetas/todas', requireAuth, requireAdmin, etiquetasCtrl.listarTodas);
 router.post('/etiquetas', requireAuth, requireAdmin, etiquetasCtrl.crear);
 router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualizar);
+
+router.get('/difusiones', requireAuth, requireAdmin, difusionesCtrl.listar);
+router.post('/difusiones', requireAuth, requireAdmin, difusionesCtrl.crear);
+router.get('/difusiones/:id', requireAuth, requireAdmin, difusionesCtrl.detalle);
+router.get('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.destinatarios);
+router.post('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.cargar);
+router.post('/difusiones/:id/imagen', requireAuth, requireAdmin, subida.single('imagen'), difusionesCtrl.subirImagen);
+router.post('/difusiones/:id/iniciar', requireAuth, requireAdmin, difusionesCtrl.iniciar);
+router.post('/difusiones/:id/cancelar', requireAuth, requireAdmin, difusionesCtrl.cancelar);
 
 module.exports = router;
