@@ -53,6 +53,10 @@ Conversacion.belongsTo(Agente, { foreignKey: 'agenteId', as: 'agente' });
 Agente.hasMany(Contacto, { foreignKey: 'agenteDuenoId', as: 'contactosPropios' });
 Contacto.belongsTo(Agente, { foreignKey: 'agenteDuenoId', as: 'agenteDueno' });
 
+// Contacto 1—1 Recordatorio (uno por contacto)
+Contacto.hasOne(Recordatorio, { foreignKey: 'contactoId', as: 'recordatorio' });
+Recordatorio.belongsTo(Contacto, { foreignKey: 'contactoId', as: 'contacto' });
+
 // Conversacion 1—N Mensaje
 Conversacion.hasMany(Mensaje, { foreignKey: 'conversacionId', as: 'mensajes' });
 Mensaje.belongsTo(Conversacion, { foreignKey: 'conversacionId', as: 'conversacion' });

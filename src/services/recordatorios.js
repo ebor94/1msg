@@ -46,7 +46,13 @@ async function siguienteRecordatorio(hoyISO) {
   const anio = +hoyISO.slice(0, 4), mes = +hoyISO.slice(5, 7), dia = +hoyISO.slice(8, 10);
   const dim = diasDelMes(anio, mes);
   const inicioMes = `${hoyISO.slice(0, 7)}-01`;
-  const activos = await Recordatorio.findAll({ where: { activo: true }, order: [['id', 'ASC']] });
+  // Solo recordatorios activos de contactos NO desactivados (a un contacto desactivado
+  // no se le escribe, igual que en los envíos normales). INNER JOIN vía include.
+  const activos = await Recordatorio.findAll({
+    where: { activo: true },
+    include: [{ model: Contacto, as: 'contacto', where: { desactivadoEn: null }, required: true, attributes: [] }],
+    order: [['id', 'ASC']],
+  });
   return activos.find((r) => esDiaDeEnvio(r.diaMes, dia, dim) && (!r.ultimoEnvioEn || String(r.ultimoEnvioEn) < inicioMes)) || null;
 }
 
