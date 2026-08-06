@@ -12,6 +12,7 @@ function deps(over = {}) {
     enviar: async () => 'enviado',
     finalizar: async () => {},
     emitirRemoto: async () => {},
+    quedanReintentos: async () => 0,
     ...over,
   };
 }
@@ -30,6 +31,17 @@ test('tick con campaña y sin pendientes → finaliza', async () => {
   const d = deps({ campanaActiva: async () => ({ id: 1, plantillaNombre: 'x' }), siguienteDestinatario: async () => null, finalizar: async () => { finalizada++; } });
   assert.equal(await tick(new Date(), d), 'finalizada');
   assert.equal(finalizada, 1);
+});
+test('tick sin pendientes pero con reintentos futuros → espera-retry (no finaliza)', async () => {
+  let finalizada = 0;
+  const d = deps({
+    campanaActiva: async () => ({ id: 1, plantillaNombre: 'x' }),
+    siguienteDestinatario: async () => null,
+    quedanReintentos: async () => 2,
+    finalizar: async () => { finalizada++; },
+  });
+  assert.equal(await tick(new Date(), d), 'espera-retry');
+  assert.equal(finalizada, 0);
 });
 test('tick con destinatario pendiente → envía', async () => {
   let envio = 0;

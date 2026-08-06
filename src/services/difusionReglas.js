@@ -1,10 +1,12 @@
 'use strict';
 // Reglas PURAS del envío de difusiones: ventana horaria, ritmo y clasificación de error.
 
-/** Ventana: Lun–Vie 08:00–18:59, Sáb 08:00–13:59 (hora local); Dom no. */
+/** Ventana: Lun–Vie 08:00–18:59, Sáb 08:00–13:59 (hora Colombia); Dom no. */
 function dentroDeVentana(fecha) {
-  const dow = fecha.getDay(); // 0=Dom..6=Sáb
-  const h = fecha.getHours();
+  // Hora de pared de Colombia (UTC-5), independiente de la TZ del proceso.
+  const bogota = new Date(fecha.getTime() - 5 * 3600 * 1000);
+  const dow = bogota.getUTCDay(); // 0=Dom..6=Sáb
+  const h = bogota.getUTCHours();
   if (dow === 0) return false;
   if (dow === 6) return h >= 8 && h < 14;
   return h >= 8 && h < 19;

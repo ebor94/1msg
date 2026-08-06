@@ -28,6 +28,14 @@ function subirUno(req, res, next) {
   });
 }
 
+function subirImagen(req, res, next) {
+  subida.single('imagen')(req, res, (err) => {
+    if (!err) return next();
+    const grande = err.code === 'LIMIT_FILE_SIZE';
+    return res.status(grande ? 413 : 400).json({ error: grande ? 'archivo demasiado grande (máx 16 MB)' : 'archivo inválido' });
+  });
+}
+
 // Máximo 20 intentos FALLIDOS de login por (IP + usuario) cada 15 minutos: frena la
 // fuerza bruta por cuenta sin bloquear a una oficina que comparte IP pública (NAT).
 // skipSuccessfulRequests: un login correcto NO gasta cupo — así un usuario que entra
@@ -110,7 +118,7 @@ router.post('/difusiones', requireAuth, requireAdmin, difusionesCtrl.crear);
 router.get('/difusiones/:id', requireAuth, requireAdmin, difusionesCtrl.detalle);
 router.get('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.destinatarios);
 router.post('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.cargar);
-router.post('/difusiones/:id/imagen', requireAuth, requireAdmin, subida.single('imagen'), difusionesCtrl.subirImagen);
+router.post('/difusiones/:id/imagen', requireAuth, requireAdmin, subirImagen, difusionesCtrl.subirImagen);
 router.post('/difusiones/:id/iniciar', requireAuth, requireAdmin, difusionesCtrl.iniciar);
 router.post('/difusiones/:id/cancelar', requireAuth, requireAdmin, difusionesCtrl.cancelar);
 

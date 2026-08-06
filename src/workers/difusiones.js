@@ -29,14 +29,21 @@ async function tick(ahora, deps = {}) {
   const siguiente = deps.siguienteDestinatario || ((id) => siguienteDestinatarioDefault(id, ahora));
   const catalogo = deps.catalogo || obtenerCatalogo;
   const emitir = deps.emitirRemoto || emitirRemoto;
-  const finalizar = deps.finalizar || (async (dif) => { await dif.update({ estado: 'finalizada' }); emitir('difusion:progreso', {}, { difusionId: dif.id, estado: 'finalizada' }); });
+  const finalizar = deps.finalizar || (async (dif) => { await Difusion.update({ estado: 'finalizada' }, { where: { id: dif.id, estado: 'enviando' } }); emitir('difusion:progreso', {}, { difusionId: dif.id, estado: 'finalizada' }); });
   const enviar = deps.enviar || (async (dest, dif, def) => enviarDestinatario(dest, dif, def));
+  const quedanReintentos = deps.quedanReintentos || ((id) => DifusionDestinatario.count({
+    where: { difusionId: id, [Op.or]: [{ estado: 'pendiente' }, { estado: 'fallido', reintentarEn: { [Op.gt]: ahora } }] },
+  }));
 
   const dif = await campanaActiva();
   if (!dif) return 'sin-campana';
   if (!enVentana) return 'fuera-ventana';
   const dest = await siguiente(dif.id);
-  if (!dest) { await finalizar(dif); return 'finalizada'; }
+  if (!dest) {
+    if (await quedanReintentos(dif.id) > 0) return 'espera-retry';
+    await finalizar(dif);
+    return 'finalizada';
+  }
   const def = (await catalogo()).find((p) => p.name === dif.plantillaNombre);
   if (!def) { logger.error(`difusión ${dif.id}: plantilla ${dif.plantillaNombre} no está en el catálogo`); return 'sin-plantilla'; }
   await enviar(dest, dif, def);
@@ -53,6 +60,7 @@ async function iniciarLoop() {
     try {
       const r = await tick(new Date());
       if (r === 'enviado') espera = esperaEnvioMs(); // ritmo entre mensajes (20 s + jitter)
+      else if (r === 'espera-retry') espera = 60000; // quedan reintentos futuros: revisar cada minuto
     } catch (err) {
       logger.error(`worker difusiones: ${err.message}`);
     }

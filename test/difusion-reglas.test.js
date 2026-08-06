@@ -3,16 +3,16 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { dentroDeVentana, esperaEnvioMs, clasificarError } = require('../src/services/difusionReglas');
 
-// 2026-08-03 = Lunes, 08-08 = Sábado, 08-09 = Domingo (verificado).
-test('dentroDeVentana: Lun 10h sí, Lun 07h no, Lun 19h no', () => {
-  assert.equal(dentroDeVentana(new Date(2026, 7, 3, 10, 0)), true);
-  assert.equal(dentroDeVentana(new Date(2026, 7, 3, 7, 59)), false);
-  assert.equal(dentroDeVentana(new Date(2026, 7, 3, 19, 0)), false);
+// Colombia = UTC-5, así que Colombia HH:00 = UTC (HH+5):00. 2026-08-03 Lun, 08-08 Sáb, 08-09 Dom.
+test('dentroDeVentana: Lun 10h sí, 07:59 no, 19h no (hora Colombia)', () => {
+  assert.equal(dentroDeVentana(new Date(Date.UTC(2026, 7, 3, 15, 0))), true);   // Lun 10:00 CO
+  assert.equal(dentroDeVentana(new Date(Date.UTC(2026, 7, 3, 12, 59))), false); // Lun 07:59 CO
+  assert.equal(dentroDeVentana(new Date(Date.UTC(2026, 7, 4, 0, 0))), false);   // Lun 19:00 CO
 });
-test('dentroDeVentana: Sáb 12h sí, Sáb 14h no, Dom no', () => {
-  assert.equal(dentroDeVentana(new Date(2026, 7, 8, 12, 0)), true);
-  assert.equal(dentroDeVentana(new Date(2026, 7, 8, 14, 0)), false);
-  assert.equal(dentroDeVentana(new Date(2026, 7, 9, 10, 0)), false);
+test('dentroDeVentana: Sáb 12h sí, Sáb 14h no, Dom no (hora Colombia)', () => {
+  assert.equal(dentroDeVentana(new Date(Date.UTC(2026, 7, 8, 17, 0))), true);   // Sáb 12:00 CO
+  assert.equal(dentroDeVentana(new Date(Date.UTC(2026, 7, 8, 19, 0))), false);  // Sáb 14:00 CO
+  assert.equal(dentroDeVentana(new Date(Date.UTC(2026, 7, 9, 15, 0))), false);  // Dom 10:00 CO
 });
 test('esperaEnvioMs: base + jitter según rnd', () => {
   assert.equal(esperaEnvioMs(20000, 5000, () => 0), 20000);
