@@ -104,6 +104,8 @@ async function crearContacto() {
             @click="menuAbierto = false; router.push('/informe')">📋 Informe de contactos</button>
           <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; router.push('/seguimiento')">📈 Seguimiento de agentes</button>
+          <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; router.push('/difusiones')">📣 Difusiones</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; mostrarProductos = true">🔎 Consultar productos</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
