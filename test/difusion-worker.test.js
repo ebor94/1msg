@@ -11,6 +11,7 @@ function deps(over = {}) {
     catalogo: async () => [],
     enviar: async () => 'enviado',
     finalizar: async () => {},
+    emitirRemoto: async () => {},
     ...over,
   };
 }
@@ -32,12 +33,17 @@ test('tick con campaña y sin pendientes → finaliza', async () => {
 });
 test('tick con destinatario pendiente → envía', async () => {
   let envio = 0;
+  let emitido = 0;
+  let payloadEmitido = null;
   const d = deps({
     campanaActiva: async () => ({ id: 1, plantillaNombre: 'recordatorio_de_mora' }),
     siguienteDestinatario: async () => ({ id: 9 }),
     catalogo: async () => [{ name: 'recordatorio_de_mora', variables: 2 }],
     enviar: async () => { envio++; return 'enviado'; },
+    emitirRemoto: async (evento, destino, payload) => { emitido++; payloadEmitido = payload; },
   });
   assert.equal(await tick(new Date(), d), 'enviado');
   assert.equal(envio, 1);
+  assert.equal(emitido, 1);
+  assert.equal(payloadEmitido.difusionId, 1);
 });

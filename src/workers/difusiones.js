@@ -28,7 +28,8 @@ async function tick(ahora, deps = {}) {
   const campanaActiva = deps.campanaActiva || campanaActivaDefault;
   const siguiente = deps.siguienteDestinatario || ((id) => siguienteDestinatarioDefault(id, ahora));
   const catalogo = deps.catalogo || obtenerCatalogo;
-  const finalizar = deps.finalizar || (async (dif) => { await dif.update({ estado: 'finalizada' }); emitirRemoto('difusion:progreso', {}, { difusionId: dif.id, estado: 'finalizada' }); });
+  const emitir = deps.emitirRemoto || emitirRemoto;
+  const finalizar = deps.finalizar || (async (dif) => { await dif.update({ estado: 'finalizada' }); emitir('difusion:progreso', {}, { difusionId: dif.id, estado: 'finalizada' }); });
   const enviar = deps.enviar || (async (dest, dif, def) => enviarDestinatario(dest, dif, def));
 
   const dif = await campanaActiva();
@@ -37,9 +38,9 @@ async function tick(ahora, deps = {}) {
   const dest = await siguiente(dif.id);
   if (!dest) { await finalizar(dif); return 'finalizada'; }
   const def = (await catalogo()).find((p) => p.name === dif.plantillaNombre);
-  if (!def) { logger.error(`difusión ${dif.id}: plantilla ${dif.plantillaNombre} no está en el catálogo`); return 'fuera-ventana'; }
+  if (!def) { logger.error(`difusión ${dif.id}: plantilla ${dif.plantillaNombre} no está en el catálogo`); return 'sin-plantilla'; }
   await enviar(dest, dif, def);
-  emitirRemoto('difusion:progreso', {}, { difusionId: dif.id }); // destino vacío → room 'admins'
+  emitir('difusion:progreso', {}, { difusionId: dif.id }); // destino vacío → room 'admins'
   return 'enviado';
 }
 
