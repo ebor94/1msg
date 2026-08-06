@@ -246,5 +246,43 @@ export const useAcciones = defineStore('acciones', {
       if (item?.contacto) item.contacto.nombreDisplay = nuevo;
       return nuevo;
     },
+    async listarDifusiones() {
+      return (await apiFetch('/difusiones')).difusiones;
+    },
+    async crearDifusion(datos) {
+      return (await apiFetch('/difusiones', { method: 'POST', body: JSON.stringify(datos) })).difusion;
+    },
+    async cargarDestinatariosDifusion(id, payload) {
+      return apiFetch(`/difusiones/${id}/destinatarios`, { method: 'POST', body: JSON.stringify(payload) });
+    },
+    async subirImagenDifusion(id, file) {
+      const fd = new FormData();
+      fd.append('imagen', file);
+      const token = tokenGuardado();
+      const resp = await fetch(`/api/difusiones/${id}/imagen`, {
+        method: 'POST',
+        headers: token ? { authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      let cuerpo = null;
+      try { cuerpo = await resp.json(); } catch { /* sin cuerpo */ }
+      if (!resp.ok) { const e = new Error((cuerpo && cuerpo.error) || `error ${resp.status}`); e.status = resp.status; throw e; }
+      return cuerpo;
+    },
+    async iniciarDifusion(id) {
+      return apiFetch(`/difusiones/${id}/iniciar`, { method: 'POST' });
+    },
+    async cancelarDifusion(id) {
+      return apiFetch(`/difusiones/${id}/cancelar`, { method: 'POST' });
+    },
+    async detalleDifusion(id) {
+      return apiFetch(`/difusiones/${id}`);
+    },
+    async destinatariosDifusion(id, { estado, pagina = 0 } = {}) {
+      const q = new URLSearchParams();
+      if (estado) q.set('estado', estado);
+      q.set('pagina', String(pagina));
+      return apiFetch(`/difusiones/${id}/destinatarios?${q.toString()}`);
+    },
   },
 });
