@@ -19,7 +19,7 @@ function crearApp() {
       contentSecurityPolicy: {
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-          'img-src': ["'self'", 'data:', 'blob:', 'https://cucuta.losolivos.co'], // favicon Los Olivos
+          'img-src': ["'self'", 'data:', 'blob:', 'https://cucuta.losolivos.co', 'https://losolivoscucuta.com'],
           'media-src': ["'self'", 'blob:'],
         },
       },

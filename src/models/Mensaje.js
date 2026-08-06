@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) =>
       mediaRuta: { type: DataTypes.STRING(255), allowNull: true },
       mediaMime: { type: DataTypes.STRING(100), allowNull: true },
       mediaNombre: { type: DataTypes.STRING(180), allowNull: true },
+      mediaUrl: { type: DataTypes.STRING(255), allowNull: true },
       mediaBytes: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
       historico: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }, // traído por backfill
       respondeAId: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
