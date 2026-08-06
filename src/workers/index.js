@@ -20,6 +20,7 @@ const { sequelize, verificarConexion } = require('../config/database');
 const { EventoWebhook } = require('../models');
 const { procesarEventoWebhook } = require('../services/ingesta');
 const { iniciarLoop: iniciarDifusiones } = require('./difusiones');
+const { iniciarLoop: iniciarRecordatorios } = require('./recordatorios');
 
 /**
  * Avisa al API (mismo host, proceso aparte) para que emita por el socket.
@@ -189,6 +190,7 @@ async function bootstrap() {
   process.on('SIGINT', () => cerrar('SIGINT'));
   await purgarEventosViejos(); // una purga al arrancar
   iniciarDifusiones(); // arranca junto al bucle de eventos, no lo bloquea
+  iniciarRecordatorios(); // idem: barrido diario de recordatorios, no lo bloquea
   await bucle();
   clearInterval(timerPurga);
   await sequelize.close();

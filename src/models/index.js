@@ -25,6 +25,8 @@ const EventoWebhook = require('./EventoWebhook')(sequelize, DataTypes);
 const Difusion = require('./Difusion')(sequelize, DataTypes);
 const DifusionDestinatario = require('./DifusionDestinatario')(sequelize, DataTypes);
 const RespuestaRapida = require('./RespuestaRapida')(sequelize, DataTypes);
+const Recordatorio = require('./Recordatorio')(sequelize, DataTypes);
+const Ajuste = require('./Ajuste')(sequelize, DataTypes);
 
 // -------------------------------------------------------------------
 // Asociaciones. foreignKey apunta al atributo ya declarado en el modelo,
@@ -114,6 +116,8 @@ const db = {
   Difusion,
   DifusionDestinatario,
   RespuestaRapida,
+  Recordatorio,
+  Ajuste,
 };
 
 module.exports = db;

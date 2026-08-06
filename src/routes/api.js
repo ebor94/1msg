@@ -16,6 +16,7 @@ const productosCtrl = require('../controllers/productosController');
 const previsionCtrl = require('../controllers/previsionController');
 const reportesCtrl = require('../controllers/reportesController');
 const difusionesCtrl = require('../controllers/difusionesController');
+const recordatoriosCtrl = require('../controllers/recordatoriosController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -95,6 +96,8 @@ router.post('/contactos/:id/conversacion', requireAuth, contactosCtrl.abrir);
 router.get('/contactos/:id/prevision', requireAuth, contactosCtrl.prevision);
 router.get('/contactos/:id/mantenimientos', requireAuth, contactosCtrl.mantenimientos);
 router.get('/contactos/:id/prenecesidad', requireAuth, contactosCtrl.prenecesidad);
+router.get('/contactos/:id/recordatorio', requireAuth, recordatoriosCtrl.obtener);
+router.put('/contactos/:id/recordatorio', requireAuth, recordatoriosCtrl.guardar);
 router.get('/prevision/conceptos', requireAuth, previsionCtrl.conceptos);
 router.post('/prevision/gestion', requireAuth, previsionCtrl.gestion);
 router.get('/reportes/agentes/vivo', requireAuth, requireAdmin, reportesCtrl.vivo);

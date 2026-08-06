@@ -95,7 +95,7 @@ async function metricasDelDia(fechaStr) {
     `SELECT agente_id AS agenteId, COUNT(*) AS cerrados
        FROM wa_conversaciones
       WHERE agente_id IS NOT NULL AND cerrada_en >= :ini AND cerrada_en < :fin
-        AND origen <> 'difusion'
+        AND origen NOT IN ('difusion','recordatorio')
       GROUP BY agente_id`,
     { ...SEL, replacements: repl },
   );

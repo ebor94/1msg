@@ -20,6 +20,7 @@ const ORIGEN_CONVERSACION = Object.freeze({
   SALIENTE: 'saliente',
   DIFUSION: 'difusion',
   CTWA: 'ctwa',
+  RECORDATORIO: 'recordatorio',
 });
 
 const DIRECCION = Object.freeze({
