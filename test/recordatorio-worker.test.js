@@ -30,3 +30,7 @@ test('hay uno → envía', async () => {
   const r = await tick(new Date(), deps({ siguiente: async () => ({ id: 1, contactoId: 2 }), enviar: async () => { n++; return 'enviado'; } }));
   assert.equal(r, 'enviado'); assert.equal(n, 1);
 });
+test('hay uno pero falla el envío → sin-progreso', async () => {
+  const r = await tick(new Date(), deps({ siguiente: async () => ({ id: 1, contactoId: 2 }), enviar: async () => 'fallido' }));
+  assert.equal(r, 'sin-progreso');
+});

@@ -22,8 +22,8 @@ async function tick(ahora, deps = {}) {
   const hoy = hoyBogota();
   const rec = await siguiente(hoy);
   if (!rec) return 'nada';
-  await enviar(rec, aj, hoy);
-  return 'enviado';
+  const r = await enviar(rec, aj, hoy);
+  return r === 'enviado' ? 'enviado' : 'sin-progreso';
 }
 
 let corriendo = false;

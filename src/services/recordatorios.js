@@ -56,8 +56,9 @@ async function enviarRecordatorio(rec, aj, hoyISO, deps = {}) {
   const def = (await obtenerCatalogo()).find((p) => p.name === aj.recordatorio_plantilla);
   if (!def) { logger.error(`recordatorio: plantilla ${aj.recordatorio_plantilla} no está en el catálogo`); return 'sin_plantilla'; }
   const contacto = await Contacto.findByPk(rec.contactoId);
-  if (!contacto) return 'sin_contacto';
+  if (!contacto) { try { await rec.update({ ultimoEnvioEn: hoyISO }); } catch { /* ignore */ } return 'sin_contacto'; }
   const canal = await Canal.findOne({ where: { instanceId: env.onemsg.instanceId } });
+  if (!canal) { logger.error('recordatorio: canal WABA no configurado'); return 'sin_canal'; }
 
   const params = [
     ...construirParamsHeader(aj.recordatorio_imagen_url || def.imagenDefault),
@@ -80,7 +81,7 @@ async function enviarRecordatorio(rec, aj, hoyISO, deps = {}) {
 
   const texto = renderizarCuerpo(def.cuerpo, [aj.recordatorio_texto]);
   await persistirEnvioPlantilla({
-    contactoId: rec.contactoId, agenteFallback: rec.agenteId, canalId: canal ? canal.id : null,
+    contactoId: rec.contactoId, agenteFallback: rec.agenteId, canalId: canal.id,
     plantillaNombre: def.name, texto, waMessageId: enviado.id, origen: ORIGEN_CONVERSACION.RECORDATORIO,
   }, async (t) => { await rec.update({ ultimoEnvioEn: hoyISO }, { transaction: t }); });
   return 'enviado';
