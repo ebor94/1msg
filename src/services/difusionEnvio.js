@@ -1,10 +1,11 @@
 'use strict';
 const { sequelize } = require('../config/database');
-const { Conversacion, Mensaje, Contacto } = require('../models');
+const { Contacto } = require('../models');
 const { enviarPlantilla } = require('../integrations/onemsg/plantillas');
 const { construirParams, construirParamsHeader, renderizarCuerpo } = require('./plantillas');
 const { clasificarError } = require('./difusionReglas');
-const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION, ORIGEN_CONVERSACION } = require('../config/constants');
+const { persistirEnvioPlantilla } = require('./envioPlantilla');
+const { ORIGEN_CONVERSACION } = require('../config/constants');
 const logger = require('../utils/logger');
 
 /** Pura: arma el cuerpo de enviarPlantilla (header de imagen si aplica). */
@@ -45,34 +46,10 @@ async function enviarDestinatario(dest, dif, def, deps = {}) {
   }
 
   const texto = renderizarCuerpo(def.cuerpo, dest.parametros);
-  const ahora = new Date();
-  await sequelize.transaction(async (t) => {
-    const contacto = await Contacto.findByPk(dest.contactoId, { transaction: t });
-    // Dueño: si el contacto ya tiene, se respeta; si no, el del CSV.
-    const agenteId = contacto.agenteDuenoId || dest.agenteId || null;
-    if (!contacto.agenteDuenoId && agenteId) await contacto.update({ agenteDuenoId: agenteId }, { transaction: t });
-
-    // Reusar la última conversación; si está cerrada o no hay, crear/dejar en cerrada.
-    let conv = await Conversacion.findOne({ where: { contactoId: contacto.id }, order: [['id', 'DESC']], transaction: t });
-    if (!conv) {
-      conv = await Conversacion.create({
-        canalId: dif.canalId, contactoId: contacto.id, agenteId,
-        estado: ESTADO_CONVERSACION.CERRADA, origen: ORIGEN_CONVERSACION.DIFUSION, cerradaEn: ahora,
-      }, { transaction: t });
-    } else if (conv.estado === ESTADO_CONVERSACION.CERRADA && conv.agenteId !== agenteId) {
-      await conv.update({ agenteId }, { transaction: t }); // enruta el resuelto al agente resuelto, sin reabrir
-    }
-
-    await Mensaje.findOrCreate({
-      where: { waMessageId: enviado.id },
-      defaults: {
-        conversacionId: conv.id, waMessageId: enviado.id, direccion: DIRECCION.OUT,
-        tipo: TIPO_MENSAJE.TEMPLATE, texto, plantillaNombre: dif.plantillaNombre,
-        estado: ESTADO_MENSAJE.ENVIADO, enviadoPorId: null, tsProveedor: ahora,
-      },
-      transaction: t,
-    });
-    await conv.update({ ultimoMensajeEn: ahora, ultimoMensajeTexto: texto.slice(0, 255), ultimoMensajeDir: DIRECCION.OUT }, { transaction: t });
+  await persistirEnvioPlantilla({
+    contactoId: dest.contactoId, agenteFallback: dest.agenteId, canalId: dif.canalId,
+    plantillaNombre: dif.plantillaNombre, texto, waMessageId: enviado.id, origen: ORIGEN_CONVERSACION.DIFUSION,
+  }, async (t) => {
     await dest.update({ estado: 'enviado', waMessageId: enviado.id, intentos: dest.intentos + 1, errorCodigo: null }, { transaction: t });
   });
 
