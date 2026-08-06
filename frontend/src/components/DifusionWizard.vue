@@ -112,7 +112,7 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
           <div v-if="plantilla.variables" class="space-y-2">
             <div class="text-[11px] text-gray-400 uppercase">Variables</div>
             <div v-for="(v, i) in mapeo.variables" :key="i" class="flex items-center gap-2">
-              <span class="text-gray-500 w-10">{{ '{{' }}{{ i + 1 }}{{ '}}' }}</span>
+              <span class="text-gray-500 w-10">{{ '{' + '{' + (i + 1) + '}' + '}' }}</span>
               <select v-model="v.tipo" class="border rounded px-2 py-1">
                 <option value="columna">Columna CSV</option>
                 <option value="fijo">Valor fijo</option>
