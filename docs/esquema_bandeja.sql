@@ -98,7 +98,7 @@ CREATE TABLE wa_conversaciones (
   agente_id             INT UNSIGNED    NULL,
   estado                ENUM('nueva','abierta','pendiente','cerrada')
                                         NOT NULL DEFAULT 'nueva',
-  origen                ENUM('entrante','saliente','difusion','ctwa')
+  origen                ENUM('entrante','saliente','difusion','ctwa','recordatorio')
                                         NOT NULL DEFAULT 'entrante',
   atendida_por_bot      TINYINT(1)      NOT NULL DEFAULT 0,
   ventana_expira_en     DATETIME        NULL,
@@ -299,6 +299,37 @@ CREATE TABLE wa_difusion_destinatarios (
     REFERENCES wa_difusiones (id) ON DELETE CASCADE,
   CONSTRAINT fk_dif_contacto FOREIGN KEY (contacto_id)
     REFERENCES wa_contactos (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- Recordatorios mensuales por contacto + ajustes globales del feature
+-- (plantilla y textos usados al enviar). origen 'recordatorio' en
+-- wa_conversaciones identifica las conversaciones que dispara este envío.
+-- ---------------------------------------------------------------------
+CREATE TABLE wa_recordatorios (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  contacto_id     BIGINT UNSIGNED NOT NULL,
+  dia_mes         TINYINT UNSIGNED NOT NULL,           -- 1..30
+  activo          TINYINT(1)      NOT NULL DEFAULT 1,
+  ultimo_envio_en DATE            NULL,                -- último envío (para no duplicar en el mes)
+  agente_id       INT UNSIGNED    NULL,
+  creado_por_id   INT UNSIGNED    NULL,
+  creado_en       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_recordatorio_contacto (contacto_id),
+  KEY idx_recordatorio_barrido (activo, dia_mes),
+  CONSTRAINT fk_recordatorio_contacto FOREIGN KEY (contacto_id)
+    REFERENCES wa_contactos (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE wa_ajustes (
+  clave           VARCHAR(60)     NOT NULL,
+  valor           TEXT            NULL,
+  actualizado_en  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (clave)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================================
