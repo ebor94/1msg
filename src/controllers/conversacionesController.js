@@ -496,6 +496,7 @@ async function enviarPlantilla(req, res) {
         estado: enviado.sent ? ESTADO_MENSAJE.ENVIADO : ESTADO_MENSAJE.PENDIENTE,
         enviadoPorId: agente.id,
         tsProveedor: ahora,
+        mediaUrl: imagenUrl || null,
       },
     });
     await conv.update({

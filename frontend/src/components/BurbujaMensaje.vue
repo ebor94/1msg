@@ -10,6 +10,10 @@ const TIPOS_MEDIA = ['image', 'sticker', 'audio', 'video', 'document'];
 const esMedia = computed(() => TIPOS_MEDIA.includes(props.mensaje.tipo));
 const caption = computed(() => props.mensaje.texto || '');
 
+// Imagen de encabezado de plantilla (difusión/recordatorio/manual): URL pública, se
+// pinta directo (no pasa por fetchMediaBlob). Independiente de `esMedia`.
+const urlEncabezado = computed(() => props.mensaje.mediaUrl || null);
+
 // Texto a mostrar en burbujas NO-media. Las tarjetas de contacto (vCard) llegan
 // como tipo 'system' con un base64 gigante sin espacios; en vez de volcarlo
 // (rompe el layout), mostramos una etiqueta.
@@ -23,6 +27,11 @@ const contenidoTexto = computed(() => {
 const media = ref(null); // { blob, url, filename, mime }
 const estado = ref('idle'); // idle | cargando | listo | error
 const ampliada = ref(false);
+const encabezadoRoto = ref(false);
+
+// URL para el modal de ampliar/descargar: prioriza el blob de media real;
+// si no hay, cae a la imagen de encabezado de plantilla.
+const urlAmpliada = computed(() => (media.value && media.value.url) || urlEncabezado.value);
 
 let vivo = true; // false tras desmontar: evita fijar estado o dejar blobs sin revocar
 let reintentoId = null;
@@ -67,6 +76,11 @@ onUnmounted(() => {
 
       <div v-if="saliente && mensaje.enviadoPor" class="text-[10px] text-gray-500 font-medium mb-0.5">{{ mensaje.enviadoPor.nombre }}</div>
 
+      <div v-if="urlEncabezado && !encabezadoRoto" class="mb-0.5">
+        <img :src="urlEncabezado" class="rounded max-h-64 cursor-pointer" alt=""
+          @click="ampliada = true" @error="encabezadoRoto = true" />
+      </div>
+
       <div v-if="esMedia" class="mb-0.5">
         <div v-if="estado === 'cargando' || estado === 'idle'" class="text-[12px] text-gray-400 py-3 text-center">Cargando…</div>
         <div v-else-if="estado === 'error'" class="text-[12px] text-gray-400 py-3 text-center">📎 Archivo no disponible</div>
@@ -97,7 +111,7 @@ onUnmounted(() => {
       <div v-if="ampliada" class="fixed inset-0 z-[100] bg-black/85 overflow-auto" @click="ampliada = false">
         <!-- Barra superior fija: descargar / cerrar -->
         <div class="sticky top-0 flex items-center justify-end gap-4 px-4 py-3">
-          <a :href="media.url" :download="media.filename || 'imagen'" @click.stop
+          <a :href="urlAmpliada" :download="(media && media.filename) || 'imagen'" @click.stop
             class="text-white/90 hover:text-white text-[13px] flex items-center gap-1" title="Descargar">
             <span class="text-base">⬇</span> Descargar
           </a>
@@ -106,7 +120,7 @@ onUnmounted(() => {
         </div>
         <!-- La imagen se ajusta a pantalla; si es más grande, el contenedor hace scroll -->
         <div class="min-h-[calc(100%-3.5rem)] flex items-center justify-center px-4 pb-6">
-          <img :src="media.url" @click.stop
+          <img :src="urlAmpliada" @click.stop
             class="max-w-full max-h-[85vh] object-contain rounded shadow-lg" alt="" />
         </div>
       </div>

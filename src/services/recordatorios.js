@@ -86,9 +86,11 @@ async function enviarRecordatorio(rec, aj, hoyISO, deps = {}) {
   }
 
   const texto = renderizarCuerpo(def.cuerpo, [aj.recordatorio_texto]);
+  const mediaUrl = def.tieneImagen ? (aj.recordatorio_imagen_url || def.imagenDefault) : null;
   await persistirEnvioPlantilla({
     contactoId: rec.contactoId, agenteFallback: rec.agenteId, canalId: canal.id,
     plantillaNombre: def.name, texto, waMessageId: enviado.id, origen: ORIGEN_CONVERSACION.RECORDATORIO,
+    mediaUrl,
   }, async (t) => { await rec.update({ ultimoEnvioEn: hoyISO }, { transaction: t }); });
   return 'enviado';
 }

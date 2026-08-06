@@ -148,6 +148,7 @@ CREATE TABLE wa_mensajes (
   media_ruta        VARCHAR(255)    NULL,
   media_mime        VARCHAR(100)    NULL,
   media_nombre      VARCHAR(180)    NULL,
+  media_url         TEXT            NULL,
   media_bytes       INT UNSIGNED    NULL,
   historico         TINYINT(1)      NOT NULL DEFAULT 0,  -- traído por backfill
   responde_a_id     BIGINT UNSIGNED NULL,
