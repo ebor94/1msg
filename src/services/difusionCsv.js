@@ -7,7 +7,9 @@ function validarTelefonoCo(bruto) {
   const d = String(bruto || '').replace(/\D/g, '');
   let local = d;
   if (local.length === 12 && local.startsWith('57')) local = local.slice(2);
-  if (local.length === 10 && local.startsWith('3')) return { ok: true, waId: `57${local}`, telefono: `57${local}` };
+  // waId canónico del sistema = '<telefono>@c.us' (así lo crea la ingesta desde el
+  // chatId de 1msg); el teléfono va pelado para el envío a 1msg.
+  if (local.length === 10 && local.startsWith('3')) return { ok: true, waId: `57${local}@c.us`, telefono: `57${local}` };
   return { ok: false };
 }
 

@@ -39,11 +39,12 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
   const omitidos = [];
   for (const d of destinatarios) {
     if (d.estado === 'omitido') { omitidos.push({ telefono: d.telefono, motivo: d.motivo }); continue; }
-    // Resolver/crear contacto por waId (patrón de ingesta).
-    const [contacto] = await Contacto.findOrCreate({
-      where: { waId: d.waId },
-      defaults: { waId: d.waId, telefono: d.telefono },
-    });
+    // Reusar el contacto existente por TELÉFONO (identidad canónica del cliente).
+    // El wa_id del sistema es '<telefono>@c.us' y no siempre coincide con lo que
+    // trae el CSV, así que buscar por wa_id crearía un duplicado. Si no existe, se
+    // crea con el wa_id canónico.
+    let contacto = await Contacto.findOne({ where: { telefono: d.telefono }, order: [['id', 'ASC']] });
+    if (!contacto) contacto = await Contacto.create({ waId: d.waId, telefono: d.telefono });
     // Upsert del destinatario (clave única difusion_id+contacto_id → no duplica).
     await DifusionDestinatario.findOrCreate({
       where: { difusionId, contactoId: contacto.id },

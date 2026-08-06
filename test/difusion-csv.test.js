@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const { validarTelefonoCo, parsearCsv, validarColumnas, construirDestinatarios } = require('../src/services/difusionCsv');
 
 test('validarTelefonoCo acepta celular de 10 dígitos y normaliza a 57...', () => {
-  assert.deepEqual(validarTelefonoCo('3001234567'), { ok: true, waId: '573001234567', telefono: '573001234567' });
-  assert.deepEqual(validarTelefonoCo('57 300 123 4567'), { ok: true, waId: '573001234567', telefono: '573001234567' });
+  assert.deepEqual(validarTelefonoCo('3001234567'), { ok: true, waId: '573001234567@c.us', telefono: '573001234567' });
+  assert.deepEqual(validarTelefonoCo('57 300 123 4567'), { ok: true, waId: '573001234567@c.us', telefono: '573001234567' });
 });
 test('validarTelefonoCo rechaza fijo/corto', () => {
   assert.equal(validarTelefonoCo('6017654321').ok, false); // no empieza en 3
