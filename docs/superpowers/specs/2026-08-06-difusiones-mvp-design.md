@@ -54,8 +54,8 @@ pasos):
    nº de variables e imagen salen de la plantilla parseada.
 2. **Mapeo de variables**: por cada `{{i}}` del cuerpo, la fuente es
    **columna del CSV** (varía por destinatario) o **valor fijo** (igual para todos).
-   Si `tieneImagen`, se usa `imagenDefault` (override opcional); normalmente no varía
-   por persona.
+   Si `tieneImagen`, se resuelve la imagen del encabezado (ver sección siguiente);
+   normalmente es la misma para toda la campaña, no por persona.
 3. **Cargar CSV** (siguiente sección): trae `CELULAR`, `AGENTE_ID` y una columna por
    cada variable mapeada a "columna".
 4. **Vista previa + lanzar**: se renderiza el cuerpo con la primera fila
@@ -64,6 +64,27 @@ pasos):
 Por cada destinatario, `parametros` (JSON) queda como el arreglo **ordenado** de los
 valores de `{{1}}..{{n}}` (resolviendo columnas y constantes), listo para
 `construirParams`.
+
+### Imagen del encabezado (plantillas con imagen)
+
+1msg recibe la imagen como una **URL pública** en el `link` del header
+(`construirParamsHeader`), y Meta la **descarga en cada envío**. Por eso la URL debe
+seguir viva durante **toda** la campaña (horas).
+
+- **No se reutiliza** el mecanismo `mediaPublica` de la bandeja: es efímero (TTL 15
+  min, store en memoria que muere al reiniciar) — sirve para un envío suelto, no para
+  una difusión de horas.
+- En el asistente, si la plantilla `tieneImagen`, el admin:
+  - usa la **imagen por defecto** de la plantilla (`imagenDefault`), o
+  - **sube una imagen una sola vez** para la campaña.
+- La imagen subida se guarda **en disco** (persistente, como la media entrante) y se
+  sirve por una **ruta pública nueva y estable** (sin caducidad corta, sobrevive
+  reinicios), p. ej. `GET /media-difusion/:id` (solo lectura, `Content-Type` correcto
+  + `nosniff`). La URL resultante se guarda en `wa_difusiones.imagen_url` y se usa
+  como header en **todos** los envíos de la campaña.
+- La imagen es **a nivel de campaña** (misma para todos). Caso excepcional
+  (imagen por destinatario): mapear una columna del CSV con la URL, como una variable
+  más. Fuera del MVP salvo que se pida.
 
 ## Origen de destinatarios (CSV/pegar)
 
@@ -106,13 +127,15 @@ enviar a un número sin WhatsApp es bajo, así que el MVP va sin pre-check.
 
 ## Modelo de datos
 
-Se reutilizan `wa_difusiones` y `wa_difusion_destinatarios` tal como están. Único
-cambio de esquema:
+Se reutilizan `wa_difusiones` y `wa_difusion_destinatarios` tal como están. Cambios
+de esquema (**migración 007**):
 
-- **Migración 007**: `ALTER TABLE wa_difusion_destinatarios ADD COLUMN agente_id INT
-  UNSIGNED NULL AFTER contacto_id;` (agente responsable declarado en el CSV; FK
-  blanda a `wa_agentes`, sin constraint dura para no acoplar). Actualizar también el
-  modelo Sequelize y `docs/esquema_bandeja.sql`.
+- `ALTER TABLE wa_difusion_destinatarios ADD COLUMN agente_id INT UNSIGNED NULL AFTER
+  contacto_id;` (agente responsable declarado en el CSV; FK blanda a `wa_agentes`,
+  sin constraint dura para no acoplar).
+- `ALTER TABLE wa_difusiones ADD COLUMN imagen_url VARCHAR(255) NULL;` (URL pública
+  persistente de la imagen del encabezado, cuando la plantilla lleva imagen).
+- Actualizar también los modelos Sequelize y `docs/esquema_bandeja.sql`.
 
 Campos ya existentes que usamos:
 - `wa_difusiones`: `nombre`, `plantilla_nombre`, `plantilla_idioma`, `categoria`,
@@ -164,7 +187,9 @@ vez** (FIFO por `programada_para`/`creado_en`), y dentro de ella drena destinata
 - **Límite diario (tier)**: respeta un tope diario configurable acorde al tier del
   número (1K/10K/100K). Al alcanzarlo, pausa hasta el otro día.
 - **Envío**: usa el `sendTemplate` de `src/integrations/onemsg/` (token server-side,
-  jamás en cliente). Arma `params` desde `parametros` JSON del destinatario.
+  jamás en cliente). Arma el cuerpo con `construirParams(parametros)` y, si la
+  plantilla lleva imagen, el header con `construirParamsHeader(difusion.imagen_url ||
+  imagenDefault)`.
 - **429 / errores**: backoff exponencial (ya existe); incrementa `intentos`, setea
   `reintentar_en`, guarda `error_codigo`. Códigos conocidos: 131049 (límite
   marketing → reintentar en 24h), 130472 (experimento → `omitido`, marca
