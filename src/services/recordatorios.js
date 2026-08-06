@@ -72,6 +72,9 @@ async function enviarRecordatorio(rec, aj, hoyISO, deps = {}) {
     });
   } catch (err2) {
     logger.warn(`recordatorio contacto ${rec.contactoId}: fallo [${err2.codigo || ''}] ${err2.message}`);
+    // marca el recordatorio como procesado este mes para no reintentar un envío que ya
+    // falló de forma persistente (enviarPlantilla ya reintentó los 429) ni bloquear a los demás
+    try { await rec.update({ ultimoEnvioEn: hoyISO }); } catch { /* si falla el marcado, se reintentará; no bloquea */ }
     return 'fallido';
   }
 
