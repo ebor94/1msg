@@ -22,7 +22,7 @@ async function crear({ nombre, plantilla, idioma, categoria, creadoPorId }) {
   if (!canal) throw err(503, 'canal WABA no configurado');
   return Difusion.create({
     nombre, plantillaNombre: plantilla, plantillaIdioma: idioma || def.language || 'es',
-    categoria: categoria || def.categoria || 'utility', estado: 'borrador',
+    categoria: String(categoria || def.categoria || 'utility').toLowerCase(), estado: 'borrador',
     canalId: canal.id, creadoPorId,
   });
 }
@@ -37,7 +37,6 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
   const destinatarios = construirDestinatarios({ filas, mapeo, agentesActivos: agentes.map((a) => a.id) });
 
   const omitidos = [];
-  let pendientes = 0;
   for (const d of destinatarios) {
     if (d.estado === 'omitido') { omitidos.push({ telefono: d.telefono, motivo: d.motivo }); continue; }
     // Resolver/crear contacto por waId (patrón de ingesta).
@@ -50,8 +49,10 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
       where: { difusionId, contactoId: contacto.id },
       defaults: { difusionId, contactoId: contacto.id, agenteId: d.agenteId, parametros: d.parametros, estado: 'pendiente' },
     });
-    pendientes += 1;
   }
+  // Cuenta real de pendientes (no el contador local, que ignoraría reintentos
+  // de findOrCreate sobre filas ya existentes en estado enviado/fallido).
+  const pendientes = await DifusionDestinatario.count({ where: { difusionId, estado: 'pendiente' } });
   return { total: destinatarios.length, pendientes, omitidos };
 }
 
@@ -73,7 +74,7 @@ async function listar() {
   return sequelize.query(
     `SELECT d.id, d.nombre, d.plantilla_nombre AS plantilla, d.estado, d.creado_en AS creadoEn,
             COUNT(dd.id) AS total,
-            SUM(dd.estado IN ('enviado','entregado','leido')) AS enviados
+            COALESCE(SUM(dd.estado IN ('enviado','entregado','leido')), 0) AS enviados
        FROM wa_difusiones d
        LEFT JOIN wa_difusion_destinatarios dd ON dd.difusion_id = d.id
       GROUP BY d.id
@@ -89,11 +90,11 @@ async function detalle(difusionId) {
   const [embudo] = await sequelize.query(
     `SELECT
         COUNT(*) AS total,
-        SUM(dd.estado = 'omitido') AS omitidos,
-        SUM(dd.estado IN ('enviado','entregado','leido')) AS enviados,
-        SUM(m.estado = 'entregado') AS entregados,
-        SUM(m.estado = 'leido') AS leidos,
-        SUM(dd.estado = 'fallido') AS fallidos
+        COALESCE(SUM(dd.estado = 'omitido'), 0) AS omitidos,
+        COALESCE(SUM(dd.estado IN ('enviado','entregado','leido')), 0) AS enviados,
+        COALESCE(SUM(m.estado IN ('entregado','leido')), 0) AS entregados,
+        COALESCE(SUM(m.estado = 'leido'), 0) AS leidos,
+        COALESCE(SUM(dd.estado = 'fallido'), 0) AS fallidos
        FROM wa_difusion_destinatarios dd
        LEFT JOIN wa_mensajes m ON m.wa_message_id = dd.wa_message_id
       WHERE dd.difusion_id = :id`,
