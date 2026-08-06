@@ -39,10 +39,36 @@ número si 1msg la ofrece.
 
 Todo admin-only (`requireAuth` + `requireAdmin`). Un asesor recibe 403.
 
+## Selección de plantilla y mapeo de variables
+
+La app **ya parsea** cada plantilla (`src/services/plantillas.js` → `parsearPlantilla`)
+y expone: `cuerpo` (texto con `{{1}}`..`{{n}}`), `variables` (nº de variables),
+`tieneImagen` + `imagenDefault`, `namespace`. Ya existen `renderizarCuerpo` (preview)
+y `construirParams`/`construirParamsHeader` (armar el envío). El MVP los reutiliza.
+
+Las variables **no son libres**: son las que la plantilla define en Meta,
+**posicionales** (`{{1}}`, `{{2}}`…). El flujo de creación de campaña (asistente por
+pasos):
+
+1. **Datos + plantilla**: nombre de la campaña + elegir plantilla. Idioma, categoría,
+   nº de variables e imagen salen de la plantilla parseada.
+2. **Mapeo de variables**: por cada `{{i}}` del cuerpo, la fuente es
+   **columna del CSV** (varía por destinatario) o **valor fijo** (igual para todos).
+   Si `tieneImagen`, se usa `imagenDefault` (override opcional); normalmente no varía
+   por persona.
+3. **Cargar CSV** (siguiente sección): trae `CELULAR`, `AGENTE_ID` y una columna por
+   cada variable mapeada a "columna".
+4. **Vista previa + lanzar**: se renderiza el cuerpo con la primera fila
+   (`renderizarCuerpo`) para ver el mensaje real antes de iniciar.
+
+Por cada destinatario, `parametros` (JSON) queda como el arreglo **ordenado** de los
+valores de `{{1}}..{{n}}` (resolviendo columnas y constantes), listo para
+`construirParams`.
+
 ## Origen de destinatarios (CSV/pegar)
 
 - El agente crea la campaña, **elige la plantilla** (de las aprobadas que ya
-  listamos) y con eso quedan definidos los parámetros que la plantilla espera.
+  listamos) y mapea sus variables (sección anterior).
 - Sube un **CSV** con una fila por destinatario. Columnas:
   - `CELULAR` (obligatoria) — teléfono.
   - una columna por **cada parámetro** de la plantilla (ej. `NOMBRE`, `Valor_Mora`).
