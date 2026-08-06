@@ -53,12 +53,14 @@ function mapeoBackend() {
 async function crearYCargar() {
   error.value = ''; guardando.value = true;
   try {
-    const dif = await acc.crearDifusion({ nombre: nombre.value, plantilla: plantillaNombre.value });
-    difusionId.value = dif.id;
-    if (plantilla.value?.tieneImagen && imagenFile.value) {
-      await acc.subirImagenDifusion(dif.id, imagenFile.value);
+    if (!difusionId.value) {
+      const dif = await acc.crearDifusion({ nombre: nombre.value, plantilla: plantillaNombre.value });
+      difusionId.value = dif.id;
     }
-    resumen.value = await acc.cargarDestinatariosDifusion(dif.id, { texto: csvTexto.value, mapeo: mapeoBackend() });
+    if (plantilla.value?.tieneImagen && imagenFile.value) {
+      await acc.subirImagenDifusion(difusionId.value, imagenFile.value);
+    }
+    resumen.value = await acc.cargarDestinatariosDifusion(difusionId.value, { texto: csvTexto.value, mapeo: mapeoBackend() });
   } catch (e) {
     error.value = e.message || 'No se pudo crear la campaña.';
   } finally {
@@ -80,7 +82,8 @@ async function iniciar() {
 }
 
 function onArchivo(ev) { imagenFile.value = ev.target.files?.[0] || null; }
-const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim());
+const faltaImagen = computed(() => !!plantilla.value?.tieneImagen && !plantilla.value?.imagenDefault && !imagenFile.value);
+const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value);
 </script>
 
 <template>
@@ -126,6 +129,7 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
           <div v-if="plantilla.tieneImagen">
             <label class="block text-[11px] text-gray-400 uppercase mb-1">Imagen del encabezado (opcional; si no, usa la de la plantilla)</label>
             <input type="file" accept="image/png,image/jpeg,image/webp" @change="onArchivo" class="text-[12px]" />
+            <p v-if="faltaImagen" class="text-[11px] text-amber-600 mt-1">Esta plantilla requiere una imagen y no tiene una por defecto: sube una para continuar.</p>
           </div>
 
           <!-- Paso 3: CSV -->

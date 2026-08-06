@@ -30,7 +30,12 @@ async function abrir(id) {
 }
 async function refrescarSel() {
   if (sel.value?.difusion?.estado === 'enviando') {
-    try { sel.value = await acc.detalleDifusion(sel.value.difusion.id); await cargarLista(); } catch { /* silencioso */ }
+    try {
+      const id = sel.value.difusion.id;
+      sel.value = await acc.detalleDifusion(id);
+      destinatarios.value = await acc.destinatariosDifusion(id, {});
+      await cargarLista();
+    } catch { /* silencioso */ }
   }
 }
 async function cancelar(id) {
