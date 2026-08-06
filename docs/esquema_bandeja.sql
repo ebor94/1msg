@@ -265,6 +265,7 @@ CREATE TABLE wa_difusiones (
   nombre            VARCHAR(150)    NOT NULL,
   plantilla_nombre  VARCHAR(120)    NOT NULL,
   plantilla_idioma  VARCHAR(10)     NOT NULL DEFAULT 'es',
+  imagen_url        VARCHAR(255)    NULL,
   categoria         ENUM('marketing','utility','authentication')
                                     NOT NULL DEFAULT 'utility',
   estado            ENUM('borrador','programada','enviando','finalizada','cancelada')
@@ -280,6 +281,7 @@ CREATE TABLE wa_difusion_destinatarios (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   difusion_id     BIGINT UNSIGNED NOT NULL,
   contacto_id     BIGINT UNSIGNED NOT NULL,
+  agente_id       INT UNSIGNED    NULL,
   parametros      JSON            NULL,
   wa_message_id   VARCHAR(128)    NULL,
   estado          ENUM('pendiente','enviado','entregado','leido','fallido','omitido')

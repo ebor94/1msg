@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) =>
       id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true },
       difusionId: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
       contactoId: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+      agenteId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
       parametros: { type: DataTypes.JSON, allowNull: true },
       waMessageId: { type: DataTypes.STRING(128), allowNull: true },
       estado: {
