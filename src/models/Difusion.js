@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) =>
       nombre: { type: DataTypes.STRING(150), allowNull: false },
       plantillaNombre: { type: DataTypes.STRING(120), allowNull: false },
       plantillaIdioma: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'es' },
+      imagenUrl: { type: DataTypes.STRING(255), allowNull: true },
       categoria: {
         type: DataTypes.ENUM('marketing', 'utility', 'authentication'),
         allowNull: false,

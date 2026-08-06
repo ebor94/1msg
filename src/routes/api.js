@@ -15,12 +15,21 @@ const etiquetasCtrl = require('../controllers/etiquetasController');
 const productosCtrl = require('../controllers/productosController');
 const previsionCtrl = require('../controllers/previsionController');
 const reportesCtrl = require('../controllers/reportesController');
+const difusionesCtrl = require('../controllers/difusionesController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
 
 function subirUno(req, res, next) {
   subida.single('archivo')(req, res, (err) => {
+    if (!err) return next();
+    const grande = err.code === 'LIMIT_FILE_SIZE';
+    return res.status(grande ? 413 : 400).json({ error: grande ? 'archivo demasiado grande (máx 16 MB)' : 'archivo inválido' });
+  });
+}
+
+function subirImagen(req, res, next) {
+  subida.single('imagen')(req, res, (err) => {
     if (!err) return next();
     const grande = err.code === 'LIMIT_FILE_SIZE';
     return res.status(grande ? 413 : 400).json({ error: grande ? 'archivo demasiado grande (máx 16 MB)' : 'archivo inválido' });
@@ -103,5 +112,14 @@ router.get('/etiquetas/estadisticas', requireAuth, requireAdmin, etiquetasCtrl.e
 router.get('/etiquetas/todas', requireAuth, requireAdmin, etiquetasCtrl.listarTodas);
 router.post('/etiquetas', requireAuth, requireAdmin, etiquetasCtrl.crear);
 router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualizar);
+
+router.get('/difusiones', requireAuth, requireAdmin, difusionesCtrl.listar);
+router.post('/difusiones', requireAuth, requireAdmin, difusionesCtrl.crear);
+router.get('/difusiones/:id', requireAuth, requireAdmin, difusionesCtrl.detalle);
+router.get('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.destinatarios);
+router.post('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.cargar);
+router.post('/difusiones/:id/imagen', requireAuth, requireAdmin, subirImagen, difusionesCtrl.subirImagen);
+router.post('/difusiones/:id/iniciar', requireAuth, requireAdmin, difusionesCtrl.iniciar);
+router.post('/difusiones/:id/cancelar', requireAuth, requireAdmin, difusionesCtrl.cancelar);
 
 module.exports = router;
