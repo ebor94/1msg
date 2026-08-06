@@ -24,12 +24,13 @@ en el Scorecard) y la **reabre** al agente dueño cuando el cliente responde.
 ## Decisiones tomadas
 
 - **Plantilla fija**: `texto_imagen_generico` (1 variable, con imagen). Cuerpo:
-  *"Los Olivos, {{1}} , Gracias."*. `{{1}}` = **nombre del contacto**
-  (`nombre_display || nombre_wa || telefono`); la imagen usa la **default** de la
-  plantilla. → UX por contacto = solo switch + día, sin configuración extra.
-  - *Nota de flexibilidad*: si más adelante quieren que `{{1}}` sea una frase fija
-    (ej. "te recordamos tu pago mensual") en vez del nombre, es un cambio de una línea
-    (constante de config). Se deja como follow-up, no MVP.
+  *"Los Olivos, {{1}} , Gracias."*. El recordatorio es **igual para todos**:
+  - `{{1}}` = un **mensaje fijo global** (lo aporta el usuario; se configura una vez).
+  - imagen del encabezado = una **URL fija global** (la aporta el usuario; URL pública
+    persistente que ellos hospedan, como la default `…/difusiones/img/…jpeg`).
+  → No hay dato por contacto: la UX por contacto es solo switch + día.
+  - Los dos valores (mensaje + URL) viven en un **ajuste global** (ver "Modelo de
+    datos"); cambiarlos no toca el código.
 - **Día inexistente en el mes** (ej. 30 en febrero): se envía el **último día del
   mes** (febrero → 28/29). El recordatorio nunca se pierde.
 - **Quién lo configura**: cualquier agente que atienda el contacto, desde el panel
@@ -73,6 +74,17 @@ por UI; recordatorios semanales/anuales.
   reportes.
 - Actualizar el Scorecard: el conteo de "cerrados" ya excluye `origen='difusion'`;
   pasa a `origen NOT IN ('difusion','recordatorio')`.
+- Tabla nueva `wa_ajustes` (clave/valor, para config global editable sin deploy):
+  ```
+  clave           VARCHAR(60) PK
+  valor           TEXT NULL
+  actualizado_en  DATETIME ... ON UPDATE CURRENT_TIMESTAMP
+  ```
+  Sembrada (en la migración) con:
+  `recordatorio_plantilla='texto_imagen_generico'`, `recordatorio_texto=''`,
+  `recordatorio_imagen_url=''`. Los valores reales (mensaje + URL) los aporta el
+  usuario y se cargan con un `UPDATE` una vez (no requiere deploy). Un mini-formulario
+  admin para editarlos queda como follow-up opcional.
 
 ## API (admin-abierto a cualquier agente que opere el contacto)
 
@@ -99,10 +111,16 @@ Nuevo loop en el worker (`wa-worker`), junto a difusiones:
   es el último día del mes) → así un "día 30" cae el 28/29 en febrero. Excluir los que
   ya tengan `ultimo_envio_en` dentro del mes actual (no duplicar).
 - **Envío**: por cada uno, dentro de la ventana y con **ritmo suave** (reusa
-  `dentroDeVentana` + `esperaEnvioMs`, 1 cada ~20 s), envía `texto_imagen_generico`
-  con `params` = header imagen (default) + body `[nombre del contacto]`. Persiste como
-  saliente (conversación reusada/creada, `origen='recordatorio'`, `estado=cerrada`,
-  `enviado_por_id=NULL`), asigna el dueño, y marca `ultimo_envio_en = hoy`.
+  `dentroDeVentana` + `esperaEnvioMs`, 1 cada ~20 s), envía la plantilla configurada
+  (`recordatorio_plantilla`) con `params` = header imagen (`recordatorio_imagen_url`)
+  + body `[recordatorio_texto]` (los tres valores del ajuste global `wa_ajustes`).
+  Persiste como saliente (conversación reusada/creada, `origen='recordatorio'`,
+  `estado=cerrada`, `enviado_por_id=NULL`), asigna el dueño, y marca
+  `ultimo_envio_en = hoy`.
+- **Guarda de configuración**: si `recordatorio_texto` o `recordatorio_imagen_url`
+  están vacíos, el barrido **no envía** (loguea) — evita mandar la plantilla sin
+  imagen/mensaje. Así el feature puede desplegarse antes de que el usuario aporte los
+  valores.
 - **Idempotencia**: `ultimo_envio_en` (mes actual) evita el doble envío aunque el
   worker reinicie o el barrido corra dos veces el mismo día.
 
@@ -126,7 +144,9 @@ bug de asignación). Difusiones se refactoriza para llamarlo; su comportamiento 
 
 ## Limitaciones conocidas del MVP
 
-- `{{1}}` = nombre del contacto (fijo por código); frase personalizada = follow-up.
+- Mensaje e imagen **iguales para todos** (ajuste global); sin personalización por
+  contacto (para eso está difusiones). Editar los valores hoy es un `UPDATE` a
+  `wa_ajustes`; un formulario admin queda como follow-up.
 - Un solo recordatorio por contacto, solo por día del mes.
 - Si una difusión grande corre al mismo tiempo que el barrido de recordatorios,
   ambos comparten el número y el ritmo combinado puede subir a ~2/20 s (bajo, acotado;
