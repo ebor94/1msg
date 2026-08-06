@@ -5,7 +5,7 @@ const webhook = require('./webhook');
 const api = require('./api');
 const { health } = require('../controllers/healthController');
 const { emitirHandler } = require('../controllers/internalController');
-const { servirPublico } = require('../controllers/mediaController');
+const { servirPublico, servirImagenDifusion } = require('../controllers/mediaController');
 
 const router = Router();
 
@@ -17,6 +17,9 @@ router.use('/webhook/1msg', webhook);
 
 // Ruta pública efímera para que Meta/1msg descargue adjuntos salientes.
 router.get('/media-publico/:token', servirPublico);
+
+// Ruta pública persistente para la imagen de cabecera de una campaña (difusión).
+router.get('/media-difusion/:nombre', servirImagenDifusion);
 
 router.use('/api', api);
 

@@ -4,6 +4,8 @@ const { Mensaje, Conversacion } = require('../models');
 const { puedeVer } = require('../services/conversaciones');
 const { rutaMediaSegura } = require('../services/media');
 const { resolver } = require('../services/mediaPublica');
+const { rutaAbsolutaImagen } = require('../services/difusionImagen');
+const fssync = require('fs');
 const env = require('../config/env');
 const { TIPO_MENSAJE } = require('../config/constants');
 const logger = require('../utils/logger');
@@ -65,4 +67,18 @@ async function servirPublico(req, res) {
   }
 }
 
-module.exports = { servir, servirPublico };
+/** GET /media-difusion/:nombre — sirve la imagen de una campaña (pública, persistente). */
+async function servirImagenDifusion(req, res) {
+  try {
+    const abs = rutaAbsolutaImagen(req.params.nombre);
+    if (!fssync.existsSync(abs)) return res.status(404).end();
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.sendFile(abs);
+  } catch (err) {
+    if (err.status === 400) return res.status(400).end();
+    logger.error(`media-difusion: ${err.message}`);
+    return res.status(500).end();
+  }
+}
+
+module.exports = { servir, servirPublico, servirImagenDifusion };
