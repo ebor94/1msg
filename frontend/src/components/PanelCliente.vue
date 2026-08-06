@@ -3,7 +3,8 @@ import { computed, ref, watch, onMounted } from 'vue';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import { useAuth } from '../stores/auth';
-import { iniciales, horaCorta, etiquetaAsignacion } from '../utils/formato';
+import { horaCorta, etiquetaAsignacion } from '../utils/formato';
+import AvatarContacto from './AvatarContacto.vue';
 import { etiquetaCampo, formatoValor } from '../utils/tablas';
 
 const chat = useChat();
@@ -262,7 +263,7 @@ function celda(p, k) {
     Sin conversación seleccionada
   </div>
   <div v-else class="h-full overflow-auto p-4">
-    <div class="w-16 h-16 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold text-xl mx-auto mb-2">{{ iniciales(nombre) }}</div>
+    <AvatarContacto clase="w-16 h-16 mx-auto mb-2" />
     <div v-if="!editando" class="flex items-center justify-center gap-1.5">
       <h4 class="text-center text-base text-gray-900 m-0">{{ nombre }}</h4>
       <button class="text-gray-400 hover:text-marca-oscuro text-sm" title="Editar nombre" @click="abrirEdicion">✎</button>

@@ -1,7 +1,8 @@
 <script setup>
 import { computed } from 'vue';
-import { iniciales, horaCorta } from '../utils/formato';
+import { horaCorta } from '../utils/formato';
 import { useChat } from '../stores/chat';
+import AvatarContacto from './AvatarContacto.vue';
 
 const props = defineProps({ conversacion: { type: Object, required: true } });
 const chat = useChat();
@@ -13,7 +14,7 @@ const seleccionado = computed(() => chat.conversacion?.id === props.conversacion
   <div class="flex gap-3 px-3 py-2.5 border-b border-gray-100 cursor-pointer"
     :class="seleccionado ? 'bg-[#eef7f4]' : 'hover:bg-gray-50'"
     @click="chat.abrir(conversacion)">
-    <div class="w-11 h-11 rounded-full bg-gray-300 text-gray-700 grid place-items-center font-bold shrink-0">{{ iniciales(nombre) }}</div>
+    <AvatarContacto clase="w-11 h-11" />
     <div class="min-w-0 flex-1">
       <div class="flex justify-between gap-2">
         <b class="text-sm text-gray-900 truncate min-w-0">{{ nombre }}</b>
