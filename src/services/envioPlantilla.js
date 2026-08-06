@@ -10,7 +10,7 @@ const { DIRECCION, TIPO_MENSAJE, ESTADO_MENSAJE, ESTADO_CONVERSACION } = require
  * waMessageId). `extra(t, convId)` corre en la misma transacción para el bookkeeping
  * del llamador. Devuelve el id de la conversación.
  */
-async function persistirEnvioPlantilla({ contactoId, agenteFallback, canalId, plantillaNombre, texto, waMessageId, origen }, extra) {
+async function persistirEnvioPlantilla({ contactoId, agenteFallback, canalId, plantillaNombre, texto, waMessageId, origen, mediaUrl }, extra) {
   const ahora = new Date();
   let convId;
   await sequelize.transaction(async (t) => {
@@ -32,6 +32,7 @@ async function persistirEnvioPlantilla({ contactoId, agenteFallback, canalId, pl
       defaults: {
         conversacionId: conv.id, waMessageId, direccion: DIRECCION.OUT, tipo: TIPO_MENSAJE.TEMPLATE,
         texto, plantillaNombre, estado: ESTADO_MENSAJE.ENVIADO, enviadoPorId: null, tsProveedor: ahora,
+        mediaUrl: mediaUrl || null,
       },
       transaction: t,
     });
