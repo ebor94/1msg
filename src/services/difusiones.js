@@ -44,7 +44,12 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
     // trae el CSV, así que buscar por wa_id crearía un duplicado. Si no existe, se
     // crea con el wa_id canónico.
     let contacto = await Contacto.findOne({ where: { telefono: d.telefono }, order: [['id', 'ASC']] });
-    if (!contacto) contacto = await Contacto.create({ waId: d.waId, telefono: d.telefono });
+    if (!contacto) {
+      contacto = await Contacto.create({ waId: d.waId, telefono: d.telefono, nombreDisplay: d.nombre || null });
+    } else if (d.nombre && !contacto.nombreDisplay) {
+      // Rellenar el nombre si el contacto existente no tiene uno (sin pisar uno real).
+      await contacto.update({ nombreDisplay: d.nombre });
+    }
     // Upsert del destinatario (clave única difusion_id+contacto_id → no duplica).
     await DifusionDestinatario.findOrCreate({
       where: { difusionId, contactoId: contacto.id },

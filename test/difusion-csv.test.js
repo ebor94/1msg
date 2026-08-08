@@ -35,6 +35,7 @@ test('construirDestinatarios: válido, teléfono malo, agente inactivo, y orden 
   assert.equal(out[0].estado, 'pendiente');
   assert.deepEqual(out[0].parametros, ['Juan', '$450.000']);
   assert.equal(out[0].agenteId, 5);
+  assert.equal(out[0].nombre, 'Juan'); // nombre del contacto tomado de la columna NOMBRE
   assert.equal(out[1].estado, 'omitido'); assert.match(out[1].motivo, /telefono/);
   assert.equal(out[2].estado, 'omitido'); assert.match(out[2].motivo, /agente/);
 });
