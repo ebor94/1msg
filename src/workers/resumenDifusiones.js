@@ -27,7 +27,10 @@ async function tick(ahora, deps = {}) {
   } catch (err) {
     // Config global (concepto 49 ausente / API key ausente): NO marcar; se resolverá
     // al configurar y se reintentará. No quemamos destinatarios por un error global.
-    if (err.codigo === 'concepto_invalido' || err.codigo === 'no_configurado') {
+    // 401 (API key inválida/rotada) y 404 (modelo inexistente) son errores de
+    // config global de Anthropic (traen err.status, no err.codigo): NO marcar —
+    // se auto-reparan al corregir la key/modelo, no se queman los destinatarios.
+    if (err.codigo === 'concepto_invalido' || err.codigo === 'no_configurado' || err.status === 401 || err.status === 404) {
       logger.error(`resumen difusiones: config — ${err.message}`);
       return 'error-config';
     }

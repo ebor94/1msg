@@ -36,6 +36,26 @@ test('concepto inválido → error-config, NO marca', async () => {
   assert.equal(await tick(new Date(), d), 'error-config');
   assert.equal(marcado, 0);
 });
+test('error de API key inválida (status 401) → error-config, NO marca', async () => {
+  let marcado = 0;
+  const d = deps({
+    siguiente: async () => ({ id: 1, documento: '9' }),
+    procesar: async () => { const e = new Error('401'); e.status = 401; throw e; },
+    marcar: async () => { marcado++; },
+  });
+  assert.equal(await tick(new Date(), d), 'error-config');
+  assert.equal(marcado, 0);
+});
+test('modelo inexistente (status 404) → error-config, NO marca', async () => {
+  let marcado = 0;
+  const d = deps({
+    siguiente: async () => ({ id: 1, documento: '9' }),
+    procesar: async () => { const e = new Error('404'); e.status = 404; throw e; },
+    marcar: async () => { marcado++; },
+  });
+  assert.equal(await tick(new Date(), d), 'error-config');
+  assert.equal(marcado, 0);
+});
 test('fallo de IA/gestión → fallo, marca para no bloquear', async () => {
   let marcado = 0;
   const d = deps({

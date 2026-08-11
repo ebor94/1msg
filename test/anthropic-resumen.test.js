@@ -20,3 +20,14 @@ test('resumirConversacion recorta a 255 y tolera respuesta sin bloque text', asy
   const vacio = { messages: { create: async () => ({ content: [] }) } };
   assert.equal(await resumirConversacion('t', { cliente: vacio }), '');
 });
+
+test('resumirConversacion llama al SDK con el modelo Haiku y el texto', async () => {
+  let args = null;
+  const cliente = { messages: { create: async (a) => { args = a; return { content: [{ type: 'text', text: 'ok' }] }; } } };
+  const r = await resumirConversacion('conversa del cliente', { cliente });
+  assert.equal(r, 'ok');
+  assert.equal(args.model, 'claude-haiku-4-5');
+  assert.equal(args.messages[0].role, 'user');
+  assert.equal(args.messages[0].content, 'conversa del cliente');
+  assert.ok(typeof args.system === 'string' && args.system.length > 0);
+});
