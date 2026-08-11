@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAcciones } from '../stores/acciones';
-import { renderizarCuerpo, parsearCsvPreview, valorDeVariable } from '../utils/difusion';
+import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas } from '../utils/difusion';
 
 const emit = defineEmits(['creada', 'cerrar']);
 const acc = useAcciones();
@@ -12,6 +12,7 @@ const plantillaNombre = ref('');
 const mapeo = ref({ telefono: 'CELULAR', agente: 'AGENTE_ID', variables: [] });
 const csvTexto = ref('');
 const imagenFile = ref(null);
+const requiereResumen = ref(false);
 const guardando = ref(false);
 const error = ref('');
 const resumen = ref(null); // { total, pendientes, omitidos } tras cargar
@@ -35,11 +36,7 @@ const preview = computed(() => {
 });
 
 // Columnas que el CSV debe traer, según el mapeo.
-const columnasReq = computed(() => {
-  const cols = [mapeo.value.telefono, mapeo.value.agente];
-  mapeo.value.variables.forEach((v) => { if (v.tipo === 'columna' && v.columna) cols.push(v.columna); });
-  return [...new Set(cols)];
-});
+const columnasReq = computed(() => columnasRequeridas(mapeo.value, requiereResumen.value));
 
 // mapeo listo para el backend (columna|fijo).
 function mapeoBackend() {
@@ -54,7 +51,7 @@ async function crearYCargar() {
   error.value = ''; guardando.value = true;
   try {
     if (!difusionId.value) {
-      const dif = await acc.crearDifusion({ nombre: nombre.value, plantilla: plantillaNombre.value });
+      const dif = await acc.crearDifusion({ nombre: nombre.value, plantilla: plantillaNombre.value, requiereResumen: requiereResumen.value });
       difusionId.value = dif.id;
     }
     if (plantilla.value?.tieneImagen && imagenFile.value) {
@@ -99,6 +96,13 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
         <div>
           <label class="block text-[11px] text-gray-400 uppercase mb-1">Nombre de la campaña</label>
           <input v-model="nombre" class="w-full border rounded px-2 py-1.5" placeholder="Ej. Mora agosto" />
+        </div>
+        <div class="flex items-start gap-2">
+          <input id="reqResumen" type="checkbox" v-model="requiereResumen" class="mt-0.5" />
+          <label for="reqResumen" class="text-[12.5px] text-gray-700 leading-snug">
+            Requiere resumen (registra la gestión en previsión al cierre del día)
+            <span v-if="requiereResumen" class="block text-[11px] text-amber-600">El CSV debe incluir la columna <b>CEDULA</b>.</span>
+          </label>
         </div>
         <div>
           <label class="block text-[11px] text-gray-400 uppercase mb-1">Plantilla</label>
