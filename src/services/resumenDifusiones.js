@@ -4,6 +4,7 @@ const { sequelize } = require('../config/database');
 const { DifusionDestinatario } = require('../models');
 const { resumirConversacion } = require('../integrations/anthropic/resumen');
 const { consultarPlanesPorDocumento, insertarGestion } = require('../integrations/prevision/cliente');
+const { TIPO_MENSAJE } = require('../config/constants');
 
 const CONCEPTO_WHATSAPP = '49';
 const TRAMITO_IA = 'IA';
@@ -33,7 +34,7 @@ async function construirTextoConversacion(destId) {
   if (entrantes.length) {
     lineas.push('Respuestas del cliente:');
     for (const m of entrantes) {
-      lineas.push(`- ${m.tipo === 'texto' ? (m.texto || '') : `[${m.tipo}]`}`);
+      lineas.push(`- ${m.tipo === TIPO_MENSAJE.TEXT ? (m.texto || '') : `[${m.tipo}]`}`);
     }
   }
   return { texto: lineas.join('\n'), huboRespuesta: entrantes.length > 0 };
