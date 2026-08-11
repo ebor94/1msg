@@ -19,7 +19,7 @@ async function crear(req, res) {
     if (!b.nombre || !b.plantilla) return res.status(400).json({ error: 'nombre y plantilla son obligatorios' });
     const dif = await servicio.crear({
       nombre: b.nombre, plantilla: b.plantilla, idioma: b.idioma, categoria: b.categoria,
-      creadoPorId: req.agente.id,
+      requiereResumen: b.requiereResumen, creadoPorId: req.agente.id,
     });
     return res.status(201).json({ difusion: dif });
   } catch (err) { return fallo(res, err, 'no se pudo crear la difusión'); }

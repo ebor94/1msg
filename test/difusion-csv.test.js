@@ -39,3 +39,14 @@ test('construirDestinatarios: válido, teléfono malo, agente inactivo, y orden 
   assert.equal(out[1].estado, 'omitido'); assert.match(out[1].motivo, /telefono/);
   assert.equal(out[2].estado, 'omitido'); assert.match(out[2].motivo, /agente/);
 });
+
+test('construirDestinatarios captura documento (solo dígitos) de la columna CEDULA', () => {
+  const mapeo = { telefono: 'CELULAR', agente: 'AGENTE_ID', variables: [{ tipo: 'columna', columna: 'NOMBRE' }] };
+  const filas = [
+    { CELULAR: '3001234567', NOMBRE: 'Juan', AGENTE_ID: '5', CEDULA: '88.123.456' },
+    { CELULAR: '3009876543', NOMBRE: 'Ana', AGENTE_ID: '5', CEDULA: '' },
+  ];
+  const out = construirDestinatarios({ filas, mapeo, agentesActivos: [5] });
+  assert.equal(out[0].documento, '88123456'); // normalizado a dígitos
+  assert.equal(out[1].documento, null);       // vacío → null
+});

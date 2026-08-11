@@ -13,7 +13,7 @@ function puedeIniciar(estado, pendientes) {
   return estado === 'borrador' && pendientes > 0;
 }
 
-async function crear({ nombre, plantilla, idioma, categoria, creadoPorId }) {
+async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, creadoPorId }) {
   const catalogo = await obtenerCatalogo();
   const def = catalogo.find((p) => p.name === plantilla);
   if (!def) throw err(400, 'plantilla no encontrada o no aprobada');
@@ -23,7 +23,7 @@ async function crear({ nombre, plantilla, idioma, categoria, creadoPorId }) {
   return Difusion.create({
     nombre, plantillaNombre: plantilla, plantillaIdioma: idioma || def.language || 'es',
     categoria: String(categoria || def.categoria || 'utility').toLowerCase(), estado: 'borrador',
-    canalId: canal.id, creadoPorId,
+    canalId: canal.id, creadoPorId, requiereResumen: !!requiereResumen,
   });
 }
 
@@ -33,6 +33,9 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
   if (!dif) throw err(404, 'difusión no encontrada');
   const { cabeceras, filas } = parsearCsv(texto);
   validarColumnas(cabeceras, mapeo); // lanza 400 si faltan columnas
+  if (dif.requiereResumen && !cabeceras.includes(mapeo.cedula || 'CEDULA')) {
+    throw err(400, 'esta difusión requiere resumen: el CSV debe traer la columna CEDULA');
+  }
   const agentes = await Agente.findAll({ where: { activo: true }, attributes: ['id'] });
   const destinatarios = construirDestinatarios({ filas, mapeo, agentesActivos: agentes.map((a) => a.id) });
 
@@ -53,7 +56,7 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
     // Upsert del destinatario (clave única difusion_id+contacto_id → no duplica).
     await DifusionDestinatario.findOrCreate({
       where: { difusionId, contactoId: contacto.id },
-      defaults: { difusionId, contactoId: contacto.id, agenteId: d.agenteId, parametros: d.parametros, estado: 'pendiente' },
+      defaults: { difusionId, contactoId: contacto.id, agenteId: d.agenteId, parametros: d.parametros, documento: d.documento || null, estado: 'pendiente' },
     });
   }
   // Cuenta real de pendientes (no el contador local, que ignoraría reintentos

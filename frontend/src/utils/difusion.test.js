@@ -1,6 +1,6 @@
 // frontend/src/utils/difusion.test.js
 import { describe, it, expect } from 'vitest';
-import { renderizarCuerpo, parsearCsvPreview, valorDeVariable } from './difusion';
+import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas } from './difusion';
 
 describe('difusion utils', () => {
   it('renderizarCuerpo reemplaza {{n}} en orden', () => {
@@ -17,5 +17,15 @@ describe('difusion utils', () => {
   it('valorDeVariable resuelve columna y fijo', () => {
     expect(valorDeVariable({ tipo: 'columna', columna: 'NOMBRE' }, { NOMBRE: 'Ana' })).toBe('Ana');
     expect(valorDeVariable({ tipo: 'fijo', valor: '$5' }, { NOMBRE: 'Ana' })).toBe('$5');
+  });
+});
+
+describe('columnasRequeridas', () => {
+  const mapeo = { telefono: 'CELULAR', agente: 'AGENTE_ID', variables: [{ tipo: 'columna', columna: 'NOMBRE' }, { tipo: 'fijo', valor: '$1' }] };
+  it('lista teléfono, agente y columnas de variables (sin duplicar)', () => {
+    expect(columnasRequeridas(mapeo, false)).toEqual(['CELULAR', 'AGENTE_ID', 'NOMBRE']);
+  });
+  it('agrega CEDULA cuando requiere resumen', () => {
+    expect(columnasRequeridas(mapeo, true)).toEqual(['CELULAR', 'AGENTE_ID', 'NOMBRE', 'CEDULA']);
   });
 });

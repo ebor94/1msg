@@ -21,6 +21,7 @@ const { EventoWebhook } = require('../models');
 const { procesarEventoWebhook } = require('../services/ingesta');
 const { iniciarLoop: iniciarDifusiones } = require('./difusiones');
 const { iniciarLoop: iniciarRecordatorios } = require('./recordatorios');
+const { iniciarLoop: iniciarResumenDifusiones } = require('./resumenDifusiones');
 
 /**
  * Avisa al API (mismo host, proceso aparte) para que emita por el socket.
@@ -191,6 +192,7 @@ async function bootstrap() {
   await purgarEventosViejos(); // una purga al arrancar
   iniciarDifusiones(); // arranca junto al bucle de eventos, no lo bloquea
   iniciarRecordatorios(); // idem: barrido diario de recordatorios, no lo bloquea
+  iniciarResumenDifusiones(); // idem: barrido diario de resúmenes de difusión (~19:00), no lo bloquea
   await bucle();
   clearInterval(timerPurga);
   await sequelize.close();

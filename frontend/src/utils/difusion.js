@@ -22,3 +22,12 @@ export function valorDeVariable(v, fila) {
   if (v.tipo === 'fijo') return String(v.valor ?? '');
   return String((fila && fila[v.columna]) ?? '');
 }
+
+// Columnas que el CSV debe traer, según el mapeo. Si la difusión requiere resumen,
+// exige además la columna CEDULA (para mapear cada cliente a su plan de previsión).
+export function columnasRequeridas(mapeo, requiereResumen) {
+  const cols = [mapeo.telefono, mapeo.agente];
+  (mapeo.variables || []).forEach((v) => { if (v.tipo === 'columna' && v.columna) cols.push(v.columna); });
+  if (requiereResumen) cols.push('CEDULA');
+  return [...new Set(cols)];
+}
