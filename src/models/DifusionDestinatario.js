@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) =>
       contactoId: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
       agenteId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
       parametros: { type: DataTypes.JSON, allowNull: true },
+      documento: { type: DataTypes.STRING(20), allowNull: true },
       waMessageId: { type: DataTypes.STRING(128), allowNull: true },
       estado: {
         type: DataTypes.ENUM('pendiente', 'enviado', 'entregado', 'leido', 'fallido', 'omitido'),
@@ -23,6 +24,7 @@ module.exports = (sequelize, DataTypes) =>
       errorCodigo: { type: DataTypes.STRING(20), allowNull: true },
       intentos: { type: DataTypes.TINYINT.UNSIGNED, allowNull: false, defaultValue: 0 },
       reintentarEn: { type: DataTypes.DATE, allowNull: true },
+      resumenEn: { type: DataTypes.DATE, allowNull: true },
     },
     {
       tableName: 'wa_difusion_destinatarios',
