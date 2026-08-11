@@ -39,17 +39,19 @@ function validarColumnas(cabeceras, mapeo) {
 function construirDestinatarios({ filas, mapeo, agentesActivos }) {
   const activos = new Set((agentesActivos || []).map(Number));
   const colNombre = mapeo.nombre || 'NOMBRE'; // columna con el nombre del contacto (por defecto 'NOMBRE')
+  const colCedula = mapeo.cedula || 'CEDULA'; // columna con la cédula (para el resumen → gestión)
   return filas.map((fila) => {
     const tel = validarTelefonoCo(fila[mapeo.telefono]);
     const agenteId = Number(String(fila[mapeo.agente] || '').replace(/\D/g, ''));
     const parametros = (mapeo.variables || []).map((v) =>
       v.tipo === 'fijo' ? String(v.valor ?? '') : String(fila[v.columna] ?? ''));
     const nombre = fila[colNombre] != null && String(fila[colNombre]).trim() !== '' ? String(fila[colNombre]).trim() : null;
-    if (!tel.ok) return { telefono: String(fila[mapeo.telefono] || ''), parametros, agenteId: null, nombre, estado: 'omitido', motivo: 'telefono invalido' };
+    const documento = String(fila[colCedula] || '').replace(/\D/g, '') || null;
+    if (!tel.ok) return { telefono: String(fila[mapeo.telefono] || ''), parametros, agenteId: null, nombre, documento, estado: 'omitido', motivo: 'telefono invalido' };
     if (!Number.isInteger(agenteId) || !activos.has(agenteId)) {
-      return { telefono: tel.telefono, waId: tel.waId, parametros, agenteId: null, nombre, estado: 'omitido', motivo: 'agente invalido' };
+      return { telefono: tel.telefono, waId: tel.waId, parametros, agenteId: null, nombre, documento, estado: 'omitido', motivo: 'agente invalido' };
     }
-    return { telefono: tel.telefono, waId: tel.waId, parametros, agenteId, nombre, estado: 'pendiente', motivo: null };
+    return { telefono: tel.telefono, waId: tel.waId, parametros, agenteId, nombre, documento, estado: 'pendiente', motivo: null };
   });
 }
 
