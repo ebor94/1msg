@@ -117,6 +117,12 @@ const env = Object.freeze({
     password: process.env.MANTEN_DB_PASSWORD || '',
     database: process.env.MANTEN_DB_NAME || '',
   }),
+
+  // API de Anthropic (Claude) para el resumen de difusiones. Opcional: si no se
+  // configura, el worker de resumen no llama a la IA (lanza 'no_configurado').
+  anthropic: Object.freeze({
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+  }),
 });
 
 module.exports = env;

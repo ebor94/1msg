@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@1msg/sdk": "^1.0.0",
+    "@anthropic-ai/sdk": "^0.116.0",
     "axios": "^1.7.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.0",
