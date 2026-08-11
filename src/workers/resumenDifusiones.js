@@ -34,7 +34,11 @@ async function tick(ahora, deps = {}) {
     // Fallo por-destinatario (IA/gestión, ya reintentado por el SDK): marcar para no
     // bloquear la cola ni reintentar infinito (decisión del spec).
     logger.warn(`resumen difusiones dest ${dest.id}: ${err.message}; marcado para no bloquear`);
-    try { await marcar(dest.id); } catch { /* si falla el marcado, se reintenta */ }
+    try {
+      await marcar(dest.id);
+    } catch (err2) {
+      logger.error(`resumen difusiones dest ${dest.id}: falló el marcado tras un fallo previo — se reintentará: ${err2.message}`);
+    }
     return 'fallo';
   }
 }

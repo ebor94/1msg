@@ -46,3 +46,11 @@ test('fallo de IA/gestión → fallo, marca para no bloquear', async () => {
   assert.equal(await tick(new Date(), d), 'fallo');
   assert.equal(marcado, 1);
 });
+test('si marcar falla dentro del catch → sigue devolviendo fallo, no lanza', async () => {
+  const d = deps({
+    siguiente: async () => ({ id: 1, documento: '9' }),
+    procesar: async () => { throw new Error('timeout IA'); },
+    marcar: async () => { throw new Error('DB caída'); },
+  });
+  assert.equal(await tick(new Date(), d), 'fallo');
+});
