@@ -148,4 +148,23 @@ async function registrarGestion({ numPlan, concepto, novedad, posfecha, tramito 
   }
 }
 
-module.exports = { consultarPlanesPorDocumento, decidirMasivo, debeRegistrarGestion, listarConceptosPermitidos, listarEstadosPlan, registrarGestion };
+/**
+ * Registro histórico de gestión SIN tocar `plan` (solo INSERT). Se usa para el
+ * resumen de difusiones: valida el concepto contra conceptos_permitidos y recorta
+ * la novedad a 255. No hay UPDATE de plan (decisión del flujo de resumen).
+ */
+async function insertarGestion({ numPlan, concepto, novedad, tramito }) {
+  const p = obtenerPool();
+  if (!p) { const e = new Error('previsión no configurada'); e.codigo = 'no_configurado'; throw e; }
+  const conc = String(concepto);
+  const nov = String(novedad || '').slice(0, 255);
+  const [cp] = await p.query('SELECT 1 FROM conceptos_permitidos WHERE codigo_concepto = ? LIMIT 1', [conc]);
+  if (!cp.length) { const e = new Error('concepto no permitido'); e.codigo = 'concepto_invalido'; throw e; }
+  const [r] = await p.query(
+    'INSERT INTO gestion (num_plan, novedad, fecha, hora, concepto, tramito) VALUES (?, ?, CURDATE(), CURTIME(), ?, ?)',
+    [numPlan, nov, conc, tramito],
+  );
+  return { insertId: r.insertId };
+}
+
+module.exports = { consultarPlanesPorDocumento, decidirMasivo, debeRegistrarGestion, listarConceptosPermitidos, listarEstadosPlan, registrarGestion, insertarGestion };
