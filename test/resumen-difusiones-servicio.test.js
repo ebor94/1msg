@@ -1,7 +1,31 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { procesarPendiente } = require('../src/services/resumenDifusiones');
+const { procesarPendiente, construirTranscripcion } = require('../src/services/resumenDifusiones');
+
+test('construirTranscripcion etiqueta cliente/agente e incluye mensajes del agente', () => {
+  const msgs = [
+    { direccion: 'out', tipo: 'template', texto: 'Sr. Luis, el mensaje se envió por error, mil disculpas' },
+    { direccion: 'in', tipo: 'text', texto: 'Okey buena tarde' },
+  ];
+  const r = construirTranscripcion('Hola ALBA, registramos mora de $66.300', msgs);
+  assert.equal(r.huboRespuesta, true);
+  assert.match(r.texto, /^Mensaje enviado por la empresa: Hola ALBA/);
+  assert.match(r.texto, /Agente: Sr\. Luis, el mensaje se envió por error/); // texto de plantilla del agente preservado (no \[template\])
+  assert.match(r.texto, /Cliente: Okey buena tarde/);
+});
+
+test('construirTranscripcion: solo mensajes del agente (sin entrantes) → huboRespuesta false', () => {
+  const r = construirTranscripcion('Mensaje difusión', [{ direccion: 'out', tipo: 'text', texto: 'aclaración del agente' }]);
+  assert.equal(r.huboRespuesta, false);
+  assert.match(r.texto, /Agente: aclaración del agente/);
+});
+
+test('construirTranscripcion: media sin texto entrante → [tipo]', () => {
+  const r = construirTranscripcion('Mensaje difusión', [{ direccion: 'in', tipo: 'image', texto: null }]);
+  assert.equal(r.huboRespuesta, true);
+  assert.match(r.texto, /Cliente: \[image\]/);
+});
 
 function deps(over = {}) {
   const calls = { insert: [], marcar: [], resumir: 0 };

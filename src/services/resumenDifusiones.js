@@ -4,16 +4,47 @@ const { sequelize } = require('../config/database');
 const { DifusionDestinatario } = require('../models');
 const { resumirConversacion } = require('../integrations/anthropic/resumen');
 const { consultarPlanesPorDocumento, insertarGestion } = require('../integrations/prevision/cliente');
-const { TIPO_MENSAJE } = require('../config/constants');
+const { DIRECCION } = require('../config/constants');
 
 const CONCEPTO_WHATSAPP = '49';
 const TRAMITO_IA = 'IA';
 const SIN_RESPUESTA = 'Sin respuesta del cliente';
 
 /**
+ * Etiqueta un mensaje para la transcripción: usa el texto si lo hay (cubre texto,
+ * plantilla con cuerpo y pies de foto); si no, cae a `[tipo]` (media sin texto).
+ */
+function cuerpoMensaje(m) {
+  return m.texto && String(m.texto).trim() !== '' ? String(m.texto) : `[${m.tipo}]`;
+}
+
+/**
+ * Pura: arma la transcripción a partir del texto enviado y los mensajes
+ * posteriores (entrantes del cliente + salientes escritos por un agente humano),
+ * en orden. `huboRespuesta` es true solo si hubo al menos un mensaje del cliente
+ * (los mensajes del agente aportan contexto pero no cuentan como respuesta).
+ */
+function construirTranscripcion(textoEnviado, mensajes) {
+  const lineas = [`Mensaje enviado por la empresa: ${textoEnviado || ''}`];
+  let huboRespuesta = false;
+  for (const m of mensajes || []) {
+    if (m.direccion === DIRECCION.IN) {
+      huboRespuesta = true;
+      lineas.push(`Cliente: ${cuerpoMensaje(m)}`);
+    } else {
+      lineas.push(`Agente: ${cuerpoMensaje(m)}`);
+    }
+  }
+  return { texto: lineas.join('\n'), huboRespuesta };
+}
+
+/**
  * Arma el texto de la conversación de un destinatario: el mensaje saliente de la
- * plantilla + las respuestas ENTRANTES del cliente posteriores al envío. Los
- * no-texto se representan por su tipo (no traen cuerpo útil para el resumen).
+ * plantilla (la difusión) + los mensajes posteriores al envío — respuestas
+ * ENTRANTES del cliente y salientes escritos por un AGENTE humano
+ * (`enviado_por_id` no nulo, lo que excluye la propia difusión y las
+ * auto-respuestas). Así el resumen refleja aclaraciones del agente (p. ej.
+ * "el mensaje se envió por error").
  */
 async function construirTextoConversacion(destId) {
   const [env] = await sequelize.query(
@@ -24,20 +55,14 @@ async function construirTextoConversacion(destId) {
     { type: QueryTypes.SELECT, replacements: { id: destId } },
   );
   if (!env) return { texto: '', huboRespuesta: false };
-  const entrantes = await sequelize.query(
-    `SELECT texto, tipo FROM wa_mensajes
-      WHERE conversacion_id = :conv AND direccion = 'in' AND ts_proveedor > :ts
-      ORDER BY ts_proveedor ASC`,
+  const mensajes = await sequelize.query(
+    `SELECT direccion, tipo, texto FROM wa_mensajes
+      WHERE conversacion_id = :conv AND ts_proveedor > :ts
+        AND (direccion = 'in' OR (direccion = 'out' AND enviado_por_id IS NOT NULL))
+      ORDER BY ts_proveedor ASC, id ASC`,
     { type: QueryTypes.SELECT, replacements: { conv: env.convId, ts: env.tsEnviado } },
   );
-  const lineas = [`Mensaje enviado por la empresa: ${env.textoEnviado || ''}`];
-  if (entrantes.length) {
-    lineas.push('Respuestas del cliente:');
-    for (const m of entrantes) {
-      lineas.push(`- ${m.tipo === TIPO_MENSAJE.TEXT ? (m.texto || '') : `[${m.tipo}]`}`);
-    }
-  }
-  return { texto: lineas.join('\n'), huboRespuesta: entrantes.length > 0 };
+  return construirTranscripcion(env.textoEnviado, mensajes);
 }
 
 /**
@@ -86,4 +111,4 @@ async function procesarPendiente(dest, deps = {}) {
   return 'resumido';
 }
 
-module.exports = { construirTextoConversacion, siguientePendiente, marcarResumido, procesarPendiente };
+module.exports = { construirTranscripcion, construirTextoConversacion, siguientePendiente, marcarResumido, procesarPendiente };
