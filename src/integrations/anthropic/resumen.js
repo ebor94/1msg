@@ -16,8 +16,7 @@ const MODELO = 'claude-haiku-4-5';
 const MAX_TOKENS = 200; // ~255 chars de salida + margen
 const SISTEMA =
   'Eres un asistente de cartera de Los Olivos Cúcuta. Resume en español, en máximo ' +
-  '255 caracteres, la conversación de WhatsApp entre la empresa y el cliente sobre el ' +
-  'pago de su cuota. Enfócate en la intención, compromiso o solicitud del cliente. ' +
+  '255 caracteres, la conversación de WhatsApp entre la empresa y el cliente. ' +
   'Responde SOLO con el resumen, sin preámbulos ni comillas.';
 
 let cliente = null;
