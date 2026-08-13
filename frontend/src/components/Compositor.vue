@@ -140,6 +140,23 @@ async function enviar() {
   if (!t || chat.enviando) return;
   texto.value = '';
   await chat.enviar(t);
+  if (chat.conversacion?.borradorIa) {
+    const id = chat.conversacion.id;
+    chat.conversacion.borradorIa = null;
+    acc.descartarBorrador(id).catch(() => {});
+  }
+}
+
+async function usarBorrador() {
+  texto.value = chat.conversacion.borradorIa;
+  const id = chat.conversacion.id;
+  chat.conversacion.borradorIa = null;
+  try { await acc.descartarBorrador(id); } catch { /* no crítico */ }
+}
+async function descartarBorrador() {
+  const id = chat.conversacion.id;
+  chat.conversacion.borradorIa = null;
+  try { await acc.descartarBorrador(id); } catch { /* no crítico */ }
 }
 </script>
 
@@ -166,6 +183,15 @@ async function enviar() {
         class="w-full mt-2 bg-marca text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-60">
         {{ enviandoAdj ? 'Enviando…' : (esVoz ? 'Enviar nota de voz' : 'Enviar archivo') }}
       </button>
+    </div>
+
+    <div v-if="chat.conversacion?.borradorIa" class="mb-2 border border-marca/30 bg-marca/5 rounded p-2 text-[12.5px]">
+      <div class="text-[11px] text-marca-oscuro uppercase mb-1">💡 Sugerencia IA</div>
+      <div class="text-gray-800 whitespace-pre-wrap">{{ chat.conversacion.borradorIa }}</div>
+      <div class="flex gap-2 mt-2">
+        <button class="text-[12px] bg-marca text-white rounded px-2 py-1" @click="usarBorrador">Usar y editar</button>
+        <button class="text-[12px] text-gray-500 px-2 py-1" @click="descartarBorrador">Descartar</button>
+      </div>
     </div>
 
     <div v-if="!abierta && !adjunto" class="text-center text-[12px] text-amber-700 bg-amber-50 rounded py-2 px-2">
