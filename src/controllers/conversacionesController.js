@@ -188,10 +188,15 @@ async function noLeido(req, res) {
 
 /** DELETE /api/conversaciones/:id/borrador — limpia el borrador de IA. */
 async function descartarBorrador(req, res) {
-  const conv = await accesible(req, res);
-  if (!conv) return undefined;
-  await conv.update({ borradorIa: null, borradorIaEn: null });
-  return res.json({ ok: true });
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    await conv.update({ borradorIa: null, borradorIaEn: null });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`descartar borrador ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
 }
 
 /**
