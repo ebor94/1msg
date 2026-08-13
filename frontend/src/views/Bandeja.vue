@@ -5,8 +5,10 @@ import { useAuth } from '../stores/auth';
 import { useChat } from '../stores/chat';
 import { useAcciones } from '../stores/acciones';
 import { useSonido } from '../stores/sonido';
+import { useNotificaciones } from '../stores/notificaciones';
 import { iniciales } from '../utils/formato';
 import { PAISES, componerTelefono } from '../utils/paises';
+import { iniciarTituloPestana } from '../utils/tituloPestana';
 import { conectarSocket, desconectarSocket } from '../socket/cliente';
 import ListaConversaciones from '../components/ListaConversaciones.vue';
 import VistaChat from '../components/VistaChat.vue';
@@ -20,9 +22,11 @@ const auth = useAuth();
 const chat = useChat();
 const acc = useAcciones();
 const sonido = useSonido();
+const notif = useNotificaciones();
 const router = useRouter();
 
 onMounted(conectarSocket);
+onMounted(() => { iniciarTituloPestana(); });
 onUnmounted(desconectarSocket);
 
 function salir() {
@@ -110,6 +114,10 @@ async function crearContacto() {
             @click="menuAbierto = false; mostrarProductos = true">🔎 Consultar productos</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="sonido.alternar()">{{ sonido.activado ? '🔔 Silenciar sonido' : '🔕 Activar sonido' }}</button>
+          <button class="w-full text-left px-3 py-2 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="!notif.soportado || notif.bloqueado"
+            :title="notif.bloqueado ? 'Permiso de notificaciones bloqueado en el navegador' : ''"
+            @click="notif.alternar()">{{ notif.activado ? '🖥️ Notificaciones' : '🖥️ Activar notificaciones' }}</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; mostrarCambioClave = true">🔑 Cambiar contraseña</button>
           <div class="border-t border-gray-100 my-1"></div>

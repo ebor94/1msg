@@ -4,6 +4,9 @@ import { useConversaciones } from '../stores/conversaciones';
 import { useChat } from '../stores/chat';
 import { useAuth } from '../stores/auth';
 import { useSonido } from '../stores/sonido';
+import { useNotificaciones } from '../stores/notificaciones';
+import { vistaPreviaMensaje } from '../utils/notificacion';
+import { nuevoEnTitulo } from '../utils/tituloPestana';
 
 let socket = null;
 
@@ -36,7 +39,20 @@ export function conectarSocket() {
     // resuelto que el cliente reabre, o uno nuevo): recargar para que aparezca.
     if (!item && mensaje.direccion === 'in') useConversaciones().cargar();
     if (mensaje.direccion === 'in') useConversaciones().refrescarContadores(); // no leídos ↑
-    if (!abierta && mensaje.direccion === 'in') useSonido().reproducir();
+    if (!abierta && mensaje.direccion === 'in') {
+      useSonido().reproducir();
+      const titulo = item?.contacto?.nombreDisplay || item?.contacto?.nombreWa || item?.contacto?.telefono || 'Nuevo mensaje';
+      useNotificaciones().mostrar({
+        conversacionId,
+        titulo,
+        cuerpo: vistaPreviaMensaje(mensaje),
+        onAbrir: () => {
+          const conv = useConversaciones().items.find((c) => c.id === conversacionId);
+          if (conv) useChat().abrir(conv);
+        },
+      });
+      nuevoEnTitulo();
+    }
   });
 
   socket.on('mensaje:ack', ({ waMessageId, estado }) => {
