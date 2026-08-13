@@ -17,6 +17,7 @@ import PanelAgentes from '../components/PanelAgentes.vue';
 import PanelEstadisticas from '../components/PanelEstadisticas.vue';
 import PanelCambiarClave from '../components/PanelCambiarClave.vue';
 import PanelProductos from '../components/PanelProductos.vue';
+import PanelPromptIa from '../components/PanelPromptIa.vue';
 
 const auth = useAuth();
 const chat = useChat();
@@ -39,6 +40,7 @@ const mostrarAgentes = ref(false);
 const mostrarEtiquetas = ref(false);
 const mostrarCambioClave = ref(false);
 const mostrarProductos = ref(false);
+const mostrarPromptIa = ref(false);
 const mostrarNuevo = ref(false);
 const menuAbierto = ref(false); // menú desplegable de la cabecera (agrupa las acciones)
 const nuevoTelefono = ref('');
@@ -112,6 +114,8 @@ async function crearContacto() {
             @click="menuAbierto = false; router.push('/difusiones')">📣 Difusiones</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; mostrarProductos = true">🔎 Consultar productos</button>
+          <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; mostrarPromptIa = true">🤖 Prompt IA</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="sonido.alternar()">{{ sonido.activado ? '🔔 Silenciar sonido' : '🔕 Activar sonido' }}</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -169,5 +173,6 @@ async function crearContacto() {
     <PanelEstadisticas v-if="mostrarEtiquetas" @cerrar="mostrarEtiquetas = false" />
     <PanelCambiarClave v-if="mostrarCambioClave" @cerrar="mostrarCambioClave = false" />
     <PanelProductos v-if="mostrarProductos" @cerrar="mostrarProductos = false" />
+    <PanelPromptIa v-if="mostrarPromptIa" @cerrar="mostrarPromptIa = false" />
   </div>
 </template>

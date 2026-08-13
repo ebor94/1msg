@@ -246,6 +246,23 @@ export const useAcciones = defineStore('acciones', {
       if (item?.contacto) item.contacto.nombreDisplay = nuevo;
       return nuevo;
     },
+    async gestionarConIa(contactoId, on) {
+      const r = await apiFetch(`/contactos/${contactoId}`, { method: 'PATCH', body: JSON.stringify({ gestionarConIa: !!on }) });
+      const chat = useChat();
+      if (chat.conversacion?.contacto?.id === contactoId) chat.conversacion.contacto.gestionarConIa = r.contacto.gestionarConIa;
+      const item = useConversaciones().items.find((c) => c.contacto?.id === contactoId);
+      if (item?.contacto) item.contacto.gestionarConIa = r.contacto.gestionarConIa;
+      return r.contacto;
+    },
+    async descartarBorrador(convId) {
+      return apiFetch(`/conversaciones/${convId}/borrador`, { method: 'DELETE' });
+    },
+    async obtenerPromptIa() {
+      return (await apiFetch('/ajustes/ia-gestion-prompt')).prompt;
+    },
+    async guardarPromptIa(texto) {
+      return (await apiFetch('/ajustes/ia-gestion-prompt', { method: 'PUT', body: JSON.stringify({ prompt: texto }) })).prompt;
+    },
     async listarDifusiones() {
       return (await apiFetch('/difusiones')).difusiones;
     },

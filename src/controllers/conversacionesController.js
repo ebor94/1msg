@@ -87,7 +87,7 @@ async function mensajes(req, res) {
       limit: 30,
       include: [{ model: Agente, as: 'enviadoPor', attributes: ['id', 'nombre'] }],
     });
-    return res.json({ mensajes: filas.reverse() });
+    return res.json({ mensajes: filas.reverse(), borradorIa: conv.borradorIa || null });
   } catch (err) {
     logger.error(`mensajes conversación ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
@@ -182,6 +182,19 @@ async function noLeido(req, res) {
     return res.json({ ok: true });
   } catch (err) {
     logger.error(`marcar no leído ${req.params.id}: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+/** DELETE /api/conversaciones/:id/borrador — limpia el borrador de IA. */
+async function descartarBorrador(req, res) {
+  try {
+    const conv = await accesible(req, res);
+    if (!conv) return undefined;
+    await conv.update({ borradorIa: null, borradorIaEn: null });
+    return res.json({ ok: true });
+  } catch (err) {
+    logger.error(`descartar borrador ${req.params.id}: ${err.message}`);
     return res.status(500).json({ error: 'error interno' });
   }
 }
@@ -696,4 +709,4 @@ async function desetiquetarConv(req, res) {
   }
 }
 
-module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, archivar, desarchivar, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv };
+module.exports = { listarHandler, contadores, mensajes, historial, leer, noLeido, resolver, archivar, desarchivar, enviar, enviarMedia, enviarPlantilla, tomar, asignar, agregarNota, listarNotas, asignaciones, etiquetasDeConv, etiquetarConv, desetiquetarConv, descartarBorrador };

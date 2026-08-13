@@ -71,6 +71,7 @@ export const useChat = defineStore('chat', {
         const r = await apiFetch(`/conversaciones/${id}/mensajes`);
         if (!sigueActual()) return;
         this.mensajes = r.mensajes;
+        if (this.conversacion && this.conversacion.id === id) this.conversacion.borradorIa = r.borradorIa || null;
         this.hayMas = r.mensajes.length === 30;
         await apiFetch(`/conversaciones/${id}/leer`, { method: 'POST' });
         if (!sigueActual()) return;

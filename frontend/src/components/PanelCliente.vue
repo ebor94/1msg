@@ -27,6 +27,15 @@ async function cambiarCompro(e) {
   }
 }
 
+// Gestión con IA: la IA redacta borradores de respuesta para este contacto.
+async function alternarGestionIa(on) {
+  try {
+    await acc.gestionarConIa(c.value.contacto.id, on);
+  } catch {
+    aviso.value = 'No se pudo cambiar la gestión con IA.';
+  }
+}
+
 // El select refleja el agente actual (se sincroniza también con cambios en vivo).
 const seleccion = ref('');
 watch(() => c.value?.agenteId, (v) => { seleccion.value = v == null ? '' : v; }, { immediate: true });
@@ -324,6 +333,12 @@ function celda(p, k) {
         <option value="no">No</option>
         <option value="pendiente">Pendiente</option>
       </select>
+    </div>
+
+    <div class="py-2 border-t border-gray-100 flex items-center justify-between">
+      <span class="text-[12.5px] text-gray-700">Gestionar con IA</span>
+      <input type="checkbox" :checked="!!c.contacto?.gestionarConIa"
+        @change="alternarGestionIa($event.target.checked)" />
     </div>
 
     <button v-if="!c.agenteId" @click="tomar" class="w-full mt-2 bg-marca text-white rounded-lg py-2 text-sm font-semibold">Tomar chat</button>

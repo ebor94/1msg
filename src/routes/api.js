@@ -17,6 +17,7 @@ const previsionCtrl = require('../controllers/previsionController');
 const reportesCtrl = require('../controllers/reportesController');
 const difusionesCtrl = require('../controllers/difusionesController');
 const recordatoriosCtrl = require('../controllers/recordatoriosController');
+const ajustesCtrl = require('../controllers/ajustesController');
 const env = require('../config/env');
 
 const subida = multer({ storage: multer.memoryStorage(), limits: { fileSize: env.media.maxUploadBytes } });
@@ -83,6 +84,7 @@ router.post('/conversaciones/:id/notas', requireAuth, convCtrl.agregarNota);
 router.get('/conversaciones/:id/etiquetas', requireAuth, convCtrl.etiquetasDeConv);
 router.post('/conversaciones/:id/etiquetas', requireAuth, convCtrl.etiquetarConv);
 router.delete('/conversaciones/:id/etiquetas/:etiquetaId', requireAuth, convCtrl.desetiquetarConv);
+router.delete('/conversaciones/:id/borrador', requireAuth, convCtrl.descartarBorrador);
 router.post('/conversaciones/:id/archivar', requireAuth, requireAdmin, convCtrl.archivar);
 router.post('/conversaciones/:id/desarchivar', requireAuth, requireAdmin, convCtrl.desarchivar);
 router.get('/mensajes/:id/media', requireAuth, mediaCtrl.servir);
@@ -115,6 +117,9 @@ router.get('/etiquetas/estadisticas', requireAuth, requireAdmin, etiquetasCtrl.e
 router.get('/etiquetas/todas', requireAuth, requireAdmin, etiquetasCtrl.listarTodas);
 router.post('/etiquetas', requireAuth, requireAdmin, etiquetasCtrl.crear);
 router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualizar);
+
+router.get('/ajustes/ia-gestion-prompt', requireAuth, requireAdmin, ajustesCtrl.obtenerPromptIa);
+router.put('/ajustes/ia-gestion-prompt', requireAuth, requireAdmin, ajustesCtrl.guardarPromptIa);
 
 router.get('/difusiones', requireAuth, requireAdmin, difusionesCtrl.listar);
 router.post('/difusiones', requireAuth, requireAdmin, difusionesCtrl.crear);

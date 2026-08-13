@@ -55,6 +55,11 @@ export function conectarSocket() {
     }
   });
 
+  socket.on('conversacion:borrador', ({ conversacionId, borrador }) => {
+    const chat = useChat();
+    if (chat.conversacion && chat.conversacion.id === conversacionId) chat.conversacion.borradorIa = borrador;
+  });
+
   socket.on('mensaje:ack', ({ waMessageId, estado }) => {
     const chat = useChat();
     const m = chat.mensajes.find((x) => x.waMessageId === waMessageId);

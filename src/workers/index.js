@@ -22,6 +22,7 @@ const { procesarEventoWebhook } = require('../services/ingesta');
 const { iniciarLoop: iniciarDifusiones } = require('./difusiones');
 const { iniciarLoop: iniciarRecordatorios } = require('./recordatorios');
 const { iniciarLoop: iniciarResumenDifusiones } = require('./resumenDifusiones');
+const { generarBorrador } = require('../services/borradorIa');
 
 /**
  * Avisa al API (mismo host, proceso aparte) para que emita por el socket.
@@ -77,6 +78,19 @@ async function procesarLote(limite) {
         await evento.save();
         if (resumen.eventosSocket?.length) {
           for (const ev of resumen.eventosSocket) await avisarSocket(ev);
+        }
+        // Borrador IA: por cada entrante, generar sugerencia (best-effort, no bloquea la cola).
+        for (const ev of resumen.eventosSocket) {
+          if (ev.evento === 'mensaje:nuevo' && ev.payload?.mensaje?.direccion === 'in') {
+            try {
+              const borrador = await generarBorrador(ev.payload.conversacionId);
+              if (borrador) {
+                await avisarSocket({ evento: 'conversacion:borrador', destino: ev.destino, payload: { conversacionId: ev.payload.conversacionId, borrador } });
+              }
+            } catch (e) {
+              logger.warn(`borrador IA conv ${ev.payload.conversacionId}: ${e.message}`);
+            }
+          }
         }
       }
       intentos.delete(evento.id);

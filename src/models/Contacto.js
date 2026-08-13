@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) =>
       documento: { type: DataTypes.STRING(20), allowNull: true },
       lineaNegocio: { type: DataTypes.STRING(40), allowNull: true },
       compro: { type: DataTypes.ENUM('si', 'no', 'pendiente'), allowNull: true }, // ¿el cliente compró? (null = sin marcar)
+      gestionarConIa: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       // Vienen de los errores 130472 y 131049 de las difusiones.
       waExperimento: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       marketingBloqueadoHasta: { type: DataTypes.DATE, allowNull: true },
