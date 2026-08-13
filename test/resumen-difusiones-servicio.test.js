@@ -33,7 +33,7 @@ function deps(over = {}) {
     construirTexto: async () => ({ texto: 'Enviado: x\nCliente: pago el viernes', huboRespuesta: true }),
     resumir: async () => { calls.resumir++; return 'Cliente pagará el viernes.'; },
     consultarPlanes: async () => [{ num_plan: 111 }],
-    insertarGestion: async (g) => { calls.insert.push(g); },
+    registrarGestion: async (g) => { calls.insert.push(g); },
     marcar: async (id) => { calls.marcar.push(id); },
   };
   return { d: { ...base, ...over }, calls };
@@ -65,7 +65,7 @@ test('sin plan para la cédula: marca y no inserta', async () => {
 });
 
 test('concepto inválido: propaga el error y NO marca', async () => {
-  const { d, calls } = deps({ insertarGestion: async () => { const e = new Error('concepto no permitido'); e.codigo = 'concepto_invalido'; throw e; } });
+  const { d, calls } = deps({ registrarGestion: async () => { const e = new Error('concepto no permitido'); e.codigo = 'concepto_invalido'; throw e; } });
   await assert.rejects(() => procesarPendiente({ id: 10, documento: '88123456' }, d), /concepto/);
   assert.equal(calls.marcar.length, 0);
 });

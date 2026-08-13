@@ -3,7 +3,7 @@ const { QueryTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { DifusionDestinatario } = require('../models');
 const { resumirConversacion } = require('../integrations/anthropic/resumen');
-const { consultarPlanesPorDocumento, insertarGestion } = require('../integrations/prevision/cliente');
+const { consultarPlanesPorDocumento, registrarGestion } = require('../integrations/prevision/cliente');
 const { DIRECCION } = require('../config/constants');
 
 const CONCEPTO_WHATSAPP = '49';
@@ -89,14 +89,16 @@ async function marcarResumido(destId) {
 
 /**
  * Procesa un destinatario: arma el texto, resume (o "Sin respuesta"), mapea la
- * cédula al primer plan e inserta la gestión; marca resumen_en (idempotencia).
- * Los errores de config/IA/gestión se propagan; el worker decide si marcar.
+ * cédula al primer plan y registra la gestión (actualiza el plan —novedad_plan,
+ * concepto_plan, fech_gestion_plan— e inserta en gestion, transaccional); marca
+ * resumen_en (idempotencia). Los errores de config/IA/gestión se propagan; el
+ * worker decide si marcar.
  */
 async function procesarPendiente(dest, deps = {}) {
   const construir = deps.construirTexto || construirTextoConversacion;
   const resumir = deps.resumir || resumirConversacion;
   const planes = deps.consultarPlanes || consultarPlanesPorDocumento;
-  const insertar = deps.insertarGestion || insertarGestion;
+  const registrar = deps.registrarGestion || registrarGestion;
   const marcar = deps.marcar || marcarResumido;
 
   const { texto, huboRespuesta } = await construir(dest.id);
@@ -106,7 +108,7 @@ async function procesarPendiente(dest, deps = {}) {
   if (!filas.length) { await marcar(dest.id); return 'sin-plan'; }
   const numPlan = filas[0].num_plan;
 
-  await insertar({ numPlan, concepto: CONCEPTO_WHATSAPP, novedad, tramito: TRAMITO_IA });
+  await registrar({ numPlan, concepto: CONCEPTO_WHATSAPP, novedad, tramito: TRAMITO_IA });
   await marcar(dest.id);
   return 'resumido';
 }
