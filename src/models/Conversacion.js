@@ -28,6 +28,8 @@ module.exports = (sequelize, DataTypes) =>
         defaultValue: ORIGEN_CONVERSACION.ENTRANTE,
       },
       atendidaPorBot: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      borradorIa: { type: DataTypes.TEXT, allowNull: true },
+      borradorIaEn: { type: DataTypes.DATE, allowNull: true },
       // Reloj de las 24h: si ya pasó, la UI obliga a plantilla.
       ventanaExpiraEn: { type: DataTypes.DATE, allowNull: true },
       ultimoMensajeEn: { type: DataTypes.DATE, allowNull: true },
