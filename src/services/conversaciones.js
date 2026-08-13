@@ -57,7 +57,7 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
     model: Contacto,
     as: 'contacto',
     required: true,
-    attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'desactivadoEn', 'compro'],
+    attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'desactivadoEn', 'compro', 'gestionarConIa'],
   };
   // En modo normal se excluyen los contactos desactivados; en "ocultos" se incluyen
   // (la condición de desactivado ya va en el Op.or del where). Usa la MISMA condición

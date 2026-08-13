@@ -134,6 +134,7 @@ function contactoPlano(c) {
     nombreWa: c.nombreWa,
     nombreDisplay: c.nombreDisplay,
     compro: c.compro,
+    gestionarConIa: c.gestionarConIa,
   };
 }
 
