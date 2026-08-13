@@ -8,7 +8,7 @@ const CLAVE = 'wa_notif';
 export const useNotificaciones = defineStore('notificaciones', {
   state: () => ({ activado: localStorage.getItem(CLAVE) === '1' }),
   getters: {
-    soportado: () => typeof window !== 'undefined' && 'Notification' in window,
+    soportado() { return typeof window !== 'undefined' && 'Notification' in window; },
     permiso() { return this.soportado ? Notification.permission : 'denied'; },
     bloqueado() { return this.permiso === 'denied'; },
   },
@@ -22,7 +22,7 @@ export const useNotificaciones = defineStore('notificaciones', {
     desactivar() { this.activado = false; localStorage.setItem(CLAVE, '0'); },
     async alternar() { if (this.activado) this.desactivar(); else await this.activar(); },
     mostrar({ conversacionId, titulo, cuerpo, onAbrir }) {
-      if (!this.activado || !this.soportado || Notification.permission !== 'granted') return;
+      if (!this.activado || this.permiso !== 'granted') return;
       // No molestar con un popup del SO si el agente ya está mirando la bandeja.
       if (typeof document !== 'undefined' && document.hasFocus && document.hasFocus()) return;
       try {
