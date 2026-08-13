@@ -28,6 +28,10 @@ async function responder(hilo, promptRol, deps = {}) {
   const resp = await c.messages.create({
     model: MODELO,
     max_tokens: MAX_TOKENS,
+    // Borrador corto: en claude-sonnet-5 el thinking va ON por defecto si se omite,
+    // y max_tokens es el tope combinado de thinking + texto. Lo desactivamos para
+    // no gastar el presupuesto de 500 tokens en pensar ni sumar latencia.
+    thinking: { type: 'disabled' },
     system: String(promptRol || ''),
     messages: [{ role: 'user', content: String(hilo || '') }],
   });

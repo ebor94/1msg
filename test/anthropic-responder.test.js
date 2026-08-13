@@ -14,6 +14,7 @@ test('responder llama al SDK con Sonnet, el prompt como system y el hilo, y devu
   const r = await responder('Cliente: hola', 'Eres un asistente.', { cliente });
   assert.equal(r, 'Con gusto, ¿en qué te ayudo?');
   assert.equal(args.model, 'claude-sonnet-5');
+  assert.deepEqual(args.thinking, { type: 'disabled' });
   assert.equal(args.system, 'Eres un asistente.');
   assert.equal(args.messages[0].role, 'user');
   assert.equal(args.messages[0].content, 'Cliente: hola');
