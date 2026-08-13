@@ -335,6 +335,7 @@ async function actualizar(req, res) {
     else return res.status(422).json({ error: 'estado de compra inválido' });
     cambios.compro = v;
   }
+  if (body.gestionarConIa !== undefined) cambios.gestionarConIa = !!body.gestionarConIa;
   try {
     const contacto = await Contacto.findByPk(id);
     if (!contacto) return res.status(404).json({ error: 'no encontrado' });
@@ -347,6 +348,7 @@ async function actualizar(req, res) {
         nombreWa: contacto.nombreWa,
         nombreDisplay: contacto.nombreDisplay,
         compro: contacto.compro,
+        gestionarConIa: contacto.gestionarConIa,
       },
     });
   } catch (err) {
