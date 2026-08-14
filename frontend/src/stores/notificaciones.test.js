@@ -56,4 +56,12 @@ describe('store notificaciones', () => {
     n.mostrar({ conversacionId: 7, titulo: 'Luis', cuerpo: 'hola' });
     expect(ctor).toHaveBeenCalledWith('Luis', { body: 'hola', tag: 'wa-conv-7' });
   });
+  it('mostrar({omitirFoco:true}) crea la notificación aunque la bandeja esté enfocada', () => {
+    const ctor = stubNotification({ permission: 'granted' });
+    document.hasFocus = () => true;
+    const n = useNotificaciones();
+    n.activado = true;
+    n.mostrar({ conversacionId: 3, titulo: 'Contacto asignado', cuerpo: 'Se te asignó el chat de Ana', omitirFoco: true });
+    expect(ctor).toHaveBeenCalledWith('Contacto asignado', { body: 'Se te asignó el chat de Ana', tag: 'wa-conv-3' });
+  });
 });

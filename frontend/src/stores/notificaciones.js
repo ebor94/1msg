@@ -21,10 +21,11 @@ export const useNotificaciones = defineStore('notificaciones', {
     },
     desactivar() { this.activado = false; localStorage.setItem(CLAVE, '0'); },
     async alternar() { if (this.activado) this.desactivar(); else await this.activar(); },
-    mostrar({ conversacionId, titulo, cuerpo, onAbrir }) {
+    mostrar({ conversacionId, titulo, cuerpo, onAbrir, omitirFoco }) {
       if (!this.activado || this.permiso !== 'granted') return;
-      // No molestar con un popup del SO si el agente ya está mirando la bandeja.
-      if (typeof document !== 'undefined' && document.hasFocus && document.hasFocus()) return;
+      // No molestar con un popup del SO si el agente ya está mirando la bandeja
+      // (salvo omitirFoco: para eventos que deben verse siempre, p. ej. una asignación).
+      if (!omitirFoco && typeof document !== 'undefined' && document.hasFocus && document.hasFocus()) return;
       try {
         const n = new Notification(titulo, { body: cuerpo, tag: `wa-conv-${conversacionId}` });
         n.onclick = () => {
