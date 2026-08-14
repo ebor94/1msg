@@ -66,10 +66,24 @@ export function conectarSocket() {
     if (m) m.estado = estado;
   });
 
-  socket.on('conversacion:asignada', ({ conversacionId, agenteId }) => {
+  socket.on('conversacion:asignada', ({ conversacionId, agenteId, nombre, por }) => {
     const chat = useChat();
     if (chat.conversacion && chat.conversacion.id === conversacionId) chat.conversacion.agenteId = agenteId;
     useConversaciones().cargar();
+    // Aviso solo al agente que RECIBE el chat y que no fue quien lo asignó/tomó.
+    const yo = useAuth().agente?.id;
+    if (yo != null && agenteId === yo && por != null && por !== yo) {
+      useNotificaciones().mostrar({
+        conversacionId,
+        titulo: 'Contacto asignado',
+        cuerpo: `Se te asignó el chat de ${nombre || 'un contacto'}`,
+        omitirFoco: true,
+        onAbrir: () => {
+          const conv = useConversaciones().items.find((c) => c.id === conversacionId);
+          if (conv) chat.abrir(conv);
+        },
+      });
+    }
   });
 
   socket.on('connect', () => {

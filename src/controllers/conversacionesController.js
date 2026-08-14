@@ -566,6 +566,12 @@ async function tomar(req, res) {
   }
 }
 
+/** Nombre visible del contacto de una conversación (para el aviso de asignación). */
+async function nombreDelContacto(contactoId) {
+  const c = await Contacto.findByPk(contactoId, { attributes: ['nombreDisplay', 'nombreWa', 'telefono'] });
+  return c ? (c.nombreDisplay || c.nombreWa || c.telefono) : null;
+}
+
 /**
  * Reasignación manual: a otro agente o de vuelta a la bandeja general
  * (agenteId: null). Transfiere también la dueñez del contacto para que la
@@ -602,7 +608,8 @@ async function asignar(req, res) {
       );
     });
 
-    emitirARooms('conversacion:asignada', roomsDeAsignacion(anterior, nuevo), { conversacionId: Number(id), agenteId: nuevo });
+    const nombreCto = nuevo ? await nombreDelContacto(conv.contactoId).catch(() => null) : null;
+    emitirARooms('conversacion:asignada', roomsDeAsignacion(anterior, nuevo), { conversacionId: Number(id), agenteId: nuevo, nombre: nombreCto, por: me });
     const actualizada = await Conversacion.findByPk(id);
     return res.json({ conversacion: actualizada });
   } catch (err) {
