@@ -608,7 +608,7 @@ async function asignar(req, res) {
       );
     });
 
-    const nombreCto = nuevo ? await nombreDelContacto(conv.contactoId) : null;
+    const nombreCto = nuevo ? await nombreDelContacto(conv.contactoId).catch(() => null) : null;
     emitirARooms('conversacion:asignada', roomsDeAsignacion(anterior, nuevo), { conversacionId: Number(id), agenteId: nuevo, nombre: nombreCto, por: me });
     const actualizada = await Conversacion.findByPk(id);
     return res.json({ conversacion: actualizada });
