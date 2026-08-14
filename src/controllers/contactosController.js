@@ -104,7 +104,7 @@ async function buscar(req, res) {
   try {
     const contactos = await Contacto.findAll({
       where: { [Op.or]: condiciones, desactivadoEn: null },
-      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'agenteDuenoId', 'compro'],
+      attributes: ['id', 'waId', 'telefono', 'nombreWa', 'nombreDisplay', 'agenteDuenoId', 'compro', 'gestionarConIa'],
       include: [{ model: Agente, as: 'agenteDueno', attributes: ['id', 'nombre'] }],
       limit: 10,
     });

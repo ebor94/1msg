@@ -36,6 +36,7 @@ function construirResultado(contacto, conv, miAgenteId) {
             nombreWa: contacto.nombreWa,
             nombreDisplay: contacto.nombreDisplay,
             compro: contacto.compro,
+            gestionarConIa: contacto.gestionarConIa,
           },
         }
       : null,

@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { construirResultado } = require('../src/services/busquedaContactos');
 
-const contacto = { id: 3, waId: '57300@c.us', telefono: '57300', nombreWa: 'Ana WA', nombreDisplay: 'Ana' };
+const contacto = { id: 3, waId: '57300@c.us', telefono: '57300', nombreWa: 'Ana WA', nombreDisplay: 'Ana', gestionarConIa: true };
 
 test('conversación mía → esMio, nombre display, conversacion abrible', () => {
   const conv = { id: 9, agenteId: 5, ventanaExpiraEn: null, agente: { id: 5, nombre: 'Yo' } };
@@ -16,6 +16,7 @@ test('conversación mía → esMio, nombre display, conversacion abrible', () =>
   assert.equal(r.agenteActualNombre, 'Yo');
   assert.equal(r.conversacion.id, 9);
   assert.equal(r.conversacion.contacto.waId, '57300@c.us');
+  assert.equal(r.conversacion.contacto.gestionarConIa, true); // el flag viaja para "solo visualizar"
 });
 
 test('conversación general → esGeneral, sin agente', () => {
