@@ -37,7 +37,7 @@ async function cargar(req, res) {
 async function subirImagen(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: 'falta el archivo' });
-    const { url } = await guardarImagen(req.params.id, req.file.buffer, req.file.mimetype);
+    const { url } = await guardarImagen(req.params.id, req.file.buffer);
     await Difusion.update({ imagenUrl: url }, { where: { id: req.params.id } });
     return res.json({ imagenUrl: url });
   } catch (err) { return fallo(res, err, 'no se pudo subir la imagen'); }
@@ -53,9 +53,9 @@ async function subirImagenCarrusel(req, res) {
     if (!dif.carrusel || !Array.isArray(dif.carrusel.cards) || !dif.carrusel.cards[idx]) {
       return res.status(400).json({ error: 'la difusión no tiene esa tarjeta de carrusel' });
     }
-    const { url } = await guardarImagen(req.params.id, req.file.buffer, req.file.mimetype, idx);
-    // Sequelize no detecta la mutación in-place de un campo JSON: se asigna un objeto nuevo.
-    const carrusel = { ...dif.carrusel, cards: dif.carrusel.cards.map((c, i) => (i === idx ? { ...c, imagenUrl: url } : c)) };
+    const { url, ancho, alto } = await guardarImagen(req.params.id, req.file.buffer, idx);
+    // Sequelize no detecta mutación in-place de un campo JSON: se asigna un objeto nuevo.
+    const carrusel = { ...dif.carrusel, cards: dif.carrusel.cards.map((c, i) => (i === idx ? { ...c, imagenUrl: url, ancho, alto } : c)) };
     await dif.update({ carrusel });
     return res.json({ imagenUrl: url });
   } catch (err) { return fallo(res, err, 'no se pudo subir la imagen de la tarjeta'); }
