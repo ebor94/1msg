@@ -16,7 +16,8 @@ function payloadDeEnvio(dif, def, dest, telefono) {
     language: { code: dif.plantillaIdioma || def.language || 'es', policy: 'deterministic' },
     namespace: def.namespace || null,
   };
-  if (def.esCarrusel && dif.carrusel) {
+  if (def.esCarrusel) {
+    if (!dif.carrusel) throw new Error('difusión de carrusel sin contenido');
     return { ...base, params: construirParamsCarrusel(dif.carrusel, def.carrusel) };
   }
   const header = def.tieneImagen ? construirParamsHeader(dif.imagenUrl || def.imagenDefault) : [];

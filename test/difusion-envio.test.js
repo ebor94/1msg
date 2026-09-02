@@ -36,6 +36,10 @@ test('payloadDeEnvio: carrusel usa el builder de carrusel', () => {
   assert.equal(p.params[1].cards[0].card_index, 0);
 });
 
+test('payloadDeEnvio: carrusel sin contenido lanza (no cae al camino plano)', () => {
+  assert.throws(() => payloadDeEnvio({ plantillaNombre: 'c', plantillaIdioma: 'es' }, { esCarrusel: true }, { parametros: [] }, '573001112233'));
+});
+
 test('payloadDeEnvio: plantilla plana mantiene el camino actual', () => {
   const dif = { plantillaNombre: 'plana', plantillaIdioma: 'es', imagenUrl: null };
   const def = { esCarrusel: false, namespace: 'ns', tieneImagen: false };

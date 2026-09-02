@@ -43,6 +43,10 @@ function carruselListo(dif, def) {
     const llenas = (card.vars || []).filter((v) => String(v).trim()).length;
     if (llenas < (cardDef.variables || 0)) return { ok: false, motivo: `faltan textos en la tarjeta ${i + 1}` };
   }
+  const bodyLlenas = (c.bodyVars || []).filter((v) => String(v).trim()).length;
+  if (bodyLlenas < ((def.carrusel && def.carrusel.bodyVars) || 0)) {
+    return { ok: false, motivo: 'faltan los textos del encabezado del carrusel' };
+  }
   return { ok: true };
 }
 
@@ -104,7 +108,8 @@ async function iniciar(difusionId) {
   if (!dif) throw err(404, 'difusión no encontrada');
   if (dif.carrusel) {
     const def = (await obtenerCatalogo()).find((p) => p.name === dif.plantillaNombre);
-    const chk = carruselListo(dif, def || {});
+    if (!def) throw err(400, 'plantilla no encontrada o no aprobada');
+    const chk = carruselListo(dif, def);
     if (!chk.ok) throw err(400, chk.motivo);
   }
   const pendientes = await DifusionDestinatario.count({ where: { difusionId, estado: 'pendiente' } });

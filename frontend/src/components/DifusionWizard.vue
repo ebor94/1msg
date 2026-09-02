@@ -94,7 +94,12 @@ function onArchivo(ev) { imagenFile.value = ev.target.files?.[0] || null; }
 const faltaImagen = computed(() => !!plantilla.value?.tieneImagen && !plantilla.value?.imagenDefault && !imagenFile.value);
 const faltaImagenCarrusel = computed(() =>
   esCarrusel.value && (carrusel.value?.cards || []).some((c, i) => plantilla.value.carrusel.cards[i].tieneImagen && !c.imagenFile && !c.imagenUrl));
-const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value);
+const faltaTextoCarrusel = computed(() => {
+  if (!esCarrusel.value || !carrusel.value) return false;
+  if ((carrusel.value.bodyVars || []).some((v) => !String(v).trim())) return true;
+  return (carrusel.value.cards || []).some((c) => (c.vars || []).some((v) => !String(v).trim()));
+});
+const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value && !faltaTextoCarrusel.value);
 </script>
 
 <template>

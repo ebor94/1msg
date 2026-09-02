@@ -31,3 +31,11 @@ test('carruselListo exige imágenes y textos de cada tarjeta', () => {
 test('carruselListo: plantilla plana siempre ok', () => {
   assert.equal(carruselListo({}, { esCarrusel: false }).ok, true);
 });
+
+test('carruselListo: exige los textos del encabezado (bodyVars)', () => {
+  const def = { esCarrusel: true, carrusel: { bodyVars: 1, cards: [{ variables: 4, tieneImagen: true }] } };
+  const sinTop = { carrusel: { bodyVars: [''], cards: [{ imagenUrl: 'https://x/a.jpg', vars: ['a', 'b', 'c', 'd'] }] } };
+  assert.equal(carruselListo(sinTop, def).ok, false);
+  const conTop = { carrusel: { bodyVars: ['Invitación'], cards: [{ imagenUrl: 'https://x/a.jpg', vars: ['a', 'b', 'c', 'd'] }] } };
+  assert.equal(carruselListo(conTop, def).ok, true);
+});
