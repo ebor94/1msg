@@ -47,6 +47,13 @@ function carruselListo(dif, def) {
   if (bodyLlenas < ((def.carrusel && def.carrusel.bodyVars) || 0)) {
     return { ok: false, motivo: 'faltan los textos del encabezado del carrusel' };
   }
+  // Todas las tarjetas con imagen deben compartir la relación de aspecto (si hay dimensiones).
+  const conDims = c.cards.filter((card) => card && card.ancho && card.alto);
+  if (conDims.length === c.cards.length && conDims.length > 1) {
+    const r0 = conDims[0].ancho / conDims[0].alto;
+    const dispar = conDims.some((card) => Math.abs(card.ancho / card.alto - r0) / r0 > 0.02);
+    if (dispar) return { ok: false, motivo: 'las tarjetas deben tener la misma relación de aspecto' };
+  }
   return { ok: true };
 }
 
