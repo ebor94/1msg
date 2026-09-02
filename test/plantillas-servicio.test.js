@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla } = require('../src/services/plantillas');
+const { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla, construirParamsCarrusel } = require('../src/services/plantillas');
 
 test('contarVariables cuenta {{n}} distintos', () => {
   assert.equal(contarVariables('Hola {{1}}, saldo {{2}} vence {{2}}'), 2);
@@ -57,4 +57,75 @@ test('parsearPlantilla con header IMAGE expone namespace e imagenDefault', () =>
   assert.equal(p.namespace, 'ns1');
   assert.equal(p.tieneImagen, true);
   assert.equal(p.variables, 1);
+});
+
+const plantillaCarrusel = {
+  name: 'olivos_carrusel_sfn',
+  language: 'es',
+  category: 'MARKETING',
+  namespace: '8297ac0c_48d8_4ec6_a482_3b545f0544ed',
+  components: [
+    { type: 'BODY', text: 'Los olivos te invita a , {{1}} , en los siguientes eventos :' },
+    {
+      type: 'CAROUSEL',
+      cards: [
+        {
+          components: [
+            { type: 'HEADER', format: 'IMAGE', example: { header_handle: ['https://x/img/a.jpg'] } },
+            { type: 'BODY', text: 'Evento: {{1}} , | Lugar : {{2}}  |  Fecha : {{3}} | Hora : {{4}} .' },
+            { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Asistiré' }, { type: 'QUICK_REPLY', text: 'No Asistiré' }] },
+          ],
+        },
+        {
+          components: [
+            { type: 'HEADER', format: 'IMAGE', example: { header_handle: ['https://x/img/b.jpg'] } },
+            { type: 'BODY', text: 'Evento: {{1}} , | Lugar : {{2}}  |  Fecha : {{3}} | Hora : {{4}} .' },
+            { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Asistiré' }, { type: 'QUICK_REPLY', text: 'No Asistiré' }] },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+test('parsearPlantilla: carrusel expone bodyVars, tarjetas, imágenes y botones', () => {
+  const p = parsearPlantilla(plantillaCarrusel);
+  assert.equal(p.esCarrusel, true);
+  assert.equal(p.carrusel.bodyVars, 1);
+  assert.equal(p.carrusel.cards.length, 2);
+  assert.equal(p.carrusel.cards[0].variables, 4);
+  assert.equal(p.carrusel.cards[0].tieneImagen, true);
+  assert.equal(p.carrusel.cards[0].imagenDefault, 'https://x/img/a.jpg');
+  assert.deepEqual(p.carrusel.cards[0].botones, ['Asistiré', 'No Asistiré']);
+});
+
+test('parsearPlantilla: plantilla plana no es carrusel', () => {
+  const p = parsearPlantilla({ name: 'plana', language: 'es', components: [{ type: 'BODY', text: 'Hola {{1}}' }] });
+  assert.equal(p.esCarrusel, false);
+  assert.equal(p.carrusel, null);
+});
+
+test('construirParamsCarrusel: body + carousel con card_index, header, body y botones', () => {
+  const contenido = {
+    bodyVars: ['participar en familia'],
+    cards: [
+      { imagenUrl: 'https://x/a.jpg', vars: ['Conferencia', 'Calle 6', 'Sábado', '3pm'] },
+      { imagenUrl: 'https://x/b.jpg', vars: ['Eucaristía', 'Catedral', 'Viernes', '6pm'] },
+    ],
+  };
+  const def = { cards: [{ botones: ['Asistiré', 'No Asistiré'] }, { botones: ['Asistiré', 'No Asistiré'] }] };
+  const params = construirParamsCarrusel(contenido, def);
+
+  assert.equal(params[0].type, 'body');
+  assert.deepEqual(params[0].parameters, [{ type: 'text', text: 'participar en familia' }]);
+
+  const car = params[1];
+  assert.equal(car.type, 'carousel');
+  assert.equal(car.cards.length, 2);
+  assert.equal(car.cards[0].card_index, 0);
+  assert.deepEqual(car.cards[0].components[0], { type: 'header', parameters: [{ type: 'image', image: { link: 'https://x/a.jpg' } }] });
+  assert.equal(car.cards[0].components[1].type, 'body');
+  assert.equal(car.cards[0].components[1].parameters.length, 4);
+  assert.deepEqual(car.cards[0].components[2], { type: 'button', sub_type: 'quick_reply', index: 0, parameters: [{ type: 'payload', payload: 'asistire_c0' }] });
+  assert.equal(car.cards[0].components[3].parameters[0].payload, 'no_asistire_c0');
 });

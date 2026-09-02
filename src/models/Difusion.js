@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) =>
       plantillaNombre: { type: DataTypes.STRING(120), allowNull: false },
       plantillaIdioma: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'es' },
       imagenUrl: { type: DataTypes.STRING(255), allowNull: true },
+      carrusel: { type: DataTypes.JSON, allowNull: true },
       categoria: {
         type: DataTypes.ENUM('marketing', 'utility', 'authentication'),
         allowNull: false,

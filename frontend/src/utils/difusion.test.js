@@ -1,6 +1,6 @@
 // frontend/src/utils/difusion.test.js
 import { describe, it, expect } from 'vitest';
-import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas } from './difusion';
+import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas, initCarrusel, carruselBackend } from './difusion';
 
 describe('difusion utils', () => {
   it('renderizarCuerpo reemplaza {{n}} en orden', () => {
@@ -27,5 +27,27 @@ describe('columnasRequeridas', () => {
   });
   it('agrega CEDULA cuando requiere resumen', () => {
     expect(columnasRequeridas(mapeo, true)).toEqual(['CELULAR', 'AGENTE_ID', 'NOMBRE', 'CEDULA']);
+  });
+});
+
+describe('carrusel', () => {
+  const def = { carrusel: { bodyVars: 1, cards: [{ variables: 4 }, { variables: 2 }] } };
+
+  it('initCarrusel dimensiona bodyVars y las vars de cada tarjeta', () => {
+    const est = initCarrusel(def);
+    expect(est.bodyVars).toEqual(['']);
+    expect(est.cards.length).toBe(2);
+    expect(est.cards[0].vars).toEqual(['', '', '', '']);
+    expect(est.cards[1].vars).toEqual(['', '']);
+    expect(est.cards[0].imagenFile).toBe(null);
+  });
+
+  it('initCarrusel devuelve null si la plantilla no es carrusel', () => {
+    expect(initCarrusel({ carrusel: null })).toBe(null);
+  });
+
+  it('carruselBackend deja solo bodyVars y vars (sin imágenes)', () => {
+    const est = { bodyVars: ['x'], cards: [{ vars: ['a', 'b'], imagenFile: {}, imagenUrl: 'u' }] };
+    expect(carruselBackend(est)).toEqual({ bodyVars: ['x'], cards: [{ vars: ['a', 'b'] }] });
   });
 });

@@ -31,3 +31,25 @@ export function columnasRequeridas(mapeo, requiereResumen) {
   if (requiereResumen) cols.push('CEDULA');
   return [...new Set(cols)];
 }
+
+// Estado editable del wizard para una plantilla de carrusel (o null si no lo es).
+export function initCarrusel(def) {
+  const c = def && def.carrusel;
+  if (!c) return null;
+  return {
+    bodyVars: Array.from({ length: c.bodyVars || 0 }, () => ''),
+    cards: (c.cards || []).map((card) => ({
+      vars: Array.from({ length: card.variables || 0 }, () => ''),
+      imagenFile: null,
+      imagenUrl: null,
+    })),
+  };
+}
+
+// Contenido del carrusel que va al backend en `crear` (las imágenes se suben aparte).
+export function carruselBackend(estado) {
+  return {
+    bodyVars: [...((estado && estado.bodyVars) || [])],
+    cards: ((estado && estado.cards) || []).map((c) => ({ vars: [...(c.vars || [])] })),
+  };
+}

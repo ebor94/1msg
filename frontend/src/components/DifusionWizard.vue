@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAcciones } from '../stores/acciones';
-import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas } from '../utils/difusion';
+import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas, initCarrusel, carruselBackend } from '../utils/difusion';
 
 const emit = defineEmits(['creada', 'cerrar']);
 const acc = useAcciones();
@@ -17,15 +17,20 @@ const guardando = ref(false);
 const error = ref('');
 const resumen = ref(null); // { total, pendientes, omitidos } tras cargar
 const difusionId = ref(null);
+const carrusel = ref(null); // estado editable cuando la plantilla es carrusel
 
 onMounted(() => { if (!acc.plantillas.length) acc.cargarPlantillas(); });
 
 const plantilla = computed(() => acc.plantillas.find((p) => p.name === plantillaNombre.value) || null);
+const esCarrusel = computed(() => !!plantilla.value?.esCarrusel);
 
 function elegirPlantilla() {
   const p = plantilla.value;
-  mapeo.value.variables = p ? Array.from({ length: p.variables }, () => ({ tipo: 'columna', columna: '', valor: '' })) : [];
+  mapeo.value.variables = p && !p.esCarrusel ? Array.from({ length: p.variables }, () => ({ tipo: 'columna', columna: '', valor: '' })) : [];
+  carrusel.value = p && p.esCarrusel ? initCarrusel(p) : null;
 }
+
+function onArchivoTarjeta(ev, i) { carrusel.value.cards[i].imagenFile = ev.target.files?.[0] || null; }
 
 const preview = computed(() => {
   const p = plantilla.value;
@@ -51,10 +56,17 @@ async function crearYCargar() {
   error.value = ''; guardando.value = true;
   try {
     if (!difusionId.value) {
-      const dif = await acc.crearDifusion({ nombre: nombre.value, plantilla: plantillaNombre.value, requiereResumen: requiereResumen.value });
+      const datos = { nombre: nombre.value, plantilla: plantillaNombre.value, requiereResumen: requiereResumen.value };
+      if (esCarrusel.value) datos.carrusel = carruselBackend(carrusel.value);
+      const dif = await acc.crearDifusion(datos);
       difusionId.value = dif.id;
     }
-    if (plantilla.value?.tieneImagen && imagenFile.value) {
+    if (esCarrusel.value) {
+      for (let i = 0; i < carrusel.value.cards.length; i += 1) {
+        const card = carrusel.value.cards[i];
+        if (card.imagenFile) { const r = await acc.subirImagenCarruselDifusion(difusionId.value, i, card.imagenFile); card.imagenUrl = r.imagenUrl; }
+      }
+    } else if (plantilla.value?.tieneImagen && imagenFile.value) {
       await acc.subirImagenDifusion(difusionId.value, imagenFile.value);
     }
     resumen.value = await acc.cargarDestinatariosDifusion(difusionId.value, { texto: csvTexto.value, mapeo: mapeoBackend() });
@@ -80,7 +92,14 @@ async function iniciar() {
 
 function onArchivo(ev) { imagenFile.value = ev.target.files?.[0] || null; }
 const faltaImagen = computed(() => !!plantilla.value?.tieneImagen && !plantilla.value?.imagenDefault && !imagenFile.value);
-const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value);
+const faltaImagenCarrusel = computed(() =>
+  esCarrusel.value && (carrusel.value?.cards || []).some((c, i) => plantilla.value.carrusel.cards[i].tieneImagen && !c.imagenFile && !c.imagenUrl));
+const faltaTextoCarrusel = computed(() => {
+  if (!esCarrusel.value || !carrusel.value) return false;
+  if ((carrusel.value.bodyVars || []).some((v) => !String(v).trim())) return true;
+  return (carrusel.value.cards || []).some((c) => (c.vars || []).some((v) => !String(v).trim()));
+});
+const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value && !faltaTextoCarrusel.value);
 </script>
 
 <template>
@@ -115,8 +134,8 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
         <template v-if="plantilla">
           <div class="bg-gray-50 border rounded p-2 text-[12px] text-gray-600 whitespace-pre-wrap">{{ plantilla.cuerpo }}</div>
 
-          <!-- Paso 2: mapeo de variables -->
-          <div v-if="plantilla.variables" class="space-y-2">
+          <!-- Paso 2: mapeo de variables (solo plantillas planas) -->
+          <div v-if="!esCarrusel && plantilla.variables" class="space-y-2">
             <div class="text-[11px] text-gray-400 uppercase">Variables</div>
             <div v-for="(v, i) in mapeo.variables" :key="i" class="flex items-center gap-2">
               <span class="text-gray-500 w-10">{{ '{' + '{' + (i + 1) + '}' + '}' }}</span>
@@ -129,11 +148,30 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
             </div>
           </div>
 
-          <!-- Imagen si la plantilla la lleva -->
-          <div v-if="plantilla.tieneImagen">
+          <!-- Imagen si la plantilla plana la lleva -->
+          <div v-if="!esCarrusel && plantilla.tieneImagen">
             <label class="block text-[11px] text-gray-400 uppercase mb-1">Imagen del encabezado (opcional; si no, usa la de la plantilla)</label>
             <input type="file" accept="image/png,image/jpeg,image/webp" @change="onArchivo" class="text-[12px]" />
             <p v-if="faltaImagen" class="text-[11px] text-amber-600 mt-1">Esta plantilla requiere una imagen y no tiene una por defecto: sube una para continuar.</p>
+          </div>
+
+          <!-- Editor de carrusel -->
+          <div v-if="esCarrusel && carrusel" class="space-y-3">
+            <div v-if="carrusel.bodyVars.length">
+              <div class="text-[11px] text-gray-400 uppercase mb-1">Texto de arriba</div>
+              <input v-for="(_, i) in carrusel.bodyVars" :key="'b' + i" v-model="carrusel.bodyVars[i]"
+                class="w-full border rounded px-2 py-1 mb-1" :placeholder="'Variable ' + (i + 1)" />
+            </div>
+            <div v-for="(card, ci) in carrusel.cards" :key="'c' + ci" class="border rounded p-2 space-y-2">
+              <div class="text-[12px] font-semibold text-gray-700">Tarjeta {{ ci + 1 }}</div>
+              <div v-if="plantilla.carrusel.cards[ci].tieneImagen">
+                <label class="block text-[11px] text-gray-400 mb-1">Imagen de la tarjeta</label>
+                <input type="file" accept="image/png,image/jpeg,image/webp" class="text-[12px]" @change="(e) => onArchivoTarjeta(e, ci)" />
+                <span v-if="card.imagenFile" class="text-[11px] text-green-600 ml-1">✓ {{ card.imagenFile.name }}</span>
+              </div>
+              <input v-for="(_, vi) in card.vars" :key="'v' + ci + '_' + vi" v-model="card.vars[vi]"
+                class="w-full border rounded px-2 py-1" :placeholder="'Variable ' + (vi + 1)" />
+            </div>
           </div>
 
           <!-- Paso 3: CSV -->

@@ -19,7 +19,7 @@ async function crear(req, res) {
     if (!b.nombre || !b.plantilla) return res.status(400).json({ error: 'nombre y plantilla son obligatorios' });
     const dif = await servicio.crear({
       nombre: b.nombre, plantilla: b.plantilla, idioma: b.idioma, categoria: b.categoria,
-      requiereResumen: b.requiereResumen, creadoPorId: req.agente.id,
+      requiereResumen: b.requiereResumen, carrusel: b.carrusel, creadoPorId: req.agente.id,
     });
     return res.status(201).json({ difusion: dif });
   } catch (err) { return fallo(res, err, 'no se pudo crear la difusión'); }
@@ -41,6 +41,24 @@ async function subirImagen(req, res) {
     await Difusion.update({ imagenUrl: url }, { where: { id: req.params.id } });
     return res.json({ imagenUrl: url });
   } catch (err) { return fallo(res, err, 'no se pudo subir la imagen'); }
+}
+
+async function subirImagenCarrusel(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'falta el archivo' });
+    const idx = Number(req.params.idx);
+    if (!Number.isInteger(idx) || idx < 0) return res.status(400).json({ error: 'índice de tarjeta inválido' });
+    const dif = await Difusion.findByPk(req.params.id);
+    if (!dif) return res.status(404).json({ error: 'difusión no encontrada' });
+    if (!dif.carrusel || !Array.isArray(dif.carrusel.cards) || !dif.carrusel.cards[idx]) {
+      return res.status(400).json({ error: 'la difusión no tiene esa tarjeta de carrusel' });
+    }
+    const { url } = await guardarImagen(req.params.id, req.file.buffer, req.file.mimetype, idx);
+    // Sequelize no detecta la mutación in-place de un campo JSON: se asigna un objeto nuevo.
+    const carrusel = { ...dif.carrusel, cards: dif.carrusel.cards.map((c, i) => (i === idx ? { ...c, imagenUrl: url } : c)) };
+    await dif.update({ carrusel });
+    return res.json({ imagenUrl: url });
+  } catch (err) { return fallo(res, err, 'no se pudo subir la imagen de la tarjeta'); }
 }
 
 async function iniciar(req, res) {
@@ -66,4 +84,4 @@ async function destinatarios(req, res) {
   } catch (err) { return fallo(res, err, 'no se pudieron listar los destinatarios'); }
 }
 
-module.exports = { crear, cargar, subirImagen, iniciar, cancelar, listar, detalle, destinatarios, _setServicio };
+module.exports = { crear, cargar, subirImagen, subirImagenCarrusel, iniciar, cancelar, listar, detalle, destinatarios, _setServicio };

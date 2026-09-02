@@ -127,6 +127,7 @@ router.get('/difusiones/:id', requireAuth, requireAdmin, difusionesCtrl.detalle)
 router.get('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.destinatarios);
 router.post('/difusiones/:id/destinatarios', requireAuth, requireAdmin, difusionesCtrl.cargar);
 router.post('/difusiones/:id/imagen', requireAuth, requireAdmin, subirImagen, difusionesCtrl.subirImagen);
+router.post('/difusiones/:id/carrusel/:idx/imagen', requireAuth, requireAdmin, subirImagen, difusionesCtrl.subirImagenCarrusel);
 router.post('/difusiones/:id/iniciar', requireAuth, requireAdmin, difusionesCtrl.iniciar);
 router.post('/difusiones/:id/cancelar', requireAuth, requireAdmin, difusionesCtrl.cancelar);
 

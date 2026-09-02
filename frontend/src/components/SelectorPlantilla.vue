@@ -13,6 +13,8 @@ const imagenUrl = ref('');
 const error = ref('');
 const enviando = ref(false);
 
+const plantillasEnviables = computed(() => acc.plantillas.filter((p) => !p.esCarrusel));
+
 onMounted(() => acc.cargarPlantillas());
 
 function elegir(p) {
@@ -56,12 +58,12 @@ async function enviar() {
         <button class="text-gray-400 text-sm" @click="emit('cerrar')">✕</button>
       </div>
       <div v-if="!elegida">
-        <div v-for="p in acc.plantillas" :key="p.name" @click="elegir(p)"
+        <div v-for="p in plantillasEnviables" :key="p.name" @click="elegir(p)"
           class="border-b border-gray-100 py-2 px-1 cursor-pointer hover:bg-gray-50">
           <div class="text-[13px] font-medium text-gray-800">{{ p.name }}</div>
           <div class="text-[12px] text-gray-500 line-clamp-2">{{ p.cuerpo }}</div>
         </div>
-        <div v-if="!acc.plantillas.length" class="text-center text-gray-400 text-sm py-4">Cargando plantillas…</div>
+        <div v-if="!plantillasEnviables.length" class="text-center text-gray-400 text-sm py-4">Cargando plantillas…</div>
       </div>
       <div v-else>
         <button class="text-[12px] text-marca-oscuro mb-2" @click="elegida = null">‹ Otra plantilla</button>

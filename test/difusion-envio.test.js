@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { payloadDeEnvio } = require('../src/services/difusionEnvio');
+const { payloadDeEnvio, textoYMediaSaliente } = require('../src/services/difusionEnvio');
 
 const def = { name: 'recordatorio_de_mora', cuerpo: 'Hola {{1}}, mora {{2}}', variables: 2, tieneImagen: false, imagenDefault: null, namespace: 'ns', language: 'es' };
 
@@ -23,4 +23,44 @@ test('payloadDeEnvio añade header de imagen si la plantilla la lleva', () => {
   const p = payloadDeEnvio(dif, defImg, { parametros: ['Ana', '$1'] }, '573001234567');
   assert.equal(p.params[0].type, 'header');
   assert.equal(p.params[0].parameters[0].image.link, 'https://mi/persistente.png'); // imagenUrl gana sobre default
+});
+
+test('payloadDeEnvio: carrusel usa el builder de carrusel', () => {
+  const dif = { plantillaNombre: 'car', plantillaIdioma: 'es', carrusel: { bodyVars: ['x'], cards: [{ imagenUrl: 'https://x/a.jpg', vars: ['a', 'b', 'c', 'd'] }] } };
+  const def = { esCarrusel: true, namespace: 'ns', carrusel: { cards: [{ botones: ['Asistiré'] }] } };
+  const p = payloadDeEnvio(dif, def, { parametros: [] }, '573001112233');
+  assert.equal(p.phone, '573001112233');
+  assert.equal(p.namespace, 'ns');
+  assert.equal(p.params[0].type, 'body');
+  assert.equal(p.params[1].type, 'carousel');
+  assert.equal(p.params[1].cards[0].card_index, 0);
+});
+
+test('payloadDeEnvio: carrusel sin contenido lanza (no cae al camino plano)', () => {
+  assert.throws(() => payloadDeEnvio({ plantillaNombre: 'c', plantillaIdioma: 'es' }, { esCarrusel: true }, { parametros: [] }, '573001112233'));
+});
+
+test('payloadDeEnvio: plantilla plana mantiene el camino actual', () => {
+  const dif = { plantillaNombre: 'plana', plantillaIdioma: 'es', imagenUrl: null };
+  const def = { esCarrusel: false, namespace: 'ns', tieneImagen: false };
+  const p = payloadDeEnvio(dif, def, { parametros: ['Ana'] }, '573001112233');
+  assert.equal(p.params.length, 1);
+  assert.equal(p.params[0].type, 'body');
+  assert.equal(p.params[0].parameters[0].text, 'Ana');
+});
+
+test('textoYMediaSaliente: carrusel usa cuerpo general + marca + 1ª imagen', () => {
+  const dif = { carrusel: { bodyVars: ['Ana'], cards: [{ imagenUrl: 'https://x/a.jpg', vars: [] }, { imagenUrl: 'https://x/b.jpg', vars: [] }] } };
+  const def = { esCarrusel: true, cuerpo: 'Hola {{1}}' };
+  const r = textoYMediaSaliente(dif, def, { parametros: [] });
+  assert.equal(r.texto, 'Hola Ana 📸 Carrusel (2 tarjetas)');
+  assert.equal(r.mediaUrl, 'https://x/a.jpg');
+});
+
+test('textoYMediaSaliente: plano renderiza con parametros y respeta imagen', () => {
+  const dif = { imagenUrl: 'https://x/h.jpg' };
+  const def = { esCarrusel: false, cuerpo: 'Hola {{1}}', tieneImagen: true };
+  const r = textoYMediaSaliente(dif, def, { parametros: ['Ana'] });
+  assert.equal(r.texto, 'Hola Ana');
+  assert.equal(r.mediaUrl, 'https://x/h.jpg');
 });
