@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla } = require('../src/services/plantillas');
+const { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla, construirParamsCarrusel } = require('../src/services/plantillas');
 
 test('contarVariables cuenta {{n}} distintos', () => {
   assert.equal(contarVariables('Hola {{1}}, saldo {{2}} vence {{2}}'), 2);
@@ -103,4 +103,29 @@ test('parsearPlantilla: plantilla plana no es carrusel', () => {
   const p = parsearPlantilla({ name: 'plana', language: 'es', components: [{ type: 'BODY', text: 'Hola {{1}}' }] });
   assert.equal(p.esCarrusel, false);
   assert.equal(p.carrusel, null);
+});
+
+test('construirParamsCarrusel: body + carousel con card_index, header, body y botones', () => {
+  const contenido = {
+    bodyVars: ['participar en familia'],
+    cards: [
+      { imagenUrl: 'https://x/a.jpg', vars: ['Conferencia', 'Calle 6', 'Sábado', '3pm'] },
+      { imagenUrl: 'https://x/b.jpg', vars: ['Eucaristía', 'Catedral', 'Viernes', '6pm'] },
+    ],
+  };
+  const def = { cards: [{ botones: ['Asistiré', 'No Asistiré'] }, { botones: ['Asistiré', 'No Asistiré'] }] };
+  const params = construirParamsCarrusel(contenido, def);
+
+  assert.equal(params[0].type, 'body');
+  assert.deepEqual(params[0].parameters, [{ type: 'text', text: 'participar en familia' }]);
+
+  const car = params[1];
+  assert.equal(car.type, 'carousel');
+  assert.equal(car.cards.length, 2);
+  assert.equal(car.cards[0].card_index, 0);
+  assert.deepEqual(car.cards[0].components[0], { type: 'header', parameters: [{ type: 'image', image: { link: 'https://x/a.jpg' } }] });
+  assert.equal(car.cards[0].components[1].type, 'body');
+  assert.equal(car.cards[0].components[1].parameters.length, 4);
+  assert.deepEqual(car.cards[0].components[2], { type: 'button', sub_type: 'quick_reply', index: 0, parameters: [{ type: 'payload', payload: 'asistire_c0' }] });
+  assert.equal(car.cards[0].components[3].parameters[0].payload, 'no_asistire_c0');
 });

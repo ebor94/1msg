@@ -58,4 +58,37 @@ function parsearPlantilla(t) {
   };
 }
 
-module.exports = { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla };
+function slugBoton(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+/** Pura: arma el `params` de sendTemplate para una plantilla tipo carrusel. */
+function construirParamsCarrusel(contenido, def) {
+  const bodyVars = (contenido && contenido.bodyVars) || [];
+  const params = [];
+  if (bodyVars.length) {
+    params.push({ type: 'body', parameters: bodyVars.map((v) => ({ type: 'text', text: String(v) })) });
+  }
+  const cards = ((contenido && contenido.cards) || []).map((card, i) => {
+    const botonesDef = (def && def.cards && def.cards[i] && def.cards[i].botones) || [];
+    const components = [];
+    if (card.imagenUrl) {
+      components.push({ type: 'header', parameters: [{ type: 'image', image: { link: String(card.imagenUrl) } }] });
+    }
+    if ((card.vars || []).length) {
+      components.push({ type: 'body', parameters: card.vars.map((v) => ({ type: 'text', text: String(v) })) });
+    }
+    botonesDef.forEach((texto, idx) => {
+      components.push({ type: 'button', sub_type: 'quick_reply', index: idx, parameters: [{ type: 'payload', payload: `${slugBoton(texto)}_c${i}` }] });
+    });
+    return { card_index: i, components };
+  });
+  params.push({ type: 'carousel', cards });
+  return params;
+}
+
+module.exports = { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, construirParamsCarrusel, parsearPlantilla };
