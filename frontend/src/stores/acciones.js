@@ -286,6 +286,20 @@ export const useAcciones = defineStore('acciones', {
       if (!resp.ok) { const e = new Error((cuerpo && cuerpo.error) || `error ${resp.status}`); e.status = resp.status; throw e; }
       return cuerpo;
     },
+    async subirImagenCarruselDifusion(id, idx, file) {
+      const fd = new FormData();
+      fd.append('imagen', file);
+      const token = tokenGuardado();
+      const resp = await fetch(`/api/difusiones/${id}/carrusel/${idx}/imagen`, {
+        method: 'POST',
+        headers: token ? { authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      let cuerpo = null;
+      try { cuerpo = await resp.json(); } catch { /* sin cuerpo */ }
+      if (!resp.ok) { const e = new Error((cuerpo && cuerpo.error) || `error ${resp.status}`); e.status = resp.status; throw e; }
+      return cuerpo;
+    },
     async iniciarDifusion(id) {
       return apiFetch(`/difusiones/${id}/iniciar`, { method: 'POST' });
     },
