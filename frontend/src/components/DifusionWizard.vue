@@ -151,7 +151,7 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
           <!-- Imagen si la plantilla plana la lleva -->
           <div v-if="!esCarrusel && plantilla.tieneImagen">
             <label class="block text-[11px] text-gray-400 uppercase mb-1">Imagen del encabezado (opcional; si no, usa la de la plantilla)</label>
-            <input type="file" accept="image/png,image/jpeg,image/webp" @change="onArchivo" class="text-[12px]" />
+            <input type="file" accept="image/jpeg,image/png" @change="onArchivo" class="text-[12px]" />
             <p v-if="faltaImagen" class="text-[11px] text-amber-600 mt-1">Esta plantilla requiere una imagen y no tiene una por defecto: sube una para continuar.</p>
           </div>
 

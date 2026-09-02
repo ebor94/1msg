@@ -13,6 +13,7 @@ function dimensionesJpeg(buf) {
   let i = 2;
   while (i < buf.length - 8) {
     if (buf[i] !== 0xff) { i += 1; continue; }
+    if (buf[i + 1] === 0xff) { i += 1; continue; } // saltar bytes de relleno 0xFF
     const marker = buf[i + 1];
     if ((marker >= 0xc0 && marker <= 0xc3) || (marker >= 0xc5 && marker <= 0xc7) ||
         (marker >= 0xc9 && marker <= 0xcb) || (marker >= 0xcd && marker <= 0xcf)) {

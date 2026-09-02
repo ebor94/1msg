@@ -48,6 +48,8 @@ function carruselListo(dif, def) {
     return { ok: false, motivo: 'faltan los textos del encabezado del carrusel' };
   }
   // Todas las tarjetas con imagen deben compartir la relación de aspecto (si hay dimensiones).
+  // Solo valida aspecto cuando TODAS las tarjetas tienen dimensiones (WhatsApp exige
+  // estructura uniforme entre tarjetas, así que en la práctica todas llevan imagen).
   const conDims = c.cards.filter((card) => card && card.ancho && card.alto);
   if (conDims.length === c.cards.length && conDims.length > 1) {
     const r0 = conDims[0].ancho / conDims[0].alto;

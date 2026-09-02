@@ -53,3 +53,12 @@ test('nombreArchivoImagen: por formato, con y sin índice de tarjeta', () => {
   assert.equal(nombreArchivoImagen(15, 'jpg'), 'dif-15.jpg');
   assert.throws(() => nombreArchivoImagen(15, 'webp'));
 });
+test('leerImagen: JPEG con byte de relleno 0xFF antes del SOF → dimensiones OK', () => {
+  const b = Buffer.alloc(24);
+  b[0] = 0xff; b[1] = 0xd8; b[2] = 0xff; b[3] = 0xff; b[4] = 0xc0; // relleno 0xFF antes del SOF0
+  b.writeUInt16BE(0x0011, 5);
+  b[7] = 0x08;
+  b.writeUInt16BE(700, 8);
+  b.writeUInt16BE(500, 10);
+  assert.deepEqual(leerImagen(b), { formato: 'jpg', ancho: 500, alto: 700 });
+});
