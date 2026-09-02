@@ -160,17 +160,19 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
             <div v-if="carrusel.bodyVars.length">
               <div class="text-[11px] text-gray-400 uppercase mb-1">Texto de arriba</div>
               <input v-for="(_, i) in carrusel.bodyVars" :key="'b' + i" v-model="carrusel.bodyVars[i]"
-                class="w-full border rounded px-2 py-1 mb-1" :placeholder="'Variable ' + (i + 1)" />
+                class="w-full border rounded px-2 py-1 mb-1"
+                :placeholder="(plantilla.carrusel.bodyEjemplos && plantilla.carrusel.bodyEjemplos[i]) ? ('Ej: ' + plantilla.carrusel.bodyEjemplos[i]) : ('Variable ' + (i + 1))" />
             </div>
             <div v-for="(card, ci) in carrusel.cards" :key="'c' + ci" class="border rounded p-2 space-y-2">
               <div class="text-[12px] font-semibold text-gray-700">Tarjeta {{ ci + 1 }}</div>
               <div v-if="plantilla.carrusel.cards[ci].tieneImagen">
                 <label class="block text-[11px] text-gray-400 mb-1">Imagen de la tarjeta</label>
-                <input type="file" accept="image/png,image/jpeg,image/webp" class="text-[12px]" @change="(e) => onArchivoTarjeta(e, ci)" />
+                <input type="file" accept="image/jpeg,image/png" class="text-[12px]" @change="(e) => onArchivoTarjeta(e, ci)" />
                 <span v-if="card.imagenFile" class="text-[11px] text-green-600 ml-1">✓ {{ card.imagenFile.name }}</span>
               </div>
               <input v-for="(_, vi) in card.vars" :key="'v' + ci + '_' + vi" v-model="card.vars[vi]"
-                class="w-full border rounded px-2 py-1" :placeholder="'Variable ' + (vi + 1)" />
+                class="w-full border rounded px-2 py-1"
+                :placeholder="(plantilla.carrusel.cards[ci].ejemplos && plantilla.carrusel.cards[ci].ejemplos[vi]) ? ('Ej: ' + plantilla.carrusel.cards[ci].ejemplos[vi]) : ('Variable ' + (vi + 1))" />
             </div>
           </div>
 
