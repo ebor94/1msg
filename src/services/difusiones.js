@@ -13,7 +13,40 @@ function puedeIniciar(estado, pendientes) {
   return estado === 'borrador' && pendientes > 0;
 }
 
-async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, creadoPorId }) {
+/** Pura: da forma al contenido del carrusel según la plantilla (rellena huecos vacíos). */
+function normalizarCarrusel(entrada, def) {
+  const src = entrada || {};
+  const nBody = (def.carrusel && def.carrusel.bodyVars) || 0;
+  const bodyVars = Array.from({ length: nBody }, (_, i) => String((src.bodyVars || [])[i] ?? ''));
+  const cards = ((def.carrusel && def.carrusel.cards) || []).map((cDef, i) => {
+    const cIn = (src.cards || [])[i] || {};
+    return {
+      imagenUrl: cIn.imagenUrl || null,
+      vars: Array.from({ length: cDef.variables || 0 }, (_, j) => String((cIn.vars || [])[j] ?? '')),
+    };
+  });
+  return { bodyVars, cards };
+}
+
+/** Pura: valida que un carrusel esté listo para enviar (imágenes + textos completos). */
+function carruselListo(dif, def) {
+  if (!def || !def.esCarrusel) return { ok: true };
+  const c = dif.carrusel;
+  const cardsDef = (def.carrusel && def.carrusel.cards) || [];
+  if (!c || !Array.isArray(c.cards) || c.cards.length !== cardsDef.length) {
+    return { ok: false, motivo: 'el contenido del carrusel está incompleto' };
+  }
+  for (let i = 0; i < c.cards.length; i += 1) {
+    const cardDef = cardsDef[i];
+    const card = c.cards[i] || {};
+    if (cardDef.tieneImagen && !card.imagenUrl) return { ok: false, motivo: `falta la imagen de la tarjeta ${i + 1}` };
+    const llenas = (card.vars || []).filter((v) => String(v).trim()).length;
+    if (llenas < (cardDef.variables || 0)) return { ok: false, motivo: `faltan textos en la tarjeta ${i + 1}` };
+  }
+  return { ok: true };
+}
+
+async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, carrusel, creadoPorId }) {
   const catalogo = await obtenerCatalogo();
   const def = catalogo.find((p) => p.name === plantilla);
   if (!def) throw err(400, 'plantilla no encontrada o no aprobada');
@@ -24,6 +57,7 @@ async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, cr
     nombre, plantillaNombre: plantilla, plantillaIdioma: idioma || def.language || 'es',
     categoria: String(categoria || def.categoria || 'utility').toLowerCase(), estado: 'borrador',
     canalId: canal.id, creadoPorId, requiereResumen: !!requiereResumen,
+    carrusel: def.esCarrusel ? normalizarCarrusel(carrusel, def) : null,
   });
 }
 
@@ -68,6 +102,11 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
 async function iniciar(difusionId) {
   const dif = await Difusion.findByPk(difusionId);
   if (!dif) throw err(404, 'difusión no encontrada');
+  if (dif.carrusel) {
+    const def = (await obtenerCatalogo()).find((p) => p.name === dif.plantillaNombre);
+    const chk = carruselListo(dif, def || {});
+    if (!chk.ok) throw err(400, chk.motivo);
+  }
   const pendientes = await DifusionDestinatario.count({ where: { difusionId, estado: 'pendiente' } });
   if (!puedeIniciar(dif.estado, pendientes)) throw err(409, 'la campaña no se puede iniciar (revisa estado y destinatarios)');
   await dif.update({ estado: 'enviando' });
@@ -133,4 +172,7 @@ async function destinatarios(difusionId, { estado, pagina = 0, tam = 50 } = {}) 
   return { total: count, filas: rows };
 }
 
-module.exports = { puedeIniciar, crear, cargarDestinatarios, iniciar, cancelar, listar, detalle, destinatarios };
+module.exports = {
+  puedeIniciar, normalizarCarrusel, carruselListo,
+  crear, cargarDestinatarios, iniciar, cancelar, listar, detalle, destinatarios,
+};
