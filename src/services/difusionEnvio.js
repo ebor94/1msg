@@ -2,21 +2,37 @@
 const { sequelize } = require('../config/database');
 const { Contacto } = require('../models');
 const { enviarPlantilla } = require('../integrations/onemsg/plantillas');
-const { construirParams, construirParamsHeader, renderizarCuerpo } = require('./plantillas');
+const { construirParams, construirParamsHeader, construirParamsCarrusel, renderizarCuerpo } = require('./plantillas');
 const { clasificarError } = require('./difusionReglas');
 const { persistirEnvioPlantilla } = require('./envioPlantilla');
 const { ORIGEN_CONVERSACION } = require('../config/constants');
 const logger = require('../utils/logger');
 
-/** Pura: arma el cuerpo de enviarPlantilla (header de imagen si aplica). */
+/** Pura: arma el cuerpo de enviarPlantilla (carrusel, o header de imagen + body). */
 function payloadDeEnvio(dif, def, dest, telefono) {
-  const header = def.tieneImagen ? construirParamsHeader(dif.imagenUrl || def.imagenDefault) : [];
-  return {
+  const base = {
     phone: telefono,
     template: dif.plantillaNombre,
     language: { code: dif.plantillaIdioma || def.language || 'es', policy: 'deterministic' },
     namespace: def.namespace || null,
-    params: [...header, ...construirParams(dest.parametros)],
+  };
+  if (def.esCarrusel && dif.carrusel) {
+    return { ...base, params: construirParamsCarrusel(dif.carrusel, def.carrusel) };
+  }
+  const header = def.tieneImagen ? construirParamsHeader(dif.imagenUrl || def.imagenDefault) : [];
+  return { ...base, params: [...header, ...construirParams(dest.parametros)] };
+}
+
+/** Pura: texto y media que se guardan en el mensaje saliente de la bandeja. */
+function textoYMediaSaliente(dif, def, dest) {
+  if (def.esCarrusel && dif.carrusel) {
+    const cards = dif.carrusel.cards || [];
+    const texto = `${renderizarCuerpo(def.cuerpo, dif.carrusel.bodyVars || [])} 📸 Carrusel (${cards.length} tarjetas)`.trim();
+    return { texto, mediaUrl: (cards[0] && cards[0].imagenUrl) || null };
+  }
+  return {
+    texto: renderizarCuerpo(def.cuerpo, dest.parametros),
+    mediaUrl: def.tieneImagen ? (dif.imagenUrl || def.imagenDefault) : null,
   };
 }
 
@@ -45,8 +61,7 @@ async function enviarDestinatario(dest, dif, def, deps = {}) {
     return clas.estado;
   }
 
-  const texto = renderizarCuerpo(def.cuerpo, dest.parametros);
-  const mediaUrl = def.tieneImagen ? (dif.imagenUrl || def.imagenDefault) : null;
+  const { texto, mediaUrl } = textoYMediaSaliente(dif, def, dest);
   await persistirEnvioPlantilla({
     contactoId: dest.contactoId, agenteFallback: dest.agenteId, canalId: dif.canalId,
     plantillaNombre: dif.plantillaNombre, texto, waMessageId: enviado.id, origen: ORIGEN_CONVERSACION.DIFUSION,
@@ -60,4 +75,4 @@ async function enviarDestinatario(dest, dif, def, deps = {}) {
   return 'enviado';
 }
 
-module.exports = { payloadDeEnvio, enviarDestinatario };
+module.exports = { payloadDeEnvio, textoYMediaSaliente, enviarDestinatario };
