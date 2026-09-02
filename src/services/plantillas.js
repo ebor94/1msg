@@ -33,6 +33,7 @@ function parsearTarjeta(card) {
     tieneImagen: esImagen,
     imagenDefault: esImagen ? (header.example && header.example.header_handle && header.example.header_handle[0]) || null : null,
     botones: buttons ? (buttons.buttons || []).map((b) => b.text) : [],
+    ejemplos: (body && body.example && body.example.body_text && body.example.body_text[0]) || [],
   };
 }
 
@@ -43,6 +44,7 @@ function parsearPlantilla(t) {
   const cuerpo = (body && body.text) || '';
   const esImagen = !!(header && header.format === 'IMAGE');
   const carrusel = comps.find((c) => c.type === 'CAROUSEL');
+  const bodyEjemplos = (body && body.example && body.example.body_text && body.example.body_text[0]) || [];
   return {
     name: t.name,
     language: typeof t.language === 'string' ? t.language : (t.language && t.language.code) || 'es',
@@ -54,7 +56,7 @@ function parsearPlantilla(t) {
     namespace: t.namespace || null,
     imagenDefault: esImagen ? (header.example && header.example.header_handle && header.example.header_handle[0]) || null : null,
     esCarrusel: !!carrusel,
-    carrusel: carrusel ? { bodyVars: contarVariables(cuerpo), cards: (carrusel.cards || []).map(parsearTarjeta) } : null,
+    carrusel: carrusel ? { bodyVars: contarVariables(cuerpo), bodyEjemplos, cards: (carrusel.cards || []).map(parsearTarjeta) } : null,
   };
 }
 

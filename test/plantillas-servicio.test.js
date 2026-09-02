@@ -105,6 +105,24 @@ test('parsearPlantilla: plantilla plana no es carrusel', () => {
   assert.equal(p.carrusel, null);
 });
 
+test('parsearPlantilla: carrusel expone bodyEjemplos y ejemplos por tarjeta', () => {
+  const t = {
+    name: 'car2', language: 'es',
+    components: [
+      { type: 'BODY', text: 'Invita a {{1}}', example: { body_text: [['participar en familia']] } },
+      { type: 'CAROUSEL', cards: [
+        { components: [
+          { type: 'HEADER', format: 'IMAGE', example: { header_handle: ['https://x/a.jpg'] } },
+          { type: 'BODY', text: 'Evento {{1}} en {{2}}', example: { body_text: [['Eucaristía', 'Catedral']] } },
+        ] },
+      ] },
+    ],
+  };
+  const p = parsearPlantilla(t);
+  assert.deepEqual(p.carrusel.bodyEjemplos, ['participar en familia']);
+  assert.deepEqual(p.carrusel.cards[0].ejemplos, ['Eucaristía', 'Catedral']);
+});
+
 test('construirParamsCarrusel: body + carousel con card_index, header, body y botones', () => {
   const contenido = {
     bodyVars: ['participar en familia'],

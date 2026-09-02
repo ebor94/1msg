@@ -39,3 +39,30 @@ test('carruselListo: exige los textos del encabezado (bodyVars)', () => {
   const conTop = { carrusel: { bodyVars: ['Invitación'], cards: [{ imagenUrl: 'https://x/a.jpg', vars: ['a', 'b', 'c', 'd'] }] } };
   assert.equal(carruselListo(conTop, def).ok, true);
 });
+
+test('carruselListo: distinta relación de aspecto → no ok', () => {
+  const def = { esCarrusel: true, carrusel: { bodyVars: 1, cards: [{ variables: 1, tieneImagen: true }, { variables: 1, tieneImagen: true }] } };
+  const dif = { carrusel: { bodyVars: ['x'], cards: [
+    { imagenUrl: 'a', vars: ['a'], ancho: 900, alto: 1600 },
+    { imagenUrl: 'b', vars: ['b'], ancho: 1600, alto: 900 },
+  ] } };
+  assert.equal(carruselListo(dif, def).ok, false);
+});
+
+test('carruselListo: misma relación de aspecto → ok', () => {
+  const def = { esCarrusel: true, carrusel: { bodyVars: 1, cards: [{ variables: 1, tieneImagen: true }, { variables: 1, tieneImagen: true }] } };
+  const dif = { carrusel: { bodyVars: ['x'], cards: [
+    { imagenUrl: 'a', vars: ['a'], ancho: 900, alto: 1600 },
+    { imagenUrl: 'b', vars: ['b'], ancho: 450, alto: 800 },
+  ] } };
+  assert.equal(carruselListo(dif, def).ok, true);
+});
+
+test('carruselListo: falta ancho/alto en una tarjeta → omite el chequeo de aspecto (ok)', () => {
+  const def = { esCarrusel: true, carrusel: { bodyVars: 1, cards: [{ variables: 1, tieneImagen: true }, { variables: 1, tieneImagen: true }] } };
+  const dif = { carrusel: { bodyVars: ['x'], cards: [
+    { imagenUrl: 'a', vars: ['a'], ancho: 900, alto: 1600 },
+    { imagenUrl: 'b', vars: ['b'] },
+  ] } };
+  assert.equal(carruselListo(dif, def).ok, true);
+});
