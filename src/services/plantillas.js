@@ -22,12 +22,27 @@ function construirParamsHeader(imagenUrl) {
   return [{ type: 'header', parameters: [{ type: 'image', image: { link: String(imagenUrl) } }] }];
 }
 
+function parsearTarjeta(card) {
+  const comps = card.components || [];
+  const body = comps.find((c) => c.type === 'BODY');
+  const header = comps.find((c) => c.type === 'HEADER');
+  const buttons = comps.find((c) => c.type === 'BUTTONS');
+  const esImagen = !!(header && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(header.format));
+  return {
+    variables: contarVariables((body && body.text) || ''),
+    tieneImagen: esImagen,
+    imagenDefault: esImagen ? (header.example && header.example.header_handle && header.example.header_handle[0]) || null : null,
+    botones: buttons ? (buttons.buttons || []).map((b) => b.text) : [],
+  };
+}
+
 function parsearPlantilla(t) {
   const comps = t.components || [];
   const body = comps.find((c) => c.type === 'BODY');
   const header = comps.find((c) => c.type === 'HEADER');
   const cuerpo = (body && body.text) || '';
   const esImagen = !!(header && header.format === 'IMAGE');
+  const carrusel = comps.find((c) => c.type === 'CAROUSEL');
   return {
     name: t.name,
     language: typeof t.language === 'string' ? t.language : (t.language && t.language.code) || 'es',
@@ -38,6 +53,8 @@ function parsearPlantilla(t) {
     tieneBotones: comps.some((c) => c.type === 'BUTTONS'),
     namespace: t.namespace || null,
     imagenDefault: esImagen ? (header.example && header.example.header_handle && header.example.header_handle[0]) || null : null,
+    esCarrusel: !!carrusel,
+    carrusel: carrusel ? { bodyVars: contarVariables(cuerpo), cards: (carrusel.cards || []).map(parsearTarjeta) } : null,
   };
 }
 

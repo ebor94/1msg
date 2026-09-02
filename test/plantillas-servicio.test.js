@@ -58,3 +58,49 @@ test('parsearPlantilla con header IMAGE expone namespace e imagenDefault', () =>
   assert.equal(p.tieneImagen, true);
   assert.equal(p.variables, 1);
 });
+
+const plantillaCarrusel = {
+  name: 'olivos_carrusel_sfn',
+  language: 'es',
+  category: 'MARKETING',
+  namespace: '8297ac0c_48d8_4ec6_a482_3b545f0544ed',
+  components: [
+    { type: 'BODY', text: 'Los olivos te invita a , {{1}} , en los siguientes eventos :' },
+    {
+      type: 'CAROUSEL',
+      cards: [
+        {
+          components: [
+            { type: 'HEADER', format: 'IMAGE', example: { header_handle: ['https://x/img/a.jpg'] } },
+            { type: 'BODY', text: 'Evento: {{1}} , | Lugar : {{2}}  |  Fecha : {{3}} | Hora : {{4}} .' },
+            { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Asistiré' }, { type: 'QUICK_REPLY', text: 'No Asistiré' }] },
+          ],
+        },
+        {
+          components: [
+            { type: 'HEADER', format: 'IMAGE', example: { header_handle: ['https://x/img/b.jpg'] } },
+            { type: 'BODY', text: 'Evento: {{1}} , | Lugar : {{2}}  |  Fecha : {{3}} | Hora : {{4}} .' },
+            { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Asistiré' }, { type: 'QUICK_REPLY', text: 'No Asistiré' }] },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+test('parsearPlantilla: carrusel expone bodyVars, tarjetas, imágenes y botones', () => {
+  const p = parsearPlantilla(plantillaCarrusel);
+  assert.equal(p.esCarrusel, true);
+  assert.equal(p.carrusel.bodyVars, 1);
+  assert.equal(p.carrusel.cards.length, 2);
+  assert.equal(p.carrusel.cards[0].variables, 4);
+  assert.equal(p.carrusel.cards[0].tieneImagen, true);
+  assert.equal(p.carrusel.cards[0].imagenDefault, 'https://x/img/a.jpg');
+  assert.deepEqual(p.carrusel.cards[0].botones, ['Asistiré', 'No Asistiré']);
+});
+
+test('parsearPlantilla: plantilla plana no es carrusel', () => {
+  const p = parsearPlantilla({ name: 'plana', language: 'es', components: [{ type: 'BODY', text: 'Hola {{1}}' }] });
+  assert.equal(p.esCarrusel, false);
+  assert.equal(p.carrusel, null);
+});
