@@ -8,11 +8,12 @@ const SUBDIR = 'difusiones';
 
 function err400(msg) { const e = new Error(msg); e.status = 400; return e; }
 
-/** Nombre determinístico por campaña; rechaza mimes no soportados. */
-function nombreArchivoImagen(difusionId, mime) {
+/** Nombre determinístico por campaña (y por tarjeta si se da cardIndex); rechaza mimes no soportados. */
+function nombreArchivoImagen(difusionId, mime, cardIndex) {
   const ext = EXT_POR_MIME[String(mime || '').toLowerCase()];
   if (!ext) throw err400('formato de imagen no soportado (usa png/jpg/webp)');
-  return `dif-${difusionId}.${ext}`;
+  const sufijo = cardIndex === undefined || cardIndex === null ? '' : `-c${Number(cardIndex)}`;
+  return `dif-${difusionId}${sufijo}.${ext}`;
 }
 
 /** Ruta absoluta segura del archivo servible; rechaza traversal. */
@@ -22,8 +23,8 @@ function rutaAbsolutaImagen(nombre) {
 }
 
 /** Guarda la imagen y devuelve su URL pública persistente. */
-async function guardarImagen(difusionId, buffer, mime) {
-  const nombre = nombreArchivoImagen(difusionId, mime);
+async function guardarImagen(difusionId, buffer, mime, cardIndex) {
+  const nombre = nombreArchivoImagen(difusionId, mime, cardIndex);
   const abs = rutaAbsolutaImagen(nombre);
   await fs.mkdir(path.dirname(abs), { recursive: true });
   await fs.writeFile(abs, buffer);
