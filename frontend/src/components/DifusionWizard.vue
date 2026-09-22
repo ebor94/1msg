@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAcciones } from '../stores/acciones';
-import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas, initCarrusel, carruselBackend } from '../utils/difusion';
+import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas, initCarrusel, carruselBackend, largoHidratado, carruselExcedeLimite, LIMITE_CUERPO_CARRUSEL, LIMITE_CUERPO_GENERAL } from '../utils/difusion';
 
 const emit = defineEmits(['creada', 'cerrar']);
 const acc = useAcciones();
@@ -99,7 +99,7 @@ const faltaTextoCarrusel = computed(() => {
   if ((carrusel.value.bodyVars || []).some((v) => !String(v).trim())) return true;
   return (carrusel.value.cards || []).some((c) => (c.vars || []).some((v) => !String(v).trim()));
 });
-const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value && !faltaTextoCarrusel.value);
+const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value && !faltaTextoCarrusel.value && !(esCarrusel.value && carruselExcedeLimite(plantilla.value, carrusel.value)));
 </script>
 
 <template>
@@ -162,6 +162,9 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
               <input v-for="(_, i) in carrusel.bodyVars" :key="'b' + i" v-model="carrusel.bodyVars[i]"
                 class="w-full border rounded px-2 py-1 mb-1"
                 :placeholder="(plantilla.carrusel.bodyEjemplos && plantilla.carrusel.bodyEjemplos[i]) ? ('Ej: ' + plantilla.carrusel.bodyEjemplos[i]) : ('Variable ' + (i + 1))" />
+              <div class="text-[11px] text-right" :class="largoHidratado(plantilla.cuerpo, carrusel.bodyVars) > LIMITE_CUERPO_GENERAL ? 'text-red-600 font-semibold' : 'text-gray-400'">
+                {{ largoHidratado(plantilla.cuerpo, carrusel.bodyVars) }} / {{ LIMITE_CUERPO_GENERAL }}
+              </div>
             </div>
             <div v-for="(card, ci) in carrusel.cards" :key="'c' + ci" class="border rounded p-2 space-y-2">
               <div class="text-[12px] font-semibold text-gray-700">Tarjeta {{ ci + 1 }}</div>
@@ -173,6 +176,9 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
               <input v-for="(_, vi) in card.vars" :key="'v' + ci + '_' + vi" v-model="card.vars[vi]"
                 class="w-full border rounded px-2 py-1"
                 :placeholder="(plantilla.carrusel.cards[ci].ejemplos && plantilla.carrusel.cards[ci].ejemplos[vi]) ? ('Ej: ' + plantilla.carrusel.cards[ci].ejemplos[vi]) : ('Variable ' + (vi + 1))" />
+              <div class="text-[11px] text-right" :class="largoHidratado(plantilla.carrusel.cards[ci].texto, card.vars) > LIMITE_CUERPO_CARRUSEL ? 'text-red-600 font-semibold' : 'text-gray-400'">
+                {{ largoHidratado(plantilla.carrusel.cards[ci].texto, card.vars) }} / {{ LIMITE_CUERPO_CARRUSEL }}
+              </div>
             </div>
           </div>
 
