@@ -53,3 +53,21 @@ export function carruselBackend(estado) {
     cards: ((estado && estado.cards) || []).map((c) => ({ vars: [...(c.vars || [])] })),
   };
 }
+
+export const LIMITE_CUERPO_CARRUSEL = 160;
+export const LIMITE_CUERPO_GENERAL = 1024;
+
+// Largo del texto ya rellenado con sus variables (como lo mide WhatsApp).
+export function largoHidratado(texto, vars) {
+  return renderizarCuerpo(texto || '', vars || []).length;
+}
+
+// True si el encabezado (>1024) o alguna tarjeta (>160) excede su límite.
+export function carruselExcedeLimite(plantilla, carrusel) {
+  if (!plantilla || !plantilla.carrusel || !carrusel) return false;
+  if (largoHidratado(plantilla.cuerpo, carrusel.bodyVars) > LIMITE_CUERPO_GENERAL) return true;
+  return (carrusel.cards || []).some((card, i) => {
+    const texto = plantilla.carrusel.cards[i] && plantilla.carrusel.cards[i].texto;
+    return largoHidratado(texto, card.vars) > LIMITE_CUERPO_CARRUSEL;
+  });
+}

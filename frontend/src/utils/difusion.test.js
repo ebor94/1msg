@@ -1,6 +1,6 @@
 // frontend/src/utils/difusion.test.js
 import { describe, it, expect } from 'vitest';
-import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas, initCarrusel, carruselBackend } from './difusion';
+import { renderizarCuerpo, parsearCsvPreview, valorDeVariable, columnasRequeridas, initCarrusel, carruselBackend, largoHidratado, carruselExcedeLimite, LIMITE_CUERPO_CARRUSEL, LIMITE_CUERPO_GENERAL } from './difusion';
 
 describe('difusion utils', () => {
   it('renderizarCuerpo reemplaza {{n}} en orden', () => {
@@ -49,5 +49,31 @@ describe('carrusel', () => {
   it('carruselBackend deja solo bodyVars y vars (sin imágenes)', () => {
     const est = { bodyVars: ['x'], cards: [{ vars: ['a', 'b'], imagenFile: {}, imagenUrl: 'u' }] };
     expect(carruselBackend(est)).toEqual({ bodyVars: ['x'], cards: [{ vars: ['a', 'b'] }] });
+  });
+});
+
+describe('límite de caracteres carrusel', () => {
+  it('largoHidratado cuenta el texto con variables sustituidas', () => {
+    expect(largoHidratado('Hola {{1}}', ['Ana'])).toBe(8);
+    expect(LIMITE_CUERPO_CARRUSEL).toBe(160);
+    expect(LIMITE_CUERPO_GENERAL).toBe(1024);
+  });
+
+  it('carruselExcedeLimite true si una tarjeta pasa de 160', () => {
+    const plantilla = { cuerpo: 'Enc {{1}}', carrusel: { cards: [{ texto: 'X: {{1}}' }] } };
+    const carrusel = { bodyVars: ['ok'], cards: [{ vars: ['a'.repeat(200)] }] };
+    expect(carruselExcedeLimite(plantilla, carrusel)).toBe(true);
+  });
+
+  it('carruselExcedeLimite true si el encabezado pasa de 1024', () => {
+    const plantilla = { cuerpo: 'Enc {{1}}', carrusel: { cards: [{ texto: 'X: {{1}}' }] } };
+    const carrusel = { bodyVars: ['b'.repeat(1100)], cards: [{ vars: ['ok'] }] };
+    expect(carruselExcedeLimite(plantilla, carrusel)).toBe(true);
+  });
+
+  it('carruselExcedeLimite false cuando todo cumple', () => {
+    const plantilla = { cuerpo: 'Enc {{1}}', carrusel: { cards: [{ texto: 'X: {{1}}' }] } };
+    const carrusel = { bodyVars: ['ok'], cards: [{ vars: ['corto'] }] };
+    expect(carruselExcedeLimite(plantilla, carrusel)).toBe(false);
   });
 });
