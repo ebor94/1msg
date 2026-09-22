@@ -5,8 +5,12 @@ const { Difusion, DifusionDestinatario, Contacto, Agente, Canal } = require('../
 const { parsearCsv, validarColumnas, construirDestinatarios } = require('./difusionCsv');
 const { obtenerCatalogo } = require('../controllers/plantillasController');
 const env = require('../config/env');
+const { renderizarCuerpo } = require('./plantillas');
 
 function err(status, msg) { const e = new Error(msg); e.status = status; return e; }
+
+const LIMITE_CUERPO_CARRUSEL = 160;   // límite de WhatsApp para el cuerpo de cada tarjeta
+const LIMITE_CUERPO_GENERAL = 1024;   // límite para el cuerpo general del carrusel
 
 /** Pura: solo se puede iniciar una campaña en borrador con destinatarios pendientes. */
 function puedeIniciar(estado, pendientes) {
@@ -55,6 +59,17 @@ function carruselListo(dif, def) {
     const r0 = conDims[0].ancho / conDims[0].alto;
     const dispar = conDims.some((card) => Math.abs(card.ancho / card.alto - r0) / r0 > 0.02);
     if (dispar) return { ok: false, motivo: 'las tarjetas deben tener la misma relación de aspecto' };
+  }
+  // Límite de caracteres del cuerpo hidratado (WhatsApp): tarjeta ≤160, encabezado ≤1024.
+  for (let i = 0; i < c.cards.length; i += 1) {
+    const largo = renderizarCuerpo((cardsDef[i] && cardsDef[i].texto) || '', c.cards[i].vars || []).length;
+    if (largo > LIMITE_CUERPO_CARRUSEL) {
+      return { ok: false, motivo: `el texto de la tarjeta ${i + 1} supera el límite de ${LIMITE_CUERPO_CARRUSEL} caracteres (tiene ${largo})` };
+    }
+  }
+  const largoGeneral = renderizarCuerpo(def.cuerpo || '', c.bodyVars || []).length;
+  if (largoGeneral > LIMITE_CUERPO_GENERAL) {
+    return { ok: false, motivo: `el texto del encabezado supera el límite de ${LIMITE_CUERPO_GENERAL} caracteres (tiene ${largoGeneral})` };
   }
   return { ok: true };
 }

@@ -66,3 +66,25 @@ test('carruselListo: falta ancho/alto en una tarjeta → omite el chequeo de asp
   ] } };
   assert.equal(carruselListo(dif, def).ok, true);
 });
+
+test('carruselListo: cuerpo de tarjeta hidratado > 160 → no ok', () => {
+  const def = { esCarrusel: true, cuerpo: 'Hola {{1}}', carrusel: { bodyVars: 1, cards: [{ variables: 1, tieneImagen: true, texto: 'X: {{1}}' }] } };
+  const dif = { carrusel: { bodyVars: ['ok'], cards: [{ imagenUrl: 'a', vars: ['a'.repeat(200)] }] } };
+  const r = carruselListo(dif, def);
+  assert.equal(r.ok, false);
+  assert.match(r.motivo, /tarjeta 1.*160/);
+});
+
+test('carruselListo: cuerpo de tarjeta ≤ 160 → ok', () => {
+  const def = { esCarrusel: true, cuerpo: 'Hola {{1}}', carrusel: { bodyVars: 1, cards: [{ variables: 1, tieneImagen: true, texto: 'X: {{1}}' }] } };
+  const dif = { carrusel: { bodyVars: ['ok'], cards: [{ imagenUrl: 'a', vars: ['corto'] }] } };
+  assert.equal(carruselListo(dif, def).ok, true);
+});
+
+test('carruselListo: encabezado hidratado > 1024 → no ok', () => {
+  const def = { esCarrusel: true, cuerpo: 'Enc: {{1}}', carrusel: { bodyVars: 1, cards: [{ variables: 1, tieneImagen: true, texto: 'X: {{1}}' }] } };
+  const dif = { carrusel: { bodyVars: ['b'.repeat(1100)], cards: [{ imagenUrl: 'a', vars: ['corto'] }] } };
+  const r = carruselListo(dif, def);
+  assert.equal(r.ok, false);
+  assert.match(r.motivo, /encabezado.*1024/);
+});

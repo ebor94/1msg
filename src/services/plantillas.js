@@ -34,6 +34,7 @@ function parsearTarjeta(card) {
     imagenDefault: esImagen ? (header.example && header.example.header_handle && header.example.header_handle[0]) || null : null,
     botones: buttons ? (buttons.buttons || []).map((b) => b.text) : [],
     ejemplos: (body && body.example && body.example.body_text && body.example.body_text[0]) || [],
+    texto: (body && body.text) || '',
   };
 }
 
