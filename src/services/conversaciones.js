@@ -41,6 +41,16 @@ function construirFiltro({ bandeja = 'mias', agenteSolicitante, agenteFiltro = n
   return where;
 }
 
+/**
+ * Orden de la lista de conversaciones. La general va del más viejo al más nuevo (FIFO);
+ * al filtrar "solo no leídos" también, para atender primero al que más lleva esperando.
+ * El resto (vista normal) va del más nuevo al más viejo.
+ */
+function ordenLista(bandeja, soloNoLeidos) {
+  const asc = bandeja === 'general' || soloNoLeidos;
+  return [['ultimoMensajeEn', asc ? 'ASC' : 'DESC']];
+}
+
 function puedeVer(agente, conv) {
   if (agente.rol === ROL_AGENTE.ADMINISTRADOR) return true;
   return conv.agenteId === agente.id || conv.agenteId === null;
@@ -50,9 +60,7 @@ async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null
   const where = construirFiltro({ bandeja, agenteSolicitante, agenteFiltro, ocultos });
   const ocultosEfectivo = esModoOcultos(bandeja, ocultos);
   if (soloNoLeidos) where.noLeidos = { [Op.gt]: 0 };
-  const orden = bandeja === 'general'
-    ? [['ultimoMensajeEn', 'ASC']]
-    : [['ultimoMensajeEn', 'DESC']];
+  const orden = ordenLista(bandeja, soloNoLeidos);
   const contacto = {
     model: Contacto,
     as: 'contacto',
@@ -114,4 +122,4 @@ async function contarBandejas({ agenteSolicitante, agenteFiltro = null }) {
   return { ...total, noLeidos };
 }
 
-module.exports = { construirFiltro, puedeVer, listar, contarBandejas, esModoOcultos };
+module.exports = { construirFiltro, puedeVer, listar, contarBandejas, esModoOcultos, ordenLista };

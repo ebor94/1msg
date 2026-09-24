@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { Op } = require('sequelize');
-const { construirFiltro, puedeVer, esModoOcultos } = require('../src/services/conversaciones');
+const { construirFiltro, puedeVer, esModoOcultos, ordenLista } = require('../src/services/conversaciones');
 
 const admin = { id: 1, rol: 'administrador' };
 const asesor = { id: 2, rol: 'asesor' };
@@ -51,4 +51,19 @@ test('esModoOcultos: true solo con todos + ocultos', () => {
   assert.equal(esModoOcultos('mias', true), false);
   assert.equal(esModoOcultos('general', true), false);
   assert.equal(esModoOcultos('resueltos', true), false);
+});
+
+// --- Orden de la lista: "más viejo primero" al filtrar solo no leídos ---
+test('ordenLista: solo no leídos → ASC (más viejo primero) en cualquier bandeja', () => {
+  assert.deepEqual(ordenLista('mias', true), [['ultimoMensajeEn', 'ASC']]);
+  assert.deepEqual(ordenLista('todos', true), [['ultimoMensajeEn', 'ASC']]);
+});
+
+test('ordenLista: vista normal de "mías"/"todos" → DESC (más nuevo primero)', () => {
+  assert.deepEqual(ordenLista('mias', false), [['ultimoMensajeEn', 'DESC']]);
+  assert.deepEqual(ordenLista('todos', false), [['ultimoMensajeEn', 'DESC']]);
+});
+
+test('ordenLista: general siempre ASC (aunque no filtre no leídos)', () => {
+  assert.deepEqual(ordenLista('general', false), [['ultimoMensajeEn', 'ASC']]);
 });
