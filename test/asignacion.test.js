@@ -35,3 +35,15 @@ test('cascada: recepción configurada pero ninguno activo → general', async ()
   const r = await cascada({ agenteDuenoId: null }, { Agente, Conversacion: ConversacionMock({}), Ajuste: AjusteMock('[7,9]'), transaction: null });
   assert.equal(r.agenteId, null);
 });
+
+test('cascada: dueño inactivo → cae a recepción (no general)', async () => {
+  const Agente = AgenteMock({ porId: { 5: { id: 5, activo: false } }, activos: [{ id: 7, activo: true }] });
+  const r = await cascada({ agenteDuenoId: 5 }, { Agente, Conversacion: ConversacionMock({ 7: 0 }), Ajuste: AjusteMock('[7]'), transaction: null });
+  assert.equal(r.agenteId, 7);
+});
+
+test('cascada: sin ajuste configurado → usa el agente de recepción del env (fallback)', async () => {
+  const Agente = AgenteMock({ activos: [{ id: 4, activo: true }] });
+  const r = await cascada({ agenteDuenoId: null }, { Agente, Conversacion: ConversacionMock({ 4: 0 }), Ajuste: AjusteMock(undefined), transaction: null });
+  assert.equal(r.agenteId, 4);
+});
