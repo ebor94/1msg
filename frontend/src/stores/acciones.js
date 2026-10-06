@@ -263,6 +263,12 @@ export const useAcciones = defineStore('acciones', {
     async guardarPromptIa(texto) {
       return (await apiFetch('/ajustes/ia-gestion-prompt', { method: 'PUT', body: JSON.stringify({ prompt: texto }) })).prompt;
     },
+    async obtenerRecepcion() {
+      return (await apiFetch('/ajustes/recepcion')).agentes;
+    },
+    async guardarRecepcion(ids) {
+      return (await apiFetch('/ajustes/recepcion', { method: 'PUT', body: JSON.stringify({ agentes: ids }) })).agentes;
+    },
     async listarDifusiones() {
       return (await apiFetch('/difusiones')).difusiones;
     },
