@@ -121,6 +121,9 @@ router.patch('/etiquetas/:id', requireAuth, requireAdmin, etiquetasCtrl.actualiz
 router.get('/ajustes/ia-gestion-prompt', requireAuth, requireAdmin, ajustesCtrl.obtenerPromptIa);
 router.put('/ajustes/ia-gestion-prompt', requireAuth, requireAdmin, ajustesCtrl.guardarPromptIa);
 
+router.get('/ajustes/recepcion', requireAuth, requireAdmin, ajustesCtrl.obtenerRecepcion);
+router.put('/ajustes/recepcion', requireAuth, requireAdmin, ajustesCtrl.guardarRecepcion);
+
 router.get('/difusiones', requireAuth, requireAdmin, difusionesCtrl.listar);
 router.post('/difusiones', requireAuth, requireAdmin, difusionesCtrl.crear);
 router.get('/difusiones/:id', requireAuth, requireAdmin, difusionesCtrl.detalle);
