@@ -47,3 +47,9 @@ test('cascada: sin ajuste configurado → usa el agente de recepción del env (f
   const r = await cascada({ agenteDuenoId: null }, { Agente, Conversacion: ConversacionMock({ 4: 0 }), Ajuste: AjusteMock(undefined), transaction: null });
   assert.equal(r.agenteId, 4);
 });
+
+test('cascada: lista de recepción guardada vacía → general (null)', async () => {
+  const Agente = AgenteMock({ activos: [{ id: 7, activo: true }] });
+  const r = await cascada({ agenteDuenoId: null }, { Agente, Conversacion: ConversacionMock({}), Ajuste: AjusteMock('[]'), transaction: null });
+  assert.equal(r.agenteId, null);
+});

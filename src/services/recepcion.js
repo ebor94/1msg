@@ -3,16 +3,15 @@ const env = require('../config/env');
 
 const CLAVE_RECEPCION = 'agentes_recepcion';
 
-/** Pura: parsea la lista JSON de ids; vacío/corrupto → [fallbackId] si es válido, si no []. */
+/** Pura: parsea la lista JSON de ids. Fallback a [fallbackId] solo si el valor es
+ *  nulo/ausente o no es un array parseable; un array válido (incluido []) se respeta. */
 function parsearAgentesRecepcion(valor, fallbackId) {
-  let ids = [];
-  try {
-    const arr = JSON.parse(valor);
-    if (Array.isArray(arr)) ids = arr.map(Number).filter((n) => Number.isInteger(n) && n > 0);
-  } catch { ids = []; }
-  ids = [...new Set(ids)];
-  if (ids.length) return ids;
-  return Number.isInteger(fallbackId) && fallbackId > 0 ? [fallbackId] : [];
+  const fb = Number.isInteger(fallbackId) && fallbackId > 0 ? [fallbackId] : [];
+  if (valor === null || valor === undefined) return fb;
+  let arr;
+  try { arr = JSON.parse(valor); } catch { return fb; }
+  if (!Array.isArray(arr)) return fb;
+  return [...new Set(arr.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
 }
 
 /** Pura: de `candidatos` (en orden) el de menor `cargas[id]` (0 si falta); empate → el primero; vacío → null. */

@@ -47,6 +47,7 @@ async function guardarRecepcion(req, res) {
   const crudos = req.body && req.body.agentes;
   if (!Array.isArray(crudos)) return res.status(422).json({ error: 'agentes debe ser una lista de ids' });
   const unicos = [...new Set(crudos.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+  if (unicos.length > 50) return res.status(422).json({ error: 'demasiados agentes (máx 50)' });
   try {
     if (unicos.length) {
       const activas = await Agente.findAll({ where: { id: unicos, activo: true }, attributes: ['id'] });

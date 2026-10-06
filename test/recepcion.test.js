@@ -9,11 +9,13 @@ test('parsearAgentesRecepcion: JSON válido → ids (dedup, filtra no-enteros)',
 test('parsearAgentesRecepcion: vacío/basura → [fallback]', () => {
   assert.deepEqual(parsearAgentesRecepcion('', 4), [4]);
   assert.deepEqual(parsearAgentesRecepcion('no-json', 4), [4]);
-  assert.deepEqual(parsearAgentesRecepcion('[]', 4), [4]);
   assert.deepEqual(parsearAgentesRecepcion(null, 4), [4]);
 });
 test('parsearAgentesRecepcion: vacío y sin fallback válido → []', () => {
   assert.deepEqual(parsearAgentesRecepcion('[]', null), []);
+});
+test('parsearAgentesRecepcion: lista vacía guardada a propósito → [] (no fallback)', () => {
+  assert.deepEqual(parsearAgentesRecepcion('[]', 4), []);
 });
 
 test('elegirRecepcion: elige el de menor carga', () => {
