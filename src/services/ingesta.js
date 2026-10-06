@@ -11,7 +11,7 @@
  *  - Los acks nunca retroceden de estado.
  */
 
-const { sequelize, Canal, Agente, Contacto, Conversacion, Mensaje, Asignacion } = require('../models');
+const { sequelize, Canal, Agente, Contacto, Conversacion, Mensaje, Asignacion, Ajuste } = require('../models');
 const { normalizarEvento } = require('./normalizador');
 const { cascada } = require('./asignacion');
 const { guardarMediaDeMensaje } = require('./media');
@@ -96,7 +96,7 @@ async function resolverConversacion(contacto, norm, canalId, transaction) {
 
   // Chat resuelto (cerrada) que recibe mensaje → REABRIR el mismo (continuidad de hilo).
   if (ultima && ultima.estado === ESTADO_CONVERSACION.CERRADA) {
-    const asig = await cascada(contacto, { Agente, transaction }); // dueño activo o general
+    const asig = await cascada(contacto, { Agente, Conversacion, Ajuste, transaction }); // dueño activo o general
     await ultima.update(
       {
         agenteId: asig.agenteId,
@@ -120,7 +120,7 @@ async function resolverConversacion(contacto, norm, canalId, transaction) {
   }
 
   // Sin conversación previa (contacto nuevo) → crear una.
-  const asig = await cascada(contacto, { Agente, transaction });
+  const asig = await cascada(contacto, { Agente, Conversacion, Ajuste, transaction });
   const conv = await Conversacion.create(
     {
       canalId,
