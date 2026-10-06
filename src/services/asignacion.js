@@ -1,52 +1,46 @@
 'use strict';
 
-/**
- * Cascada de asignación de una conversación entrante (regla de negocio, CLAUDE.md):
- *   1. Si el contacto ya tiene agente_dueno_id (y está activo) → ese agente (continuidad).
- *   2. Sin dueño (o dueño inactivo) → agente de RECEPCIÓN (env.agenteRecepcionId),
- *      si está activo. Él recibe los chats nuevos y los reparte.
- *   3. Si no hay recepción configurada o está inactivo → bandeja general (fallback).
- *
- * Decisión 2026-07-28: los chats sin dueño ya no caen a general, sino a un agente
- * de recepción (por defecto id 4) que los distribuye. La continuidad (regla 1) se
- * mantiene: los clientes con dueño siguen cayendo directo a su agente.
- */
-
-const { TIPO_ASIGNACION } = require('../config/constants');
-const env = require('../config/env');
+const { Op } = require('sequelize');
+const { TIPO_ASIGNACION, ESTADO_CONVERSACION } = require('../config/constants');
+const { agentesRecepcionConfigurados, elegirRecepcion } = require('./recepcion');
 
 /**
- * Evalúa la cascada para un contacto.
- * Devuelve { agenteId, tipo, motivo }. agenteId null = bandeja general.
+ * Cascada de asignación de una conversación entrante:
+ *   1. Dueño activo → ese agente (continuidad).
+ *   2. Sin dueño → agente de recepción configurado y activo con MENOS chats abiertos.
+ *   3. Sin candidatos → bandeja general (fallback).
  */
-async function cascada(contacto, { Agente, transaction }) {
+async function cascada(contacto, { Agente, Conversacion, Ajuste, transaction }) {
   // Regla 1: dueño histórico, solo si sigue activo.
   if (contacto.agenteDuenoId) {
     const dueno = await Agente.findByPk(contacto.agenteDuenoId, { transaction });
     if (dueno && dueno.activo) {
-      return {
-        agenteId: dueno.id,
-        tipo: TIPO_ASIGNACION.AUTO_CONTINUIDAD,
-        motivo: 'continuidad: contacto con agente dueño',
-      };
-    }
-    // Dueño inactivo → sigue a la regla de recepción.
-  }
-
-  // Regla 2: sin dueño (o dueño inactivo) → agente de recepción, si está activo.
-  const recepcionId = env.agenteRecepcionId;
-  if (recepcionId) {
-    const recepcion = await Agente.findByPk(recepcionId, { transaction });
-    if (recepcion && recepcion.activo) {
-      return {
-        agenteId: recepcion.id,
-        tipo: TIPO_ASIGNACION.AUTO_REGLA,
-        motivo: `recepción: sin dueño → agente ${recepcion.id}`,
-      };
+      return { agenteId: dueno.id, tipo: TIPO_ASIGNACION.AUTO_CONTINUIDAD, motivo: 'continuidad: contacto con agente dueño' };
     }
   }
 
-  // Regla 3: sin recepción disponible → bandeja general (fallback).
+  // Regla 2: recepción configurada → activos → menos cargado.
+  const ids = await agentesRecepcionConfigurados({ Ajuste });
+  if (ids.length) {
+    const filasActivas = await Agente.findAll({ where: { id: ids, activo: true }, attributes: ['id'], transaction });
+    const activosSet = new Set(filasActivas.map((a) => a.id));
+    const activos = ids.filter((id) => activosSet.has(id)); // preserva el orden configurado (desempate)
+    if (activos.length) {
+      const cargas = {};
+      for (const id of activos) {
+        cargas[id] = await Conversacion.count({
+          where: { agenteId: id, estado: { [Op.in]: [ESTADO_CONVERSACION.NUEVA, ESTADO_CONVERSACION.ABIERTA] } },
+          transaction,
+        });
+      }
+      const elegido = elegirRecepcion(activos, cargas);
+      if (elegido) {
+        return { agenteId: elegido, tipo: TIPO_ASIGNACION.AUTO_REGLA, motivo: `recepción (menos cargado): agente ${elegido}` };
+      }
+    }
+  }
+
+  // Regla 3: sin recepción disponible → general.
   return { agenteId: null, tipo: TIPO_ASIGNACION.AUTO_REGLA, motivo: 'bandeja general' };
 }
 
