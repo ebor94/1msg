@@ -2,6 +2,14 @@
 
 const CATEGORIAS = Object.freeze({ ORIGEN: 'origen', INTERES: 'interes' });
 
+/** Pura: true si a la lista le falta ≥1 origen o ≥1 interés (etiquetado obligatorio al resolver). */
+function faltanEtiquetasObligatorias(etiquetas) {
+  const list = etiquetas || [];
+  const tieneOrigen = list.some((e) => e && e.categoria === CATEGORIAS.ORIGEN);
+  const tieneInteres = list.some((e) => e && e.categoria === CATEGORIAS.INTERES);
+  return !(tieneOrigen && tieneInteres);
+}
+
 /** Separa el catálogo en {origen, interes}, cada grupo ordenado por orden y nombre. */
 function agruparCatalogo(filas) {
   const cmp = (a, b) => (a.orden - b.orden) || a.nombre.localeCompare(b.nombre, 'es');
@@ -131,6 +139,7 @@ async function listarCatalogoCompleto() {
 
 module.exports = {
   CATEGORIAS,
+  faltanEtiquetasObligatorias,
   agruparCatalogo,
   listarCatalogo,
   listarCatalogoCompleto,
