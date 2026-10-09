@@ -136,6 +136,10 @@ async function resolver(req, res) {
     if (conv.agenteId == null) {
       return res.status(409).json({ error: 'toma el chat antes de resolverlo', codigo: 'sin_asignar' });
     }
+    const etqs = await etiquetasSvc.etiquetasDeConversacion(conv.id);
+    if (etiquetasSvc.faltanEtiquetasObligatorias(etqs)) {
+      return res.status(409).json({ error: 'marca una etiqueta de origen y una de interés antes de resolver', codigo: 'etiquetas_requeridas' });
+    }
     await Conversacion.update(
       { estado: ESTADO_CONVERSACION.CERRADA, cerradaEn: new Date() },
       { where: { id: conv.id } },
