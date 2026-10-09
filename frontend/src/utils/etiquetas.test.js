@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { siguienteSeleccion } from './etiquetas';
+import { siguienteSeleccion, tieneOrigenEInteres } from './etiquetas';
 
 const web = { id: 1, categoria: 'origen' };
 const mostrador = { id: 2, categoria: 'origen' };
@@ -19,5 +19,18 @@ describe('siguienteSeleccion', () => {
   });
   it('pulsar el origen seleccionado lo deselecciona', () => {
     expect(siguienteSeleccion([web, abono], web).map((e) => e.id)).toEqual([9]);
+  });
+});
+
+describe('tieneOrigenEInteres', () => {
+  const org = { id: 1, categoria: 'origen' };
+  const intr = { id: 2, categoria: 'interes' };
+  it('vacío o solo una categoría → false', () => {
+    expect(tieneOrigenEInteres([])).toBe(false);
+    expect(tieneOrigenEInteres([org])).toBe(false);
+    expect(tieneOrigenEInteres([intr])).toBe(false);
+  });
+  it('origen + interés → true', () => {
+    expect(tieneOrigenEInteres([org, intr])).toBe(true);
   });
 });
