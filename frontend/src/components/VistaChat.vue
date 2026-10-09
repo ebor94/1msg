@@ -5,10 +5,13 @@ import { useAcciones } from '../stores/acciones';
 import AvatarContacto from './AvatarContacto.vue';
 import BurbujaMensaje from './BurbujaMensaje.vue';
 import Compositor from './Compositor.vue';
+import PopupEtiquetarResolver from './PopupEtiquetarResolver.vue';
+import { tieneOrigenEInteres } from '../utils/etiquetas';
 
 const chat = useChat();
 const acc = useAcciones();
 const contenedor = ref(null);
+const mostrarPopupResolver = ref(false);
 const nombre = (c) => c?.contacto?.nombreDisplay || c?.contacto?.nombreWa || c?.contacto?.telefono || 'Sin nombre';
 
 async function marcarNoLeido() {
@@ -21,11 +24,13 @@ async function marcarNoLeido() {
 }
 
 async function resolver() {
+  if (!tieneOrigenEInteres(chat.etiquetas)) { mostrarPopupResolver.value = true; return; }
   try {
     await acc.resolver(chat.conversacion.id);
     chat.cerrar(); // vuelve a la lista; el chat pasa a Resueltos
-  } catch {
-    /* si falla, el chat queda abierto */
+  } catch (e) {
+    if (e && e.codigo === 'etiquetas_requeridas') mostrarPopupResolver.value = true;
+    /* otros errores: el chat queda abierto */
   }
 }
 
@@ -86,5 +91,6 @@ function onDrop(e) {
     <div v-if="arrastrando" class="absolute inset-0 bg-marca/10 border-2 border-dashed border-marca grid place-items-center z-10 pointer-events-none">
       <span class="text-marca-oscuro font-semibold">Suelta para adjuntar</span>
     </div>
+    <PopupEtiquetarResolver v-if="mostrarPopupResolver" @cerrar="mostrarPopupResolver = false" />
   </div>
 </template>
