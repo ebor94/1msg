@@ -15,7 +15,10 @@ const seleccion = computed(() => chat.etiquetas || []);
 const completo = computed(() => tieneOrigenEInteres(seleccion.value));
 const marcada = (e) => seleccion.value.some((x) => x.id === e.id);
 
-onMounted(() => { acc.cargarEtiquetas(); });
+onMounted(async () => {
+  try { await acc.cargarEtiquetas(); }
+  catch { error.value = 'No se pudo cargar el catálogo de etiquetas.'; }
+});
 
 async function alternar(e) {
   try { await acc.alternarEtiqueta(chat.conversacion.id, e); }
