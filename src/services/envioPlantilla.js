@@ -19,8 +19,10 @@ function debeMoverConversacion({ reasignar, estado, convAgente, agenteId }) {
  * Persiste un envío saliente de plantilla en la bandeja: reusa/crea la conversación
  * del contacto (cerrada, con el `origen` dado), asigna dueño si falta (sin reabrir un
  * chat abierto), y crea el mensaje saliente (enviado_por_id NULL, idempotente por
- * waMessageId). `extra(t, convId)` corre en la misma transacción para el bookkeeping
- * del llamador. Devuelve el id de la conversación.
+ * waMessageId). Con `reasignar` fuerza el dueño al agente del envío y mueve la
+ * conversación (abierta o cerrada) a ese agente; sin él, el comportamiento previo.
+ * `extra(t, convId)` corre en la misma transacción para el bookkeeping del llamador.
+ * Devuelve el id de la conversación.
  */
 async function persistirEnvioPlantilla({ contactoId, agenteFallback, canalId, plantillaNombre, texto, waMessageId, origen, mediaUrl, reasignar }, extra) {
   const ahora = new Date();
