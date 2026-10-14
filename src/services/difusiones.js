@@ -74,7 +74,7 @@ function carruselListo(dif, def) {
   return { ok: true };
 }
 
-async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, carrusel, creadoPorId }) {
+async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, carrusel, reasignar, creadoPorId }) {
   const catalogo = await obtenerCatalogo();
   const def = catalogo.find((p) => p.name === plantilla);
   if (!def) throw err(400, 'plantilla no encontrada o no aprobada');
@@ -85,6 +85,7 @@ async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, ca
     nombre, plantillaNombre: plantilla, plantillaIdioma: idioma || def.language || 'es',
     categoria: String(categoria || def.categoria || 'utility').toLowerCase(), estado: 'borrador',
     canalId: canal.id, creadoPorId, requiereResumen: !!requiereResumen,
+    reasignar: !!reasignar,
     carrusel: def.esCarrusel ? normalizarCarrusel(carrusel, def) : null,
   });
 }
