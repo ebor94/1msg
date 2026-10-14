@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) =>
         defaultValue: 'utility',
       },
       requiereResumen: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      reasignar: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       estado: {
         type: DataTypes.ENUM('borrador', 'programada', 'enviando', 'finalizada', 'cancelada'),
         allowNull: false,
