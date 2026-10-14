@@ -13,6 +13,7 @@ const mapeo = ref({ telefono: 'CELULAR', agente: 'AGENTE_ID', variables: [] });
 const csvTexto = ref('');
 const imagenFile = ref(null);
 const requiereResumen = ref(false);
+const reasignar = ref(false);
 const guardando = ref(false);
 const error = ref('');
 const resumen = ref(null); // { total, pendientes, omitidos } tras cargar
@@ -56,7 +57,7 @@ async function crearYCargar() {
   error.value = ''; guardando.value = true;
   try {
     if (!difusionId.value) {
-      const datos = { nombre: nombre.value, plantilla: plantillaNombre.value, requiereResumen: requiereResumen.value };
+      const datos = { nombre: nombre.value, plantilla: plantillaNombre.value, requiereResumen: requiereResumen.value, reasignar: reasignar.value };
       if (esCarrusel.value) datos.carrusel = carruselBackend(carrusel.value);
       const dif = await acc.crearDifusion(datos);
       difusionId.value = dif.id;
@@ -121,6 +122,13 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
           <label for="reqResumen" class="text-[12.5px] text-gray-700 leading-snug">
             Requiere resumen (registra la gestión en previsión al cierre del día)
             <span v-if="requiereResumen" class="block text-[11px] text-amber-600">El CSV debe incluir la columna <b>CEDULA</b>.</span>
+          </label>
+        </div>
+        <div class="flex items-start gap-2">
+          <input id="reasignar" type="checkbox" v-model="reasignar" class="mt-0.5" />
+          <label for="reasignar" class="text-[12.5px] text-gray-700 leading-snug">
+            Reasignar los chats al agente de la difusión
+            <span class="block text-[11px] text-gray-400">Si se marca, cada contacto queda con el agente de la difusión (dueño) y su chat se mueve a ese agente, aunque ya tuviera otro.</span>
           </label>
         </div>
         <div>
