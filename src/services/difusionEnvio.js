@@ -66,7 +66,7 @@ async function enviarDestinatario(dest, dif, def, deps = {}) {
   await persistirEnvioPlantilla({
     contactoId: dest.contactoId, agenteFallback: dest.agenteId, canalId: dif.canalId,
     plantillaNombre: dif.plantillaNombre, texto, waMessageId: enviado.id, origen: ORIGEN_CONVERSACION.DIFUSION,
-    mediaUrl,
+    mediaUrl, reasignar: !!dif.reasignar,
   }, async (t) => {
     await dest.update({ estado: 'enviado', waMessageId: enviado.id, intentos: dest.intentos + 1, errorCodigo: null }, { transaction: t });
   });
