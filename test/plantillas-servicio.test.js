@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla, construirParamsCarrusel } = require('../src/services/plantillas');
+const { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, parsearPlantilla, construirParamsCarrusel, construirParamsBotonUrl } = require('../src/services/plantillas');
 
 test('contarVariables cuenta {{n}} distintos', () => {
   assert.equal(contarVariables('Hola {{1}}, saldo {{2}} vence {{2}}'), 2);
@@ -163,4 +163,28 @@ test('construirParamsCarrusel: body + carousel con card_index, header, body y bo
   assert.equal(car.cards[0].components[1].parameters.length, 4);
   assert.deepEqual(car.cards[0].components[2], { type: 'button', sub_type: 'quick_reply', index: 0, parameters: [{ type: 'payload', payload: 'asistire_c0' }] });
   assert.equal(car.cards[0].components[3].parameters[0].payload, 'no_asistire_c0');
+});
+
+const plantillaBoton = {
+  name: 'mensaje_boton_link', language: 'es',
+  components: [
+    { type: 'BODY', text: 'Los Olivos, {{1}} . Gracias' },
+    { type: 'FOOTER', text: 'Los Olivos, un homenaje al amor' },
+    { type: 'BUTTONS', buttons: [{ type: 'URL', text: 'Respnder', url: 'https://losolivoscucuta.com/{{1}}', example: ['bigDay-encuesta/'] }] },
+  ],
+};
+
+test('parsearPlantilla: expone botonUrl (index, variables, texto, ejemplos)', () => {
+  const p = parsearPlantilla(plantillaBoton);
+  assert.deepEqual(p.botonUrl, { index: 0, variables: 1, texto: 'Respnder', ejemplos: ['bigDay-encuesta/'] });
+});
+
+test('parsearPlantilla: sin botón de URL con variables → botonUrl null', () => {
+  const p = parsearPlantilla({ name: 'plana', language: 'es', components: [{ type: 'BODY', text: 'Hola {{1}}' }] });
+  assert.equal(p.botonUrl, null);
+});
+
+test('construirParamsBotonUrl: arma el componente button; vacío → []', () => {
+  assert.deepEqual(construirParamsBotonUrl(['bigDay-encuesta/'], 0), [{ type: 'button', index: 0, sub_type: 'url', parameters: [{ type: 'text', text: 'bigDay-encuesta/' }] }]);
+  assert.deepEqual(construirParamsBotonUrl([], 0), []);
 });

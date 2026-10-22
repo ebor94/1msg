@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) =>
       },
       requiereResumen: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       reasignar: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      botonParams: { type: DataTypes.JSON, allowNull: true },
       estado: {
         type: DataTypes.ENUM('borrador', 'programada', 'enviando', 'finalizada', 'cancelada'),
         allowNull: false,

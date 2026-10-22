@@ -17,6 +17,11 @@ function construirParams(variables) {
   return [{ type: 'body', parameters: variables.map((v) => ({ type: 'text', text: String(v) })) }];
 }
 
+function construirParamsBotonUrl(valores, index) {
+  if (!valores || !valores.length) return [];
+  return [{ type: 'button', index: index || 0, sub_type: 'url', parameters: valores.map((v) => ({ type: 'text', text: String(v) })) }];
+}
+
 function construirParamsHeader(imagenUrl) {
   if (!imagenUrl) return [];
   return [{ type: 'header', parameters: [{ type: 'image', image: { link: String(imagenUrl) } }] }];
@@ -46,6 +51,8 @@ function parsearPlantilla(t) {
   const esImagen = !!(header && header.format === 'IMAGE');
   const carrusel = comps.find((c) => c.type === 'CAROUSEL');
   const bodyEjemplos = (body && body.example && body.example.body_text && body.example.body_text[0]) || [];
+  const buttons = comps.find((c) => c.type === 'BUTTONS');
+  const botonUrlDef = buttons && (buttons.buttons || []).find((b) => b.type === 'URL' && /\{\{\d+\}\}/.test(b.url || ''));
   return {
     name: t.name,
     language: typeof t.language === 'string' ? t.language : (t.language && t.language.code) || 'es',
@@ -58,6 +65,12 @@ function parsearPlantilla(t) {
     imagenDefault: esImagen ? (header.example && header.example.header_handle && header.example.header_handle[0]) || null : null,
     esCarrusel: !!carrusel,
     carrusel: carrusel ? { bodyVars: contarVariables(cuerpo), bodyEjemplos, cards: (carrusel.cards || []).map(parsearTarjeta) } : null,
+    botonUrl: botonUrlDef ? {
+      index: (buttons.buttons || []).indexOf(botonUrlDef),
+      variables: contarVariables(botonUrlDef.url || ''),
+      texto: botonUrlDef.text || '',
+      ejemplos: botonUrlDef.example || [],
+    } : null,
   };
 }
 
@@ -94,4 +107,4 @@ function construirParamsCarrusel(contenido, def) {
   return params;
 }
 
-module.exports = { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, construirParamsCarrusel, parsearPlantilla };
+module.exports = { contarVariables, renderizarCuerpo, construirParams, construirParamsHeader, construirParamsCarrusel, construirParamsBotonUrl, parsearPlantilla };

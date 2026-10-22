@@ -17,6 +17,13 @@ function puedeIniciar(estado, pendientes) {
   return estado === 'borrador' && pendientes > 0;
 }
 
+/** Pura: true si la plantilla tiene botón de URL con variables y faltan valores. */
+function faltaBotonUrl(dif, def) {
+  if (!def || !def.botonUrl || !def.botonUrl.variables) return false;
+  const vals = (dif.botonParams || []).filter((v) => String(v).trim());
+  return vals.length < def.botonUrl.variables;
+}
+
 /** Pura: da forma al contenido del carrusel según la plantilla (rellena huecos vacíos). */
 function normalizarCarrusel(entrada, def) {
   const src = entrada || {};
@@ -74,7 +81,7 @@ function carruselListo(dif, def) {
   return { ok: true };
 }
 
-async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, carrusel, reasignar, creadoPorId }) {
+async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, carrusel, reasignar, botonParams, creadoPorId }) {
   const catalogo = await obtenerCatalogo();
   const def = catalogo.find((p) => p.name === plantilla);
   if (!def) throw err(400, 'plantilla no encontrada o no aprobada');
@@ -86,6 +93,7 @@ async function crear({ nombre, plantilla, idioma, categoria, requiereResumen, ca
     categoria: String(categoria || def.categoria || 'utility').toLowerCase(), estado: 'borrador',
     canalId: canal.id, creadoPorId, requiereResumen: !!requiereResumen,
     reasignar: !!reasignar,
+    botonParams: botonParams || null,
     carrusel: def.esCarrusel ? normalizarCarrusel(carrusel, def) : null,
   });
 }
@@ -131,11 +139,14 @@ async function cargarDestinatarios(difusionId, { texto, mapeo }) {
 async function iniciar(difusionId) {
   const dif = await Difusion.findByPk(difusionId);
   if (!dif) throw err(404, 'difusión no encontrada');
+  const def = (await obtenerCatalogo()).find((p) => p.name === dif.plantillaNombre);
   if (dif.carrusel) {
-    const def = (await obtenerCatalogo()).find((p) => p.name === dif.plantillaNombre);
     if (!def) throw err(400, 'plantilla no encontrada o no aprobada');
     const chk = carruselListo(dif, def);
     if (!chk.ok) throw err(400, chk.motivo);
+  }
+  if (def && def.botonUrl && faltaBotonUrl(dif, def)) {
+    throw err(400, 'falta el valor del botón de enlace');
   }
   const pendientes = await DifusionDestinatario.count({ where: { difusionId, estado: 'pendiente' } });
   if (!puedeIniciar(dif.estado, pendientes)) throw err(409, 'la campaña no se puede iniciar (revisa estado y destinatarios)');
@@ -203,6 +214,6 @@ async function destinatarios(difusionId, { estado, pagina = 0, tam = 50 } = {}) 
 }
 
 module.exports = {
-  puedeIniciar, normalizarCarrusel, carruselListo,
+  puedeIniciar, normalizarCarrusel, carruselListo, faltaBotonUrl,
   crear, cargarDestinatarios, iniciar, cancelar, listar, detalle, destinatarios,
 };
