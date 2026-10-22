@@ -19,6 +19,7 @@ const error = ref('');
 const resumen = ref(null); // { total, pendientes, omitidos } tras cargar
 const difusionId = ref(null);
 const carrusel = ref(null); // estado editable cuando la plantilla es carrusel
+const botonParams = ref([]); // valor(es) del botón de URL (plantillas planas con botón de enlace)
 
 onMounted(() => { if (!acc.plantillas.length) acc.cargarPlantillas(); });
 
@@ -29,6 +30,7 @@ function elegirPlantilla() {
   const p = plantilla.value;
   mapeo.value.variables = p && !p.esCarrusel ? Array.from({ length: p.variables }, () => ({ tipo: 'columna', columna: '', valor: '' })) : [];
   carrusel.value = p && p.esCarrusel ? initCarrusel(p) : null;
+  botonParams.value = p && p.botonUrl ? Array.from({ length: p.botonUrl.variables }, (_, i) => (p.botonUrl.ejemplos && p.botonUrl.ejemplos[i]) || '') : [];
 }
 
 function onArchivoTarjeta(ev, i) { carrusel.value.cards[i].imagenFile = ev.target.files?.[0] || null; }
@@ -59,6 +61,7 @@ async function crearYCargar() {
     if (!difusionId.value) {
       const datos = { nombre: nombre.value, plantilla: plantillaNombre.value, requiereResumen: requiereResumen.value, reasignar: reasignar.value };
       if (esCarrusel.value) datos.carrusel = carruselBackend(carrusel.value);
+      if (plantilla.value?.botonUrl) datos.botonParams = botonParams.value;
       const dif = await acc.crearDifusion(datos);
       difusionId.value = dif.id;
     }
@@ -100,7 +103,8 @@ const faltaTextoCarrusel = computed(() => {
   if ((carrusel.value.bodyVars || []).some((v) => !String(v).trim())) return true;
   return (carrusel.value.cards || []).some((c) => (c.vars || []).some((v) => !String(v).trim()));
 });
-const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value && !faltaTextoCarrusel.value && !(esCarrusel.value && carruselExcedeLimite(plantilla.value, carrusel.value)));
+const faltaBotonUrl = computed(() => !!plantilla.value?.botonUrl && (botonParams.value || []).some((v) => !String(v).trim()));
+const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value && csvTexto.value.trim() && !faltaImagen.value && !faltaImagenCarrusel.value && !faltaTextoCarrusel.value && !(esCarrusel.value && carruselExcedeLimite(plantilla.value, carrusel.value)) && !faltaBotonUrl.value);
 </script>
 
 <template>
@@ -161,6 +165,15 @@ const puedeCargar = computed(() => nombre.value.trim() && plantillaNombre.value 
             <label class="block text-[11px] text-gray-400 uppercase mb-1">Imagen del encabezado (opcional; si no, usa la de la plantilla)</label>
             <input type="file" accept="image/jpeg,image/png" @change="onArchivo" class="text-[12px]" />
             <p v-if="faltaImagen" class="text-[11px] text-amber-600 mt-1">Esta plantilla requiere una imagen y no tiene una por defecto: sube una para continuar.</p>
+          </div>
+
+          <!-- Valor(es) del botón de URL (plantillas con botón de enlace) -->
+          <div v-if="!esCarrusel && plantilla.botonUrl" class="space-y-1">
+            <div class="text-[11px] text-gray-400 uppercase">Botón: {{ plantilla.botonUrl.texto || 'enlace' }}</div>
+            <input v-for="(_, i) in botonParams" :key="'btn' + i" v-model="botonParams[i]"
+              class="w-full border rounded px-2 py-1.5"
+              :placeholder="(plantilla.botonUrl.ejemplos && plantilla.botonUrl.ejemplos[i]) ? ('Ej: ' + plantilla.botonUrl.ejemplos[i]) : ('Valor del botón ' + (i + 1))" />
+            <p class="text-[11px] text-gray-400">Se completa en el enlace del botón (p. ej. la ruta de la encuesta).</p>
           </div>
 
           <!-- Editor de carrusel -->
