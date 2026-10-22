@@ -2,7 +2,7 @@
 const { sequelize } = require('../config/database');
 const { Contacto } = require('../models');
 const { enviarPlantilla } = require('../integrations/onemsg/plantillas');
-const { construirParams, construirParamsHeader, construirParamsCarrusel, renderizarCuerpo } = require('./plantillas');
+const { construirParams, construirParamsHeader, construirParamsCarrusel, construirParamsBotonUrl, renderizarCuerpo } = require('./plantillas');
 const { clasificarError } = require('./difusionReglas');
 const { persistirEnvioPlantilla } = require('./envioPlantilla');
 const { ORIGEN_CONVERSACION } = require('../config/constants');
@@ -21,7 +21,8 @@ function payloadDeEnvio(dif, def, dest, telefono) {
     return { ...base, params: construirParamsCarrusel(dif.carrusel, def.carrusel) };
   }
   const header = def.tieneImagen ? construirParamsHeader(dif.imagenUrl || def.imagenDefault) : [];
-  return { ...base, params: [...header, ...construirParams(dest.parametros)] };
+  const boton = (def.botonUrl && dif.botonParams) ? construirParamsBotonUrl(dif.botonParams, def.botonUrl.index) : [];
+  return { ...base, params: [...header, ...construirParams(dest.parametros), ...boton] };
 }
 
 /** Pura: texto y media que se guardan en el mensaje saliente de la bandeja. */

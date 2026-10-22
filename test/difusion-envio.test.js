@@ -49,6 +49,25 @@ test('payloadDeEnvio: plantilla plana mantiene el camino actual', () => {
   assert.equal(p.params[0].parameters[0].text, 'Ana');
 });
 
+test('payloadDeEnvio: plantilla con botón de URL incluye el componente button', () => {
+  const dif = { plantillaNombre: 'b', plantillaIdioma: 'es', imagenUrl: null, botonParams: ['bigDay-encuesta/'] };
+  const def = { esCarrusel: false, namespace: 'ns', tieneImagen: false, botonUrl: { index: 0, variables: 1 } };
+  const p = payloadDeEnvio(dif, def, { parametros: ['hola'] }, '573001112233');
+  assert.equal(p.params[0].type, 'body');
+  const btn = p.params.find((x) => x.type === 'button');
+  assert.ok(btn, 'debe incluir el componente button');
+  assert.equal(btn.sub_type, 'url');
+  assert.equal(btn.index, 0);
+  assert.equal(btn.parameters[0].text, 'bigDay-encuesta/');
+});
+
+test('payloadDeEnvio: plantilla sin botón → sin componente button', () => {
+  const dif = { plantillaNombre: 'plana', plantillaIdioma: 'es', imagenUrl: null };
+  const def = { esCarrusel: false, namespace: 'ns', tieneImagen: false };
+  const p = payloadDeEnvio(dif, def, { parametros: ['hola'] }, '573001112233');
+  assert.equal(p.params.some((x) => x.type === 'button'), false);
+});
+
 test('textoYMediaSaliente: carrusel usa cuerpo general + marca + 1ª imagen', () => {
   const dif = { carrusel: { bodyVars: ['Ana'], cards: [{ imagenUrl: 'https://x/a.jpg', vars: [] }, { imagenUrl: 'https://x/b.jpg', vars: [] }] } };
   const def = { esCarrusel: true, cuerpo: 'Hola {{1}}' };
