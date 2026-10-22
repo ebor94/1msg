@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { puedeIniciar, normalizarCarrusel, carruselListo } = require('../src/services/difusiones');
+const { puedeIniciar, normalizarCarrusel, carruselListo, faltaBotonUrl } = require('../src/services/difusiones');
 
 test('puedeIniciar solo en borrador con pendientes', () => {
   assert.equal(puedeIniciar('borrador', 3), true);
@@ -87,4 +87,14 @@ test('carruselListo: encabezado hidratado > 1024 → no ok', () => {
   const r = carruselListo(dif, def);
   assert.equal(r.ok, false);
   assert.match(r.motivo, /encabezado.*1024/);
+});
+
+test('faltaBotonUrl: plantilla con botón sin valor → true; con valor → false', () => {
+  const def = { botonUrl: { variables: 1, index: 0 } };
+  assert.equal(faltaBotonUrl({ botonParams: [] }, def), true);
+  assert.equal(faltaBotonUrl({ botonParams: ['  '] }, def), true);
+  assert.equal(faltaBotonUrl({ botonParams: ['bigDay-encuesta/'] }, def), false);
+});
+test('faltaBotonUrl: plantilla sin botón → false', () => {
+  assert.equal(faltaBotonUrl({ botonParams: null }, { botonUrl: null }), false);
 });
