@@ -51,9 +51,15 @@ function ordenLista(bandeja, soloNoLeidos) {
   return [['ultimoMensajeEn', asc ? 'ASC' : 'DESC']];
 }
 
-function puedeVer(agente, conv) {
+/** Gestionar = escribir/accionar sobre el chat: dueño, general (sin dueño) o admin. */
+function puedeGestionar(agente, conv) {
   if (agente.rol === ROL_AGENTE.ADMINISTRADOR) return true;
   return conv.agenteId === agente.id || conv.agenteId === null;
+}
+
+/** Leer = ver el chat (mensajes, notas, historial). Cualquier agente autenticado. */
+function puedeLeer() {
+  return true;
 }
 
 async function listar({ bandeja = 'mias', agenteSolicitante, agenteFiltro = null, q = null, soloNoLeidos = false, ocultos = false, pagina = 0, tam = 25 }) {
@@ -122,4 +128,4 @@ async function contarBandejas({ agenteSolicitante, agenteFiltro = null }) {
   return { ...total, noLeidos };
 }
 
-module.exports = { construirFiltro, puedeVer, listar, contarBandejas, esModoOcultos, ordenLista };
+module.exports = { construirFiltro, puedeGestionar, puedeLeer, listar, contarBandejas, esModoOcultos, ordenLista };

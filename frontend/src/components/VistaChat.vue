@@ -73,11 +73,14 @@ function onDrop(e) {
       <AvatarContacto clase="w-9 h-9" />
       <b class="text-sm text-gray-900">{{ nombre(chat.conversacion) }}</b>
       <div class="ml-auto flex items-center gap-3">
-        <button v-if="chat.conversacion.agenteId != null && chat.conversacion.estado !== 'cerrada'"
-          @click="resolver" title="Marcar como resuelto"
-          class="text-gray-400 hover:text-green-600 text-lg">✓</button>
-        <button @click="marcarNoLeido" title="Marcar como no leído"
-          class="text-gray-400 hover:text-marca-oscuro text-lg">✉</button>
+        <template v-if="chat.gestionable">
+          <button v-if="chat.conversacion.agenteId != null && chat.conversacion.estado !== 'cerrada'"
+            @click="resolver" title="Marcar como resuelto"
+            class="text-gray-400 hover:text-green-600 text-lg">✓</button>
+          <button @click="marcarNoLeido" title="Marcar como no leído"
+            class="text-gray-400 hover:text-marca-oscuro text-lg">✉</button>
+        </template>
+        <span v-else class="text-[11px] text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">👁 Solo lectura</span>
       </div>
     </div>
     <div ref="contenedor" class="flex-1 overflow-auto p-4 flex flex-col gap-1.5" @scroll="onScroll">
@@ -87,7 +90,10 @@ function onDrop(e) {
       <div v-else-if="chat.error" class="text-center text-red-500 text-sm">{{ chat.error }}</div>
       <BurbujaMensaje v-for="m in chat.mensajes" :key="m.id" :mensaje="m" />
     </div>
-    <Compositor ref="compositorRef" />
+    <Compositor v-if="chat.gestionable" ref="compositorRef" />
+    <div v-else class="bg-[#f0f2f5] border-t border-gray-200 px-4 py-3 text-center text-[12.5px] text-gray-500">
+      👁 Solo lectura — este chat pertenece a otro agente. No puedes escribir ni tomarlo.
+    </div>
     <div v-if="arrastrando" class="absolute inset-0 bg-marca/10 border-2 border-dashed border-marca grid place-items-center z-10 pointer-events-none">
       <span class="text-marca-oscuro font-semibold">Suelta para adjuntar</span>
     </div>

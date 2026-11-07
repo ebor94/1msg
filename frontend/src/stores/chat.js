@@ -16,6 +16,16 @@ export const useChat = defineStore('chat', {
     hayMas: false,
     cargandoMas: false,
   }),
+  getters: {
+    // ¿El agente puede ESCRIBIR/accionar sobre el chat abierto? (dueño, general o admin)
+    // Mismo criterio que el backend (puedeGestionar). Si es false → modo solo lectura.
+    gestionable(state) {
+      const a = useAuth().agente;
+      const conv = state.conversacion;
+      if (!conv || !a) return false;
+      return a.rol === 'administrador' || conv.agenteId === a.id || conv.agenteId == null;
+    },
+  },
   actions: {
     async enviar(texto) {
       if (!this.conversacion) return;
@@ -73,13 +83,17 @@ export const useChat = defineStore('chat', {
         this.mensajes = r.mensajes;
         if (this.conversacion && this.conversacion.id === id) this.conversacion.borradorIa = r.borradorIa || null;
         this.hayMas = r.mensajes.length === 30;
-        await apiFetch(`/conversaciones/${id}/leer`, { method: 'POST' });
-        if (!sigueActual()) return;
-        this.marcarLeidaEnLista(id);
         apiFetch(`/conversaciones/${id}/etiquetas`)
           .then((r) => { if (sigueActual()) this.etiquetas = r.etiquetas; })
           .catch(() => { /* el etiquetado es best-effort al abrir */ });
-        useConversaciones().refrescarContadores(); // no leídos ↓ al abrir
+        // Marcar leído es una escritura sobre el chat del dueño: solo si lo gestionamos.
+        // Al abrir en solo lectura (chat de otro agente desde el Informe) no se toca su no-leído.
+        if (this.gestionable) {
+          await apiFetch(`/conversaciones/${id}/leer`, { method: 'POST' });
+          if (!sigueActual()) return;
+          this.marcarLeidaEnLista(id);
+          useConversaciones().refrescarContadores(); // no leídos ↓ al abrir
+        }
         this.recuperarHistorial(id); // en segundo plano
       } catch (e) {
         if (sigueActual()) this.error = 'No se pudo abrir la conversación.';

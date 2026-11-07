@@ -1,7 +1,6 @@
 'use strict';
 
 const { Mensaje, Conversacion } = require('../models');
-const { puedeVer } = require('../services/conversaciones');
 const { rutaMediaSegura } = require('../services/media');
 const { resolver } = require('../services/mediaPublica');
 const { rutaAbsolutaImagen } = require('../services/difusionImagen');
@@ -13,16 +12,14 @@ const logger = require('../utils/logger');
 /** Solo estos se muestran embebidos; el resto (documentos) se fuerza a descarga. */
 const TIPOS_INLINE = new Set([TIPO_MENSAJE.IMAGE, TIPO_MENSAJE.STICKER, TIPO_MENSAJE.AUDIO, TIPO_MENSAJE.VIDEO]);
 
-/** GET /api/mensajes/:id/media — sirve el archivo guardado si el agente puede ver la conversación. */
+/** GET /api/mensajes/:id/media — sirve el archivo guardado (lectura: cualquier agente autenticado). */
 async function servir(req, res) {
   try {
     const msg = await Mensaje.findByPk(req.params.id, {
       include: [{ model: Conversacion, as: 'conversacion' }],
     });
     if (!msg) return res.status(404).json({ error: 'no encontrado' });
-    if (!msg.conversacion || !puedeVer(req.agente, msg.conversacion)) {
-      return res.status(403).json({ error: 'sin acceso' });
-    }
+    if (!msg.conversacion) return res.status(404).json({ error: 'no encontrado' });
     if (!msg.mediaRuta) return res.status(404).json({ error: 'sin archivo' });
 
     const abs = rutaMediaSegura(msg.mediaRuta, env.media.path);
