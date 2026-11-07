@@ -275,7 +275,7 @@ function celda(p, k) {
     <AvatarContacto clase="w-16 h-16 mx-auto mb-2" />
     <div v-if="!editando" class="flex items-center justify-center gap-1.5">
       <h4 class="text-center text-base text-gray-900 m-0">{{ nombre }}</h4>
-      <button class="text-gray-400 hover:text-marca-oscuro text-sm" title="Editar nombre" @click="abrirEdicion">✎</button>
+      <button v-if="chat.gestionable" class="text-gray-400 hover:text-marca-oscuro text-sm" title="Editar nombre" @click="abrirEdicion">✎</button>
     </div>
     <div v-else class="flex flex-col items-center gap-1.5">
       <input v-model="nombreEdit" @keydown.enter="guardarNombre" placeholder="Nombre del contacto" maxlength="120"
@@ -297,13 +297,13 @@ function celda(p, k) {
       <div v-for="n in acc.notas" :key="n.id" class="bg-amber-50 border border-amber-100 rounded p-2 text-[12px] text-gray-700 mb-1">
         {{ n.nota }} <span class="text-gray-400">— {{ n.agente }}</span>
       </div>
-      <div class="flex gap-1 mt-1">
+      <div v-if="chat.gestionable" class="flex gap-1 mt-1">
         <input v-model="nuevaNota" @keydown.enter="guardarNota" placeholder="Agregar nota…" class="flex-1 border rounded px-2 py-1 text-[12px]" />
         <button @click="guardarNota" class="bg-gray-200 rounded px-2 text-[12px]">+</button>
       </div>
     </div>
 
-    <div class="py-2 border-t border-gray-100">
+    <div v-if="chat.gestionable" class="py-2 border-t border-gray-100">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Recordatorio mensual</div>
       <label class="flex items-center gap-2 text-[12.5px] text-gray-700">
         <input type="checkbox" v-model="recordatorio.activo" @change="guardarRecordatorio" />
@@ -320,8 +320,8 @@ function celda(p, k) {
 
     <div class="py-2 border-t border-gray-100">
       <div class="text-[11px] text-gray-400 uppercase mb-1">¿Compró?</div>
-      <select :value="c.contacto?.compro || ''" @change="cambiarCompro"
-        class="w-full border rounded-lg px-2 py-1.5 text-[13px] font-semibold"
+      <select :value="c.contacto?.compro || ''" @change="cambiarCompro" :disabled="!chat.gestionable"
+        class="w-full border rounded-lg px-2 py-1.5 text-[13px] font-semibold disabled:opacity-70"
         :class="{
           'text-green-700 border-green-300 bg-green-50': c.contacto?.compro === 'si',
           'text-red-700 border-red-300 bg-red-50': c.contacto?.compro === 'no',
@@ -337,13 +337,13 @@ function celda(p, k) {
 
     <div class="py-2 border-t border-gray-100 flex items-center justify-between">
       <span class="text-[12.5px] text-gray-700">Gestionar con IA</span>
-      <input type="checkbox" :checked="!!c.contacto?.gestionarConIa"
+      <input type="checkbox" :checked="!!c.contacto?.gestionarConIa" :disabled="!chat.gestionable"
         @change="alternarGestionIa($event.target.checked)" />
     </div>
 
     <button v-if="!c.agenteId" @click="tomar" class="w-full mt-2 bg-marca text-white rounded-lg py-2 text-sm font-semibold">Tomar chat</button>
     <p v-if="aviso" class="text-[12px] text-red-600 text-center mt-1">{{ aviso }}</p>
-    <div class="mt-3">
+    <div v-if="chat.gestionable" class="mt-3">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Asignar a</div>
       <select v-model="seleccion" @change="asignarA" class="w-full border rounded-lg px-2 py-1.5 text-[13px]">
         <option value="">— Bandeja general —</option>
@@ -354,16 +354,16 @@ function celda(p, k) {
     <div class="mt-4 border-t border-gray-100 pt-3">
       <div class="text-[11px] text-gray-400 uppercase mb-1">Origen</div>
       <div class="flex flex-wrap gap-1.5 mb-2">
-        <button v-for="e in catalogo.origen" :key="e.id" @click="alternar(e)"
-          class="text-[12px] rounded-full px-2.5 py-1 border transition"
+        <button v-for="e in catalogo.origen" :key="e.id" @click="alternar(e)" :disabled="!chat.gestionable"
+          class="text-[12px] rounded-full px-2.5 py-1 border transition disabled:opacity-60 disabled:cursor-default"
           :style="estaPuesta(e) ? { backgroundColor: e.color, borderColor: e.color, color: '#fff' } : { borderColor: e.color, color: e.color }">
           {{ e.nombre }}
         </button>
       </div>
       <div class="text-[11px] text-gray-400 uppercase mb-1">Interés</div>
       <div class="flex flex-wrap gap-1.5">
-        <button v-for="e in catalogo.interes" :key="e.id" @click="alternar(e)"
-          class="text-[12px] rounded-full px-2.5 py-1 border transition"
+        <button v-for="e in catalogo.interes" :key="e.id" @click="alternar(e)" :disabled="!chat.gestionable"
+          class="text-[12px] rounded-full px-2.5 py-1 border transition disabled:opacity-60 disabled:cursor-default"
           :style="estaPuesta(e) ? { backgroundColor: e.color, borderColor: e.color, color: '#fff' } : { borderColor: e.color, color: e.color }">
           {{ e.nombre }}
         </button>
@@ -521,7 +521,7 @@ function celda(p, k) {
               </tbody>
             </table>
 
-            <div v-if="planSel" class="mt-3 border-t pt-3">
+            <div v-if="planSel && chat.gestionable" class="mt-3 border-t pt-3">
               <div class="text-[12px] font-semibold text-marca-oscuro mb-1">Registrar gestión · plan {{ planSel.num_plan }}</div>
               <div class="flex flex-wrap items-end gap-2 text-[12px]">
                 <label class="flex flex-col">Concepto

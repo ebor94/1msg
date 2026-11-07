@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Conversacion, Mensaje, Contacto, Agente, Asignacion, NotaInterna } = require('../models');
-const { listar, puedeVer, contarBandejas } = require('../services/conversaciones');
+const { listar, puedeGestionar, contarBandejas } = require('../services/conversaciones');
 const { recuperarHistorial } = require('../services/backfill');
 const { enviarTexto } = require('../integrations/onemsg/envio');
 const { enviarPlantilla: enviarPlantillaOnemsg } = require('../integrations/onemsg/plantillas');
@@ -23,10 +23,18 @@ const logger = require('../utils/logger');
 
 const ETIQUETA_MEDIA = { image: '📷 Imagen', audio: '🎤 Audio', video: '🎬 Video', document: '📄 Documento' };
 
+/** Gate de escritura/acción: existe y el agente puede gestionarla (dueño, general o admin). */
 async function accesible(req, res) {
   const conv = await Conversacion.findByPk(req.params.id);
   if (!conv) { res.status(404).json({ error: 'no encontrada' }); return null; }
-  if (!puedeVer(req.agente, conv)) { res.status(403).json({ error: 'sin acceso' }); return null; }
+  if (!puedeGestionar(req.agente, conv)) { res.status(403).json({ error: 'sin acceso' }); return null; }
+  return conv;
+}
+
+/** Gate de solo lectura: basta con que exista; cualquier agente autenticado puede verla. */
+async function accesibleLectura(req, res) {
+  const conv = await Conversacion.findByPk(req.params.id);
+  if (!conv) { res.status(404).json({ error: 'no encontrada' }); return null; }
   return conv;
 }
 
@@ -66,7 +74,7 @@ async function listarHandler(req, res) {
 
 async function mensajes(req, res) {
   try {
-    const conv = await accesible(req, res);
+    const conv = await accesibleLectura(req, res);
     if (!conv) return undefined;
     const where = { conversacionId: conv.id };
     const { antesDeTs, antesDeId } = req.query;
@@ -100,7 +108,6 @@ async function historial(req, res) {
       include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
-    if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
     if (!conv.contacto) return res.status(404).json({ error: 'sin contacto' });
 
     const r = await recuperarHistorial(conv);
@@ -290,7 +297,7 @@ async function enviar(req, res) {
       include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid', 'desactivadoEn'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
-    if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    if (!puedeGestionar(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
 
     if (!contactoActivo(conv.contacto)) {
       return res.status(409).json({ error: 'el contacto está desactivado', codigo: 'contacto_desactivado' });
@@ -362,7 +369,7 @@ async function enviarMedia(req, res) {
       include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'bsuid', 'desactivadoEn'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
-    if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    if (!puedeGestionar(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
     if (!contactoActivo(conv.contacto)) {
       return res.status(409).json({ error: 'el contacto está desactivado', codigo: 'contacto_desactivado' });
     }
@@ -464,7 +471,7 @@ async function enviarPlantilla(req, res) {
       include: [{ model: Contacto, as: 'contacto', attributes: ['id', 'waId', 'telefono', 'bsuid', 'desactivadoEn'] }],
     });
     if (!conv) return res.status(404).json({ error: 'no encontrada' });
-    if (!puedeVer(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
+    if (!puedeGestionar(req.agente, conv)) return res.status(403).json({ error: 'sin acceso' });
     if (!contactoActivo(conv.contacto)) {
       return res.status(409).json({ error: 'el contacto está desactivado', codigo: 'contacto_desactivado' });
     }
@@ -638,7 +645,7 @@ async function agregarNota(req, res) {
 
 async function listarNotas(req, res) {
   try {
-    const conv = await accesible(req, res);
+    const conv = await accesibleLectura(req, res);
     if (!conv) return undefined;
     const filas = await NotaInterna.findAll({
       where: { conversacionId: conv.id },
@@ -655,7 +662,7 @@ async function listarNotas(req, res) {
 
 async function asignaciones(req, res) {
   try {
-    const conv = await accesible(req, res);
+    const conv = await accesibleLectura(req, res);
     if (!conv) return undefined;
     const filas = await Asignacion.findAll({
       where: { conversacionId: conv.id },
@@ -684,7 +691,7 @@ async function asignaciones(req, res) {
 
 async function etiquetasDeConv(req, res) {
   try {
-    const conv = await accesible(req, res);
+    const conv = await accesibleLectura(req, res);
     if (!conv) return undefined;
     return res.json({ etiquetas: await etiquetasSvc.etiquetasDeConversacion(conv.id) });
   } catch (err) {

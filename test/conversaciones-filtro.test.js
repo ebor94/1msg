@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { Op } = require('sequelize');
-const { construirFiltro, puedeVer, esModoOcultos, ordenLista } = require('../src/services/conversaciones');
+const { construirFiltro, puedeGestionar, puedeLeer, esModoOcultos, ordenLista } = require('../src/services/conversaciones');
 
 const admin = { id: 1, rol: 'administrador' };
 const asesor = { id: 2, rol: 'asesor' };
@@ -20,11 +20,17 @@ test('todos como asesor → lanza 403', () => {
 test('todos como admin con filtro de agente', () => {
   assert.equal(construirFiltro({ bandeja: 'todos', agenteSolicitante: admin, agenteFiltro: 5 }).agenteId, 5);
 });
-test('puedeVer: asesor ve las suyas y las de general, no las de otro', () => {
-  assert.equal(puedeVer(asesor, { agenteId: 2 }), true);
-  assert.equal(puedeVer(asesor, { agenteId: null }), true);
-  assert.equal(puedeVer(asesor, { agenteId: 3 }), false);
-  assert.equal(puedeVer(admin, { agenteId: 3 }), true);
+test('puedeGestionar: asesor gestiona las suyas y las de general, no las de otro', () => {
+  assert.equal(puedeGestionar(asesor, { agenteId: 2 }), true);
+  assert.equal(puedeGestionar(asesor, { agenteId: null }), true);
+  assert.equal(puedeGestionar(asesor, { agenteId: 3 }), false);
+  assert.equal(puedeGestionar(admin, { agenteId: 3 }), true);
+});
+test('puedeLeer: cualquier agente autenticado puede leer cualquier chat', () => {
+  assert.equal(puedeLeer(asesor, { agenteId: 3 }), true);  // chat de otro agente
+  assert.equal(puedeLeer(asesor, { agenteId: 2 }), true);  // propio
+  assert.equal(puedeLeer(asesor, { agenteId: null }), true); // general
+  assert.equal(puedeLeer(admin, { agenteId: 3 }), true);
 });
 
 test('mías normal excluye archivadas (archivadaEn: null)', () => {
