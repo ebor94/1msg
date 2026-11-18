@@ -22,6 +22,7 @@ const { procesarEventoWebhook } = require('../services/ingesta');
 const { iniciarLoop: iniciarDifusiones } = require('./difusiones');
 const { iniciarLoop: iniciarRecordatorios } = require('./recordatorios');
 const { iniciarLoop: iniciarResumenDifusiones } = require('./resumenDifusiones');
+const { iniciarLoop: iniciarSaludProveedor } = require('./saludProveedor');
 const { generarBorrador } = require('../services/borradorIa');
 
 /**
@@ -207,6 +208,7 @@ async function bootstrap() {
   iniciarDifusiones(); // arranca junto al bucle de eventos, no lo bloquea
   iniciarRecordatorios(); // idem: barrido diario de recordatorios, no lo bloquea
   iniciarResumenDifusiones(); // idem: barrido diario de resúmenes de difusión (~19:00), no lo bloquea
+  iniciarSaludProveedor(); // idem: chequeo de salud de 1msg cada 2 min → banner automático
   await bucle();
   clearInterval(timerPurga);
   await sequelize.close();

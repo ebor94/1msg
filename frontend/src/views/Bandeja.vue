@@ -19,17 +19,22 @@ import PanelCambiarClave from '../components/PanelCambiarClave.vue';
 import PanelProductos from '../components/PanelProductos.vue';
 import PanelPromptIa from '../components/PanelPromptIa.vue';
 import PanelRecepcion from '../components/PanelRecepcion.vue';
+import PanelMantenimiento from '../components/PanelMantenimiento.vue';
+import { useMantenimiento } from '../stores/mantenimiento';
 
 const auth = useAuth();
 const chat = useChat();
 const acc = useAcciones();
 const sonido = useSonido();
 const notif = useNotificaciones();
+const mant = useMantenimiento();
 const router = useRouter();
 
 onMounted(conectarSocket);
 onMounted(() => { iniciarTituloPestana(); });
+onMounted(() => { mant.iniciar(); }); // sondea el banner de mantenimiento/proveedor
 onUnmounted(desconectarSocket);
+onUnmounted(() => { mant.detener(); });
 
 function salir() {
   desconectarSocket();
@@ -43,6 +48,7 @@ const mostrarCambioClave = ref(false);
 const mostrarProductos = ref(false);
 const mostrarPromptIa = ref(false);
 const mostrarRecepcion = ref(false);
+const mostrarMantenimiento = ref(false);
 const mostrarNuevo = ref(false);
 const menuAbierto = ref(false); // menú desplegable de la cabecera (agrupa las acciones)
 const nuevoTelefono = ref('');
@@ -120,6 +126,8 @@ async function crearContacto() {
             @click="menuAbierto = false; mostrarPromptIa = true">🤖 Prompt IA</button>
           <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="menuAbierto = false; mostrarRecepcion = true">👥 Recepción</button>
+          <button v-if="auth.esAdministrador" class="w-full text-left px-3 py-2 hover:bg-gray-50"
+            @click="menuAbierto = false; mostrarMantenimiento = true">🛠️ Mantenimiento</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50"
             @click="sonido.alternar()">{{ sonido.activado ? '🔔 Silenciar sonido' : '🔕 Activar sonido' }}</button>
           <button class="w-full text-left px-3 py-2 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -134,6 +142,10 @@ async function crearContacto() {
         </div>
       </div>
     </header>
+    <!-- Banner de mantenimiento / proveedor caído (visible para todos los agentes). -->
+    <div v-if="mant.activo" class="bg-amber-100 border-b border-amber-300 text-amber-900 px-4 py-2 text-[12.5px] text-center">
+      ⚠️ {{ mant.mensaje }}
+    </div>
     <div class="flex-1 min-h-0 md:grid" style="grid-template-columns: 340px 1fr 300px;">
       <!-- Lista: se oculta en móvil cuando hay chat abierto -->
       <aside class="border-r border-gray-200 min-h-0 h-full" :class="chat.conversacion ? 'hidden md:block' : 'block'">
@@ -179,5 +191,6 @@ async function crearContacto() {
     <PanelProductos v-if="mostrarProductos" @cerrar="mostrarProductos = false" />
     <PanelPromptIa v-if="mostrarPromptIa" @cerrar="mostrarPromptIa = false" />
     <PanelRecepcion v-if="mostrarRecepcion" @cerrar="mostrarRecepcion = false" />
+    <PanelMantenimiento v-if="mostrarMantenimiento" @cerrar="mostrarMantenimiento = false" />
   </div>
 </template>
