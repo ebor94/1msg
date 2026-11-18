@@ -2,6 +2,7 @@
 const { Ajuste, Agente } = require('../models');
 const env = require('../config/env');
 const { CLAVE_RECEPCION, parsearAgentesRecepcion, validarIdsRecepcion } = require('../services/recepcion');
+const mantenimiento = require('../services/mantenimiento');
 const logger = require('../utils/logger');
 
 const CLAVE_PROMPT = 'ia_gestion_prompt';
@@ -64,4 +65,32 @@ async function guardarRecepcion(req, res) {
   }
 }
 
-module.exports = { obtenerPromptIa, guardarPromptIa, obtenerRecepcion, guardarRecepcion };
+/** GET /api/mantenimiento — estado del banner (lo ve cualquier agente). */
+async function obtenerMantenimiento(req, res) {
+  try {
+    return res.json(await mantenimiento.estadoBanner());
+  } catch (err) {
+    logger.error(`obtener mantenimiento: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+/** PUT /api/mantenimiento — enciende/apaga el switch manual y el mensaje (admin). */
+async function guardarMantenimiento(req, res) {
+  const activo = !!(req.body && req.body.activo);
+  const mensaje = req.body && req.body.mensaje; // undefined = no tocar el mensaje
+  if (mensaje !== undefined && String(mensaje).length > 500) {
+    return res.status(422).json({ error: 'el mensaje es demasiado largo (máx 500)' });
+  }
+  try {
+    return res.json(await mantenimiento.guardarManual({ activo, mensaje }));
+  } catch (err) {
+    logger.error(`guardar mantenimiento: ${err.message}`);
+    return res.status(500).json({ error: 'error interno' });
+  }
+}
+
+module.exports = {
+  obtenerPromptIa, guardarPromptIa, obtenerRecepcion, guardarRecepcion,
+  obtenerMantenimiento, guardarMantenimiento,
+};

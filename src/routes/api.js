@@ -124,6 +124,10 @@ router.put('/ajustes/ia-gestion-prompt', requireAuth, requireAdmin, ajustesCtrl.
 router.get('/ajustes/recepcion', requireAuth, requireAdmin, ajustesCtrl.obtenerRecepcion);
 router.put('/ajustes/recepcion', requireAuth, requireAdmin, ajustesCtrl.guardarRecepcion);
 
+// Banner de mantenimiento: GET lo ve cualquier agente; el switch manual es admin.
+router.get('/mantenimiento', requireAuth, ajustesCtrl.obtenerMantenimiento);
+router.put('/mantenimiento', requireAuth, requireAdmin, ajustesCtrl.guardarMantenimiento);
+
 router.get('/difusiones', requireAuth, requireAdmin, difusionesCtrl.listar);
 router.post('/difusiones', requireAuth, requireAdmin, difusionesCtrl.crear);
 router.get('/difusiones/:id', requireAuth, requireAdmin, difusionesCtrl.detalle);
